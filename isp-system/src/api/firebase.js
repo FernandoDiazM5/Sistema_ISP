@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
 
 // Helper para obtener config desde localStorage o variables de entorno
 const getConfig = () => ({
@@ -33,143 +33,247 @@ export const initFirebase = () => {
     return db;
 };
 
-// Sincronizar subida (Full push)
-export const pushToCloud = async (data) => {
+// ===================== HELPERS =====================
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Tamaño máximo de clientes por chunk (Firestore doc ~1MB limit)
+const CLIENT_CHUNK_SIZE = 200;
+
+// ===================== PUSH (SUBIR RESPALDO) =====================
+// TODO: Todo se guarda SÓLO en backups_history/{versionId}/data/*
+// Ya no se escriben colecciones separadas "backups" ni "clients"
+// onProgress(info) → { step, totalSteps, label, percent }
+export const pushToCloud = async (data, onProgress = () => { }) => {
     const database = initFirebase();
     if (!database) throw new Error('Firebase no configurado');
 
-    const empresaId = 'isp_default';
-    const BATCH_SIZE = 450; // Safety margin below 500
-
-    // 1. Prepare Clients Batches
+    const now = new Date();
+    const versionId = now.toISOString().replace(/[:.]/g, '-');
+    const timestamp = now.toISOString();
     const clients = data.clients || [];
-    const clientBatches = [];
-    for (let i = 0; i < clients.length; i += BATCH_SIZE) {
-        clientBatches.push(clients.slice(i, i + BATCH_SIZE));
-    }
 
-    // 2. Commit Client Batches sequentially
-    // We do this first because if we fail here, the main backup metadata won't update
-    for (const batchClients of clientBatches) {
-        const batch = writeBatch(database);
-        batchClients.forEach(client => {
-            const ref = doc(database, 'clients', client.id); // Use client.id as doc ID
-            batch.set(ref, {
-                ...client,
-                _empresaId: empresaId,
-                updatedAt: new Date().toISOString()
-            });
+    // Calcular pasos totales
+    const clientChunkCount = Math.max(1, Math.ceil(clients.length / CLIENT_CHUNK_SIZE));
+    // Steps: 1(meta) + clientChunks + 1(collections) + 1(config) + 1(_meta) = clientChunks + 4
+    const totalSteps = clientChunkCount + 4;
+    let currentStep = 0;
+
+    const reportProgress = (label) => {
+        currentStep++;
+        onProgress({
+            step: currentStep,
+            totalSteps,
+            label,
+            percent: Math.round((currentStep / totalSteps) * 100),
         });
-        await batch.commit();
+    };
+
+    // 1. Escribir metadata de la versión
+    const versionMeta = {
+        createdAt: timestamp,
+        versionId,
+        totalClients: clients.length,
+        totalTickets: (data.tickets || []).length,
+        totalAverias: (data.averias || []).length,
+        totalEquipos: (data.equipos || []).length,
+        totalVisitas: (data.visitas || []).length,
+        totalTecnicos: (data.tecnicos || []).length,
+        label: `Respaldo ${now.toLocaleDateString('es-PE')} ${now.toLocaleTimeString('es-PE')}`,
+    };
+
+    await setDoc(doc(database, 'backups_history', versionId), versionMeta);
+    reportProgress('Metadata guardada');
+
+    // 2. Guardar clientes en chunks
+    const clientChunks = [];
+    for (let i = 0; i < clients.length; i += CLIENT_CHUNK_SIZE) {
+        clientChunks.push(clients.slice(i, i + CLIENT_CHUNK_SIZE));
     }
 
-    // 3. Main Backup (Collections & Config) in a single batch
-    const mainBatch = writeBatch(database);
+    for (let i = 0; i < clientChunks.length; i++) {
+        const chunkRef = doc(database, 'backups_history', versionId, 'data', `clients_${i}`);
+        await setDoc(chunkRef, { data: clientChunks[i] });
+        reportProgress(`Clientes ${i + 1}/${clientChunks.length}`);
+        if (i < clientChunks.length - 1) await delay(300);
+    }
 
-    // === COLECCIONES PRINCIPALES ===
-    const collections = [
+    // 3. Guardar cada colección por separado (evitar superar 1MB por doc)
+    const COLLECTION_NAMES = [
         'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-        'movimientosEquipos', 'whatsappLogs', 'templates'
+        'movimientosEquipos', 'whatsappLogs', 'templates',
     ];
 
-    collections.forEach(col => {
-        const ref = doc(database, 'backups', `${empresaId}_${col}`);
-        mainBatch.set(ref, { data: data[col] || [], updatedAt: new Date().toISOString() });
-    });
+    const MAX_DOC_BYTES = 800000; // 800KB safe limit (Firestore max 1MB)
+    const collectionChunks = {}; // Track chunks per collection for _meta
 
-    // === CONFIGURACIÓN Y METADATA ===
-    const configRef = doc(database, 'backups', `${empresaId}_config`);
-    mainBatch.set(configRef, {
+    for (const colName of COLLECTION_NAMES) {
+        const colData = data[colName] || [];
+        const jsonSize = new Blob([JSON.stringify(colData)]).size;
+
+        if (jsonSize > MAX_DOC_BYTES && Array.isArray(colData) && colData.length > 0) {
+            // Split large collection into chunks
+            const chunkSize = Math.ceil(colData.length / Math.ceil(jsonSize / MAX_DOC_BYTES));
+            const chunks = [];
+            for (let i = 0; i < colData.length; i += chunkSize) {
+                chunks.push(colData.slice(i, i + chunkSize));
+            }
+            collectionChunks[colName] = chunks.length;
+            for (let i = 0; i < chunks.length; i++) {
+                await setDoc(doc(database, 'backups_history', versionId, 'data', `${colName}_${i}`), { data: chunks[i] });
+                if (i < chunks.length - 1) await delay(200);
+            }
+        } else {
+            // Single document
+            collectionChunks[colName] = 1;
+            await setDoc(doc(database, 'backups_history', versionId, 'data', colName), { data: colData });
+        }
+        await delay(150);
+    }
+    reportProgress('Colecciones guardadas');
+
+    await delay(300);
+
+    // 4. Config
+    await setDoc(doc(database, 'backups_history', versionId, 'data', 'config'), {
         columnPrefs: data.columnPrefs || {},
         cleaningOptions: data.cleaningOptions || {},
         importHistory: data.importHistory || [],
-        updatedAt: new Date().toISOString()
     });
+    reportProgress('Configuración guardada');
 
-    // Metadata General
-    const metaRef = doc(database, 'backups', `${empresaId}_meta`);
-    mainBatch.set(metaRef, {
-        lastSync: new Date().toISOString(),
-        totalClients: clients.length,
-        version: 'v2_clients_collection' // Marker for new structure
+    // 5. Meta de datos — incluye info de chunks por colección
+    await setDoc(doc(database, 'backups_history', versionId, 'data', '_meta'), {
+        clientChunks: clientChunks.length,
+        collectionChunks, // e.g. { tickets: 2, averias: 1, ... }
     });
+    reportProgress('¡Backup completado!');
 
-    await mainBatch.commit();
-    return true;
+    return { success: true, versionId, timestamp };
 };
 
-// Sincronizar bajada (Full pull)
+// ===================== PULL LATEST (RESTAURAR ÚLTIMO) =====================
 export const pullFromCloud = async () => {
     const database = initFirebase();
     if (!database) throw new Error('Firebase no configurado');
 
-    const empresaId = 'isp_default';
+    const versions = await listBackupVersions();
+    if (versions.length === 0) throw new Error('No hay backups disponibles');
 
-    // 1. Metadata
-    const metaSnap = await getDoc(doc(database, 'backups', `${empresaId}_meta`));
-    const meta = metaSnap.exists() ? metaSnap.data() : {};
+    return pullBackupVersion(versions[0].id);
+};
 
-    // 2. Clientes (Individual Docs or Legacy Chunks)
-    let allClients = [];
+// ===================== LISTAR VERSIONES DE BACKUP =====================
+export const listBackupVersions = async () => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
 
-    if (meta.version === 'v2_clients_collection') {
-        // New strategy: Read from 'clients' collection
-        // TODO: Implement pagination or where clause for empresaId if multi-tenant
-        const clientsSnap = await getDocs(collection(database, 'clients'));
-        clientsSnap.forEach(doc => {
-            // Basic filter if we ever support multi-tenant (though collection is global here)
-            const data = doc.data();
-            if (data._empresaId === empresaId || !data._empresaId) {
-                // Remove metadata fields if needed, or keep them
-                const { _empresaId, updatedAt, ...clientData } = data;
-                allClients.push(clientData);
-            }
-        });
+    const versionsSnap = await getDocs(collection(database, 'backups_history'));
+    const versions = [];
 
-    } else {
-        // Legacy strategy: Read chunks from 'backups'
-        const numChunks = meta.clientChunks || 1;
-        const chunkPromises = [];
-        for (let i = 0; i < numChunks; i++) {
-            chunkPromises.push(getDoc(doc(database, 'backups', `${empresaId}_clients_${i}`)));
-        }
-        const chunkSnaps = await Promise.all(chunkPromises);
-        chunkSnaps.forEach(snap => {
-            if (snap.exists()) {
-                allClients = [...allClients, ...(snap.data().data || [])];
-            }
-        });
-    }
-
-    // 3. Estructura de colecciones (Backups blob)
-    const collections = [
-        'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
-        'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-        'movimientosEquipos', 'whatsappLogs', 'templates', 'config'
-    ];
-
-    const colPromises = collections.map(col => getDoc(doc(database, 'backups', `${empresaId}_${col}`)));
-    const colSnaps = await Promise.all(colPromises);
-
-    // Mapear resultados
-    const result = { clients: allClients };
-
-    colSnaps.forEach((snap, index) => {
-        const colName = collections[index];
-        if (snap.exists()) {
-            const d = snap.data();
-            if (colName === 'config') {
-                result.columnPrefs = d.columnPrefs;
-                result.cleaningOptions = d.cleaningOptions;
-                result.importHistory = d.importHistory;
-            } else {
-                result[colName] = d.data || [];
-            }
-        } else {
-            if (colName !== 'config') result[colName] = [];
+    versionsSnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.createdAt) {
+            versions.push({ id: docSnap.id, ...data });
         }
     });
 
-    return result;
+    versions.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return versions;
+};
+
+// ===================== RESTAURAR VERSIÓN ESPECÍFICA =====================
+export const pullBackupVersion = async (versionId) => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
+
+    // 1. Leer metadata
+    const metaSnap = await getDoc(doc(database, 'backups_history', versionId, 'data', '_meta'));
+    const meta = metaSnap.exists() ? metaSnap.data() : { clientChunks: 0, collectionChunks: {} };
+
+    // 2. Leer clientes en chunks
+    let allClients = [];
+    for (let i = 0; i < (meta.clientChunks || 0); i++) {
+        const chunkSnap = await getDoc(doc(database, 'backups_history', versionId, 'data', `clients_${i}`));
+        if (chunkSnap.exists()) {
+            allClients = [...allClients, ...(chunkSnap.data().data || [])];
+        }
+    }
+
+    // 3. Leer colecciones (cada una puede tener N chunks)
+    const COLLECTION_NAMES = [
+        'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+        'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+        'movimientosEquipos', 'whatsappLogs', 'templates',
+    ];
+
+    const collectionsData = {};
+    const cChunks = meta.collectionChunks || {};
+
+    for (const colName of COLLECTION_NAMES) {
+        const numChunks = cChunks[colName] || 1;
+        let colData = [];
+
+        if (numChunks > 1) {
+            // Read multiple chunks
+            for (let i = 0; i < numChunks; i++) {
+                const snap = await getDoc(doc(database, 'backups_history', versionId, 'data', `${colName}_${i}`));
+                if (snap.exists()) colData = [...colData, ...(snap.data().data || [])];
+            }
+        } else {
+            // Read single document
+            const snap = await getDoc(doc(database, 'backups_history', versionId, 'data', colName));
+            if (snap.exists()) colData = snap.data().data || [];
+        }
+        collectionsData[colName] = colData;
+    }
+
+    // 4. Config
+    const configSnap = await getDoc(doc(database, 'backups_history', versionId, 'data', 'config'));
+    const configData = configSnap.exists() ? configSnap.data() : {};
+
+    // 5. Armar resultado completo
+    return {
+        clients: allClients,
+        tickets: collectionsData.tickets || [],
+        averias: collectionsData.averias || [],
+        tecnicos: collectionsData.tecnicos || [],
+        equipos: collectionsData.equipos || [],
+        visitas: collectionsData.visitas || [],
+        instalaciones: collectionsData.instalaciones || [],
+        derivaciones: collectionsData.derivaciones || [],
+        postVenta: collectionsData.postVenta || [],
+        sesionesRemoto: collectionsData.sesionesRemoto || [],
+        movimientosEquipos: collectionsData.movimientosEquipos || [],
+        whatsappLogs: collectionsData.whatsappLogs || [],
+        templates: collectionsData.templates || [],
+        columnPrefs: configData.columnPrefs,
+        cleaningOptions: configData.cleaningOptions,
+        importHistory: configData.importHistory,
+    };
+};
+
+// ===================== ELIMINAR VERSIÓN =====================
+export const deleteBackupVersion = async (versionId) => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
+
+    // Eliminar sub-documentos en data/
+    const dataSnap = await getDocs(collection(database, 'backups_history', versionId, 'data'));
+
+    // Usar batch para eliminar (max 500 por batch)
+    const docs = [];
+    dataSnap.forEach(d => docs.push(d.ref));
+
+    const BATCH_SIZE = 450;
+    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+        const batch = writeBatch(database);
+        docs.slice(i, i + BATCH_SIZE).forEach(ref => batch.delete(ref));
+        await batch.commit();
+        if (i + BATCH_SIZE < docs.length) await delay(200);
+    }
+
+    // Eliminar documento principal
+    await deleteDoc(doc(database, 'backups_history', versionId));
+    return true;
 };

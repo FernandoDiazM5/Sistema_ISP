@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { Settings, Shield, Database, Globe, Key, Users, Save, RefreshCw, CheckCircle, AlertTriangle, Wifi, UploadCloud, DownloadCloud, Moon, Sun, Monitor, Sparkles, Smartphone, Flower, Leaf, Wind } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Shield, Database, Globe, Key, Users, Save, RefreshCw, CheckCircle, AlertTriangle, Wifi, UploadCloud, DownloadCloud, Moon, Sun, Monitor, Sparkles, Smartphone, Flower, Leaf, Wind, Clock, Trash2, FileJson, FileSpreadsheet, FileText, History, Loader2 } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES, DEMO_USERS } from '../../auth/roles';
 import { CONFIG } from '../../utils/constants';
 import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
+import useToast from '../../hooks/useToast';
+import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from '../../utils/exportBackup';
 
 function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -33,6 +35,232 @@ function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
   );
 }
 
+// ===================== BACKUP HISTORY SECTION =====================
+function BackupHistorySection() {
+  const { backupVersions, loadingVersions, loadVersions, restoreVersion, removeVersion, restoringVersion, downloadVersionData } = useSyncStore();
+  const toast = useToast();
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+  useEffect(() => {
+    loadVersions();
+  }, [loadVersions]);
+
+  const handleRestore = async (versionId) => {
+    if (!window.confirm('¿Estás seguro de restaurar esta versión? Esto reemplazará TODOS los datos actuales.')) return;
+    const ok = await restoreVersion(versionId);
+    if (ok) toast.success('Versión restaurada correctamente');
+    else toast.error('Error al restaurar la versión');
+  };
+
+  const handleDelete = async (versionId) => {
+    const ok = await removeVersion(versionId);
+    if (ok) {
+      toast.success('Versión eliminada');
+      setShowDeleteConfirm(null);
+    }
+    else toast.error('Error al eliminar');
+  };
+
+  const handleDownload = async (version, format) => {
+    setDownloadingId(version.id);
+    try {
+      const data = await downloadVersionData(version.id);
+      if (!data) {
+        toast.error('Error al descargar datos');
+        return;
+      }
+      const filename = `backup_${version.createdAt?.split('T')[0] || 'unknown'}_${version.createdAt?.split('T')[1]?.split('.')[0]?.replace(/:/g, '-') || ''}`;
+
+      switch (format) {
+        case 'json':
+          downloadAsJSON(data, filename);
+          toast.success('Descarga JSON completada');
+          break;
+        case 'csv':
+          downloadAsCSV(data, filename);
+          toast.success('Descarga CSV completada');
+          break;
+        case 'excel':
+          await downloadAsExcel(data, filename);
+          toast.success('Descarga Excel completada');
+          break;
+      }
+    } catch (e) {
+      toast.error(`Error: ${e.message}`);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  return (
+    <div className="bg-bg-card rounded-2xl p-6 border border-border">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-accent-purple/10 flex items-center justify-center">
+            <History size={18} className="text-accent-purple" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold">Historial de Backups</h3>
+            <p className="text-[11px] text-text-muted">Versiones guardadas en Firebase</p>
+          </div>
+        </div>
+        <button
+          onClick={loadVersions}
+          disabled={loadingVersions}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs font-medium hover:bg-bg-card-hover cursor-pointer transition-colors disabled:opacity-50"
+        >
+          <RefreshCw size={12} className={loadingVersions ? 'animate-spin' : ''} />
+          Actualizar
+        </button>
+      </div>
+
+      {loadingVersions && backupVersions.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={24} className="animate-spin text-text-muted" />
+          <span className="ml-3 text-sm text-text-muted">Cargando versiones...</span>
+        </div>
+      ) : backupVersions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-bg-secondary border border-border flex items-center justify-center mb-3">
+            <Database size={24} className="text-text-muted" />
+          </div>
+          <p className="text-sm font-medium text-text-secondary">No hay backups guardados</p>
+          <p className="text-xs text-text-muted mt-1">Sube tu primer respaldo para empezar</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-1">
+          {backupVersions.map((version, idx) => {
+            const date = new Date(version.createdAt);
+            const isLatest = idx === 0;
+            const isDeleting = showDeleteConfirm === version.id;
+            const isRestoring = restoringVersion === version.id;
+            const isDownloading = downloadingId === version.id;
+
+            return (
+              <div key={version.id} className={`relative p-4 rounded-xl border transition-all ${isLatest ? 'bg-accent-blue/5 border-accent-blue/30' : 'bg-bg-secondary border-border hover:border-accent-blue/20'}`}>
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock size={14} className="text-text-muted" />
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {date.toLocaleDateString('es-PE', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                        <span className="ml-2 text-text-muted font-mono text-xs">{date.toLocaleTimeString('es-PE')}</span>
+                      </p>
+                    </div>
+                    {isLatest && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent-blue/10 text-accent-blue">
+                        ÚLTIMO
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex flex-wrap gap-3 mb-3">
+                  <Stat label="Clientes" value={version.totalClients} />
+                  <Stat label="Tickets" value={version.totalTickets} />
+                  <Stat label="Averías" value={version.totalAverias} />
+                  <Stat label="Equipos" value={version.totalEquipos} />
+                  <Stat label="Visitas" value={version.totalVisitas} />
+                  <Stat label="Técnicos" value={version.totalTecnicos} />
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Restore */}
+                  <button
+                    onClick={() => handleRestore(version.id)}
+                    disabled={isRestoring}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-purple/10 text-accent-purple text-[11px] font-bold hover:bg-accent-purple/20 disabled:opacity-50 transition-colors cursor-pointer border-none"
+                  >
+                    {isRestoring ? <Loader2 size={12} className="animate-spin" /> : <DownloadCloud size={12} />}
+                    Restaurar
+                  </button>
+
+                  {/* Download buttons */}
+                  <div className="flex items-center gap-1 ml-1">
+                    <span className="text-[10px] text-text-muted mr-1">Descargar:</span>
+                    <button
+                      onClick={() => handleDownload(version, 'json')}
+                      disabled={isDownloading}
+                      title="Descargar JSON"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 text-[11px] font-bold hover:bg-emerald-500/20 disabled:opacity-50 transition-colors cursor-pointer border-none"
+                    >
+                      <FileJson size={12} /> JSON
+                    </button>
+                    <button
+                      onClick={() => handleDownload(version, 'csv')}
+                      disabled={isDownloading}
+                      title="Descargar CSV"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-blue-500/10 text-blue-500 text-[11px] font-bold hover:bg-blue-500/20 disabled:opacity-50 transition-colors cursor-pointer border-none"
+                    >
+                      <FileText size={12} /> CSV
+                    </button>
+                    <button
+                      onClick={() => handleDownload(version, 'excel')}
+                      disabled={isDownloading}
+                      title="Descargar Excel"
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-orange-500/10 text-orange-500 text-[11px] font-bold hover:bg-orange-500/20 disabled:opacity-50 transition-colors cursor-pointer border-none"
+                    >
+                      <FileSpreadsheet size={12} /> Excel
+                    </button>
+                  </div>
+
+                  {/* Delete */}
+                  {isDeleting ? (
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="text-[11px] text-red-400">¿Eliminar?</span>
+                      <button
+                        onClick={() => handleDelete(version.id)}
+                        className="px-2 py-1 rounded-lg bg-red-500/20 text-red-500 text-[11px] font-bold hover:bg-red-500/30 cursor-pointer border-none"
+                      >
+                        Sí
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(null)}
+                        className="px-2 py-1 rounded-lg bg-bg-card text-text-muted text-[11px] font-medium hover:bg-bg-card-hover cursor-pointer border-none"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowDeleteConfirm(version.id)}
+                      className="ml-auto p-1.5 rounded-lg text-text-muted hover:text-red-500 hover:bg-red-500/10 cursor-pointer border-none bg-transparent transition-colors"
+                      title="Eliminar versión"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {isDownloading && (
+                  <div className="absolute inset-0 bg-bg-card/80 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Loader2 size={20} className="animate-spin text-accent-blue mr-2" />
+                    <span className="text-sm text-text-secondary">Descargando...</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-bg-card border border-border">
+      <span className="text-[10px] text-text-muted">{label}:</span>
+      <span className="text-[11px] font-bold text-text-primary">{value ?? 0}</span>
+    </div>
+  );
+}
+
+// ===================== MAIN PAGE =====================
 export default function ConfiguracionPage() {
   const { user } = useAuth();
   const clients = useStore(s => s.clients);
@@ -40,19 +268,18 @@ export default function ConfiguracionPage() {
   const tickets = useStore(s => s.tickets);
   const averias = useStore(s => s.averias);
   const equipos = useStore(s => s.equipos);
-  const theme = useStore(s => s.theme); // Moved hook to top level
+  const theme = useStore(s => s.theme);
 
-  const { syncPush, syncPull, isSyncing, lastSync } = useSyncStore();
+  const { syncPush, syncPull, isSyncing, lastSync, syncProgress } = useSyncStore();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('general');
 
-  // Editable API values
   const [apiValues, setApiValues] = useState(() => ({
     googleApiKey: localStorage.getItem('isp_google_api_key') || CONFIG.GOOGLE_API_KEY || '',
     googleClientId: localStorage.getItem('isp_google_client_id') || CONFIG.GOOGLE_CLIENT_ID || '',
     googleSheetId: localStorage.getItem('isp_google_sheet_id') || CONFIG.GOOGLE_SHEET_ID || '',
     geminiApiKey: localStorage.getItem('isp_gemini_api_key') || '',
-    // Firebase Config
     firebaseApiKey: localStorage.getItem('isp_firebase_api_key') || '',
     firebaseAuthDomain: localStorage.getItem('isp_firebase_auth_domain') || '',
     firebaseProjectId: localStorage.getItem('isp_firebase_project_id') || '',
@@ -62,7 +289,6 @@ export default function ConfiguracionPage() {
   }));
   const [apiSaved, setApiSaved] = useState(false);
 
-  // Editable system values
   const [sysValues, setSysValues] = useState(() => ({
     empresaNombre: localStorage.getItem('isp_empresa_nombre') || 'ISP Carabayllo',
     empresaTelefono: localStorage.getItem('isp_empresa_telefono') || '999-000-111',
@@ -78,16 +304,14 @@ export default function ConfiguracionPage() {
     localStorage.setItem('isp_google_client_id', apiValues.googleClientId);
     localStorage.setItem('isp_google_sheet_id', apiValues.googleSheetId);
     localStorage.setItem('isp_gemini_api_key', apiValues.geminiApiKey);
-
-    // Firebase
     localStorage.setItem('isp_firebase_api_key', apiValues.firebaseApiKey);
     localStorage.setItem('isp_firebase_auth_domain', apiValues.firebaseAuthDomain);
     localStorage.setItem('isp_firebase_project_id', apiValues.firebaseProjectId);
     localStorage.setItem('isp_firebase_storage_bucket', apiValues.firebaseStorageBucket);
     localStorage.setItem('isp_firebase_messaging_sender_id', apiValues.firebaseMessagingSenderId);
     localStorage.setItem('isp_firebase_app_id', apiValues.firebaseAppId);
-
     setApiSaved(true);
+    toast.success('Credenciales API guardadas');
     setTimeout(() => setApiSaved(false), 3000);
   };
 
@@ -96,13 +320,28 @@ export default function ConfiguracionPage() {
       localStorage.setItem('isp_' + key.replace(/([A-Z])/g, '_$1').toLowerCase(), val);
     });
     setSysSaved(true);
+    toast.success('Parámetros guardados');
     setTimeout(() => setSysSaved(false), 3000);
+  };
+
+  const handleSyncPush = async () => {
+    const result = await syncPush();
+    if (result) toast.success('Respaldo subido correctamente a Firebase');
+    else toast.error('Error al subir respaldo');
+  };
+
+  const handleSyncPull = async () => {
+    if (!window.confirm('ADVERTENCIA: Esto reemplazará TODOS los datos actuales con la versión más reciente de la nube. ¿Deseas continuar?')) return;
+    const ok = await syncPull();
+    if (ok) toast.success('Datos restaurados desde Firebase');
+    else toast.error('Error al restaurar datos');
   };
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings },
     { id: 'usuarios', label: 'Usuarios & Roles', icon: Users },
     { id: 'api', label: 'Conexión API', icon: Globe },
+    { id: 'backups', label: 'Backups', icon: Database },
     { id: 'sistema', label: 'Sistema', icon: Database },
   ];
 
@@ -133,505 +372,370 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Tab: General */}
-      {
-        activeTab === 'general' && (
-          <div className="grid grid-cols-2 gap-6">
-            {/* ... (ISP System info card) */}
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
-                  <Wifi size={18} className="text-accent-blue" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">ISP System</h3>
-                  <p className="text-[11px] text-text-muted">Sistema de Gestión para Proveedores de Internet</p>
-                </div>
+      {activeTab === 'general' && (
+        <div className="grid grid-cols-2 gap-6">
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
+                <Wifi size={18} className="text-accent-blue" />
               </div>
-              <div className="flex flex-col gap-3">
-                <InfoRow label="Versión" value="1.0.0" />
-                <InfoRow label="Framework" value="React 18 + Vite 5" />
-                <InfoRow label="Estado" value="Producción" badge="bg-emerald-500/10 text-emerald-400" />
-                <InfoRow label="Última actualización" value={new Date().toLocaleDateString('es-PE')} />
+              <div>
+                <h3 className="text-sm font-bold">ISP System</h3>
+                <p className="text-[11px] text-text-muted">Sistema de Gestión para Proveedores de Internet</p>
               </div>
             </div>
-
-            {/* Theme Selector Section */}
-            <div className="bg-bg-card rounded-2xl p-6 border border-border col-span-2">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary flex items-center gap-2">
-                <Sparkles size={16} className="text-accent-yellow" /> Personalización
-              </h3>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <ThemeOption
-                  id="default"
-                  label="Azul Noche"
-                  color="#0a0e1a"
-                  accent="#3b82f6"
-                  icon={Moon}
-                  active={theme === 'default'}
-                  onClick={() => useStore.getState().setTheme('default')}
-                />
-                <ThemeOption
-                  id="light"
-                  label="Modo Claro"
-                  color="#ffffff"
-                  accent="#2563eb"
-                  icon={Sun}
-                  active={theme === 'light'}
-                  onClick={() => useStore.getState().setTheme('light')}
-                />
-                <ThemeOption
-                  id="black"
-                  label="Negro OLED"
-                  color="#000000"
-                  accent="#e5e5e5"
-                  icon={Smartphone}
-                  active={theme === 'black'}
-                  onClick={() => useStore.getState().setTheme('black')}
-                />
-                <ThemeOption
-                  id="purple"
-                  label="Lila Suave"
-                  color="#faf5ff"
-                  accent="#a855f7"
-                  icon={Sparkles}
-                  active={theme === 'purple'}
-                  onClick={() => useStore.getState().setTheme('purple')}
-                />
-                <ThemeOption
-                  id="rose"
-                  label="Rosa Nórdico"
-                  color="#fff1f2"
-                  accent="#e11d48"
-                  icon={Flower}
-                  active={theme === 'rose'}
-                  onClick={() => useStore.getState().setTheme('rose')}
-                />
-                <ThemeOption
-                  id="ocean"
-                  label="Brisa Marina"
-                  color="#ecfeff"
-                  accent="#0891b2"
-                  icon={Wind}
-                  active={theme === 'ocean'}
-                  onClick={() => useStore.getState().setTheme('ocean')}
-                />
-                <ThemeOption
-                  id="sage"
-                  label="Jardín Salvia"
-                  color="#f0fdf4"
-                  accent="#16a34a"
-                  icon={Leaf}
-                  active={theme === 'sage'}
-                  onClick={() => useStore.getState().setTheme('sage')}
-                />
-              </div>
+            <div className="flex flex-col gap-3">
+              <InfoRow label="Versión" value="1.1.0" />
+              <InfoRow label="Framework" value="React 18 + Vite 5" />
+              <InfoRow label="Estado" value="Producción" badge="bg-emerald-500/10 text-emerald-400" />
+              <InfoRow label="Última actualización" value={new Date().toLocaleDateString('es-PE')} />
             </div>
+          </div>
 
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Resumen del Sistema</h3>
-              <div className="flex flex-col gap-3">
-                <StatRow label="Clientes registrados" value={clients.length} color="text-accent-blue" />
-                <StatRow label="Tickets" value={tickets.length} color="text-accent-purple" />
-                <StatRow label="Averías registradas" value={averias.length} color="text-accent-red" />
-                <StatRow label="Equipos en inventario" value={equipos.length} color="text-accent-yellow" />
-                <StatRow label="Fuente de datos" value={dataSource === 'demo' ? 'Demo (30 registros)' : 'Excel importado'} color="text-text-secondary" />
-              </div>
+          {/* Theme Selector */}
+          <div className="bg-bg-card rounded-2xl p-6 border border-border col-span-2">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary flex items-center gap-2">
+              <Sparkles size={16} className="text-accent-yellow" /> Personalización
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <ThemeOption id="default" label="Azul Noche" color="#0a0e1a" accent="#3b82f6" icon={Moon} active={theme === 'default'} onClick={() => useStore.getState().setTheme('default')} />
+              <ThemeOption id="light" label="Modo Claro" color="#ffffff" accent="#2563eb" icon={Sun} active={theme === 'light'} onClick={() => useStore.getState().setTheme('light')} />
+              <ThemeOption id="black" label="Negro OLED" color="#000000" accent="#e5e5e5" icon={Smartphone} active={theme === 'black'} onClick={() => useStore.getState().setTheme('black')} />
+              <ThemeOption id="purple" label="Lila Suave" color="#faf5ff" accent="#a855f7" icon={Sparkles} active={theme === 'purple'} onClick={() => useStore.getState().setTheme('purple')} />
+              <ThemeOption id="rose" label="Rosa Nórdico" color="#fff1f2" accent="#e11d48" icon={Flower} active={theme === 'rose'} onClick={() => useStore.getState().setTheme('rose')} />
+              <ThemeOption id="ocean" label="Brisa Marina" color="#ecfeff" accent="#0891b2" icon={Wind} active={theme === 'ocean'} onClick={() => useStore.getState().setTheme('ocean')} />
+              <ThemeOption id="sage" label="Jardín Salvia" color="#f0fdf4" accent="#16a34a" icon={Leaf} active={theme === 'sage'} onClick={() => useStore.getState().setTheme('sage')} />
             </div>
+          </div>
 
-            <div className="bg-bg-card rounded-2xl p-6 border border-border col-span-2">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Sesión Activa</h3>
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold"
-                  style={{ background: (ROLES[user?.rol] || ROLES.TECNICO).color + '20', color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
-                  {user?.nombre?.[0] || '?'}
-                </div>
-                <div className="flex-1">
-                  <p className="text-base font-bold">{user?.nombre}</p>
-                  <p className="text-sm text-text-secondary">{user?.email}</p>
-                  <p className="text-xs mt-1 font-medium" style={{ color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
-                    {(ROLES[user?.rol] || ROLES.TECNICO).label}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-lg">
-                  <CheckCircle size={14} className="text-emerald-400" />
-                  <span className="text-[11px] text-emerald-400 font-semibold">Sesión activa</span>
-                </div>
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Resumen del Sistema</h3>
+            <div className="flex flex-col gap-3">
+              <StatRow label="Clientes registrados" value={clients.length} color="text-accent-blue" />
+              <StatRow label="Tickets" value={tickets.length} color="text-accent-purple" />
+              <StatRow label="Averías registradas" value={averias.length} color="text-accent-red" />
+              <StatRow label="Equipos en inventario" value={equipos.length} color="text-accent-yellow" />
+              <StatRow label="Fuente de datos" value={dataSource === 'demo' ? 'Demo (30 registros)' : 'Excel importado'} color="text-text-secondary" />
+            </div>
+          </div>
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border col-span-2">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Sesión Activa</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold"
+                style={{ background: (ROLES[user?.rol] || ROLES.TECNICO).color + '20', color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
+                {user?.nombre?.[0] || '?'}
+              </div>
+              <div className="flex-1">
+                <p className="text-base font-bold">{user?.nombre}</p>
+                <p className="text-sm text-text-secondary">{user?.email}</p>
+                <p className="text-xs mt-1 font-medium" style={{ color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
+                  {(ROLES[user?.rol] || ROLES.TECNICO).label}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-lg">
+                <CheckCircle size={14} className="text-emerald-400" />
+                <span className="text-[11px] text-emerald-400 font-semibold">Sesión activa</span>
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {/* Tab: Usuarios & Roles */}
-      {
-        activeTab === 'usuarios' && (
-          <div className="flex flex-col gap-6">
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Roles del Sistema</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(ROLES).map(([key, role]) => (
-                  <div key={key} className="p-4 rounded-xl bg-bg-secondary border border-border">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                        style={{ background: role.color + '20', color: role.color }}>
-                        <Shield size={16} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">{role.label}</p>
-                        <p className="text-[11px] text-text-muted font-mono">{key}</p>
-                      </div>
+      {activeTab === 'usuarios' && (
+        <div className="flex flex-col gap-6">
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Roles del Sistema</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(ROLES).map(([key, role]) => (
+                <div key={key} className="p-4 rounded-xl bg-bg-secondary border border-border">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                      style={{ background: role.color + '20', color: role.color }}>
+                      <Shield size={16} />
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {role.permissions.map(p => (
-                        <span key={p} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.05] text-text-secondary border border-border">
-                          {p}
-                        </span>
-                      ))}
+                    <div>
+                      <p className="text-sm font-bold">{role.label}</p>
+                      <p className="text-[11px] text-text-muted font-mono">{key}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuarios Autorizados</h3>
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="text-left text-[11px] text-text-muted uppercase">
-                    <th className="py-2 px-3">Correo</th>
-                    <th className="py-2 px-3">Rol</th>
-                    <th className="py-2 px-3">Permisos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {DEMO_USERS.map(u => {
-                    const r = ROLES[u.rol] || ROLES.TECNICO;
-                    return (
-                      <tr key={u.email} className="border-t border-border">
-                        <td className="py-2.5 px-3 font-mono text-xs">{u.email}</td>
-                        <td className="py-2.5 px-3">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
-                            style={{ background: r.color + '15', color: r.color }}>
-                            {r.label}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-text-muted text-[11px]">{r.permissions.length} permisos</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <p className="text-[11px] text-text-muted mt-3">
-                * Los usuarios se gestionan desde Google Cloud Console y la hoja <code className="text-accent-blue">tb_Usuarios_Auth</code>
-              </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {role.permissions.map(p => (
+                      <span key={p} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.05] text-text-secondary border border-border">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        )
-      }
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuarios Autorizados</h3>
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] text-text-muted uppercase">
+                  <th className="py-2 px-3">Correo</th>
+                  <th className="py-2 px-3">Rol</th>
+                  <th className="py-2 px-3">Permisos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DEMO_USERS.map(u => {
+                  const r = ROLES[u.rol] || ROLES.TECNICO;
+                  return (
+                    <tr key={u.email} className="border-t border-border">
+                      <td className="py-2.5 px-3 font-mono text-xs">{u.email}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                          style={{ background: r.color + '15', color: r.color }}>
+                          {r.label}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-text-muted text-[11px]">{r.permissions.length} permisos</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <p className="text-[11px] text-text-muted mt-3">
+              * Los usuarios se gestionan desde Google Cloud Console y la hoja <code className="text-accent-blue">tb_Usuarios_Auth</code>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tab: Conexión API */}
-      {
-        activeTab === 'api' && (
-          <div className="flex flex-col gap-6">
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Google Cloud Platform</h3>
-              <div className="flex flex-col gap-4">
-                <EditableApiRow
-                  label="Google API Key"
-                  envVar="VITE_GOOGLE_API_KEY"
-                  value={apiValues.googleApiKey}
-                  onChange={v => setApiValues(p => ({ ...p, googleApiKey: v }))}
-                  placeholder="AIza..."
-                />
-                <EditableApiRow
-                  label="Google Client ID (OAuth)"
-                  envVar="VITE_GOOGLE_CLIENT_ID"
-                  value={apiValues.googleClientId}
-                  onChange={v => setApiValues(p => ({ ...p, googleClientId: v }))}
-                  placeholder="123456789-abc.apps.googleusercontent.com"
-                />
-                <EditableApiRow
-                  label="Google Sheet ID"
-                  envVar="VITE_GOOGLE_SHEET_ID"
-                  value={apiValues.googleSheetId}
-                  onChange={v => setApiValues(p => ({ ...p, googleSheetId: v }))}
-                  placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-                />
-                <EditableApiRow
-                  label="Gemini API Key"
-                  envVar="VITE_GEMINI_API_KEY"
-                  value={apiValues.geminiApiKey}
-                  onChange={v => setApiValues(p => ({ ...p, geminiApiKey: v }))}
-                  placeholder="AIza..."
-                />
+      {activeTab === 'api' && (
+        <div className="flex flex-col gap-6">
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Google Cloud Platform</h3>
+            <div className="flex flex-col gap-4">
+              <EditableApiRow label="Google API Key" envVar="VITE_GOOGLE_API_KEY" value={apiValues.googleApiKey} onChange={v => setApiValues(p => ({ ...p, googleApiKey: v }))} placeholder="AIza..." />
+              <EditableApiRow label="Google Client ID (OAuth)" envVar="VITE_GOOGLE_CLIENT_ID" value={apiValues.googleClientId} onChange={v => setApiValues(p => ({ ...p, googleClientId: v }))} placeholder="123456789-abc.apps.googleusercontent.com" />
+              <EditableApiRow label="Google Sheet ID" envVar="VITE_GOOGLE_SHEET_ID" value={apiValues.googleSheetId} onChange={v => setApiValues(p => ({ ...p, googleSheetId: v }))} placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+              <EditableApiRow label="Gemini API Key" envVar="VITE_GEMINI_API_KEY" value={apiValues.geminiApiKey} onChange={v => setApiValues(p => ({ ...p, geminiApiKey: v }))} placeholder="AIza..." />
 
-                <div className="pt-4 border-t border-border mt-2">
-                  <h4 className="text-xs font-bold mb-3 text-accent-cyan flex items-center gap-2">
-                    <Database size={14} /> Firebase Sync (Respaldo en la Nube)
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <EditableApiRow
-                      label="API Key"
-                      envVar="VITE_FIREBASE_API_KEY"
-                      value={apiValues.firebaseApiKey}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseApiKey: v }))}
-                      placeholder="AIza..."
-                    />
-                    <EditableApiRow
-                      label="Project ID"
-                      envVar="VITE_FIREBASE_PROJECT_ID"
-                      value={apiValues.firebaseProjectId}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseProjectId: v }))}
-                      placeholder="isp-sistema-xxx"
-                    />
-                    <EditableApiRow
-                      label="Auth Domain"
-                      envVar="VITE_FIREBASE_AUTH_DOMAIN"
-                      value={apiValues.firebaseAuthDomain}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseAuthDomain: v }))}
-                      placeholder="isp-sistema.firebaseapp.com"
-                    />
-                    <EditableApiRow
-                      label="Storage Bucket"
-                      envVar="VITE_FIREBASE_STORAGE_BUCKET"
-                      value={apiValues.firebaseStorageBucket}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseStorageBucket: v }))}
-                      placeholder="isp-sistema.appspot.com"
-                    />
-                    <EditableApiRow
-                      label="Msg Sender ID"
-                      envVar="VITE_FIREBASE_MESSAG..."
-                      value={apiValues.firebaseMessagingSenderId}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseMessagingSenderId: v }))}
-                      placeholder="123456..."
-                    />
-                    <EditableApiRow
-                      label="App ID"
-                      envVar="VITE_FIREBASE_APP_ID"
-                      value={apiValues.firebaseAppId}
-                      onChange={v => setApiValues(p => ({ ...p, firebaseAppId: v }))}
-                      placeholder="1:123456:web:abcd..."
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mt-4">
-                <button onClick={handleSaveApi} className="py-2.5 px-6 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
-                  <Save size={14} /> Guardar Cambios
-                </button>
-                {apiSaved && (
-                  <span className="text-xs text-accent-green flex items-center gap-1">
-                    <CheckCircle size={14} /> Guardado correctamente
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Sincronización Manual</h3>
-              <div className="flex items-center justify-between p-4 bg-bg-secondary rounded-xl border border-border">
-                <div>
-                  <p className="text-sm font-medium text-text-primary">Respaldo y Restauración</p>
-                  <p className="text-[11px] text-text-muted mt-1">
-                    {lastSync ? `Última sincronización: ${new Date(lastSync).toLocaleString()}` : 'No se ha sincronizado aún'}
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={syncPush}
-                    disabled={isSyncing || !apiValues.firebaseApiKey}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue/10 text-accent-blue text-xs font-bold hover:bg-accent-blue/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
-                  >
-                    <UploadCloud size={16} />
-                    {isSyncing ? 'Sincronizando...' : 'Subir Respaldo'}
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (window.confirm('ADVERTENCIA: Esto reemplazará TODOS los datos actuales con la versión de la nube. ¿Deseas continuar?')) {
-                        await syncPull();
-                      }
-                    }}
-                    disabled={isSyncing || !apiValues.firebaseApiKey}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-purple/10 text-accent-purple text-xs font-bold hover:bg-accent-purple/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
-                  >
-                    <DownloadCloud size={16} />
-                    {isSyncing ? 'Sincronizando...' : 'Restaurar'}
-                  </button>
+              <div className="pt-4 border-t border-border mt-2">
+                <h4 className="text-xs font-bold mb-3 text-accent-cyan flex items-center gap-2">
+                  <Database size={14} /> Firebase Sync (Respaldo en la Nube)
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <EditableApiRow label="API Key" envVar="VITE_FIREBASE_API_KEY" value={apiValues.firebaseApiKey} onChange={v => setApiValues(p => ({ ...p, firebaseApiKey: v }))} placeholder="AIza..." />
+                  <EditableApiRow label="Project ID" envVar="VITE_FIREBASE_PROJECT_ID" value={apiValues.firebaseProjectId} onChange={v => setApiValues(p => ({ ...p, firebaseProjectId: v }))} placeholder="isp-sistema-xxx" />
+                  <EditableApiRow label="Auth Domain" envVar="VITE_FIREBASE_AUTH_DOMAIN" value={apiValues.firebaseAuthDomain} onChange={v => setApiValues(p => ({ ...p, firebaseAuthDomain: v }))} placeholder="isp-sistema.firebaseapp.com" />
+                  <EditableApiRow label="Storage Bucket" envVar="VITE_FIREBASE_STORAGE_BUCKET" value={apiValues.firebaseStorageBucket} onChange={v => setApiValues(p => ({ ...p, firebaseStorageBucket: v }))} placeholder="isp-sistema.appspot.com" />
+                  <EditableApiRow label="Msg Sender ID" envVar="VITE_FIREBASE_MESSAG..." value={apiValues.firebaseMessagingSenderId} onChange={v => setApiValues(p => ({ ...p, firebaseMessagingSenderId: v }))} placeholder="123456..." />
+                  <EditableApiRow label="App ID" envVar="VITE_FIREBASE_APP_ID" value={apiValues.firebaseAppId} onChange={v => setApiValues(p => ({ ...p, firebaseAppId: v }))} placeholder="1:123456:web:abcd..." />
                 </div>
               </div>
             </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Estado de Servicios</h3>
-              <div className="flex flex-col gap-3">
-                <ServiceRow name="Google Sheets API v4" status={!!CONFIG.GOOGLE_SHEET_ID} />
-                <ServiceRow name="Google Identity Services (OAuth 2.0)" status={!!CONFIG.GOOGLE_CLIENT_ID} />
-                <ServiceRow name="Google Drive API" status={!!CONFIG.GOOGLE_API_KEY} />
-                <ServiceRow name="SheetJS (Lectura Excel local)" status={true} />
-              </div>
+            <div className="flex items-center gap-3 mt-4">
+              <button onClick={handleSaveApi} className="py-2.5 px-6 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
+                <Save size={14} /> Guardar Cambios
+              </button>
+              {apiSaved && (
+                <span className="text-xs text-accent-green flex items-center gap-1">
+                  <CheckCircle size={14} /> Guardado correctamente
+                </span>
+              )}
             </div>
+          </div>
 
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <div className="flex items-start gap-3">
-                <AlertTriangle size={18} className="text-accent-yellow mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-semibold mb-1">Configuración de APIs</h3>
-                  <p className="text-[12px] text-text-secondary leading-relaxed">
-                    Las credenciales de Google se configuran mediante variables de entorno en el archivo <code className="text-accent-blue">.env</code> o
-                    directamente desde esta página (se guardan en localStorage).
-                    Para obtener las credenciales, accede a{' '}
-                    <span className="text-accent-blue">Google Cloud Console &gt; APIs & Services &gt; Credentials</span>.
-                    Nunca compartas las API keys en repositorios públicos.
-                  </p>
-                </div>
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Estado de Servicios</h3>
+            <div className="flex flex-col gap-3">
+              <ServiceRow name="Google Sheets API v4" status={!!CONFIG.GOOGLE_SHEET_ID} />
+              <ServiceRow name="Google Identity Services (OAuth 2.0)" status={!!CONFIG.GOOGLE_CLIENT_ID} />
+              <ServiceRow name="Google Drive API" status={!!CONFIG.GOOGLE_API_KEY} />
+              <ServiceRow name="Firebase Firestore" status={!!apiValues.firebaseApiKey} />
+              <ServiceRow name="SheetJS (Lectura Excel local)" status={true} />
+            </div>
+          </div>
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-accent-yellow mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Configuración de APIs</h3>
+                <p className="text-[12px] text-text-secondary leading-relaxed">
+                  Las credenciales se configuran mediante variables de entorno en <code className="text-accent-blue">.env</code> o
+                  directamente desde esta página (se guardan en localStorage).
+                  Nunca compartas las API keys en repositorios públicos.
+                </p>
               </div>
             </div>
           </div>
-        )
-      }
+        </div>
+      )}
+
+      {/* Tab: Backups */}
+      {activeTab === 'backups' && (
+        <div className="flex flex-col gap-6">
+          {/* ====== PROGRESS OVERLAY ====== */}
+          {syncProgress && (
+            <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-fade">
+              <div className="bg-bg-card border border-border rounded-2xl p-8 w-[420px] shadow-2xl">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-11 h-11 rounded-xl bg-accent-blue/10 flex items-center justify-center">
+                    <UploadCloud size={20} className="text-accent-blue animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-text-primary">Subiendo Respaldo a Firebase</h3>
+                    <p className="text-[11px] text-text-muted">No cierres esta ventana</p>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-bg-secondary rounded-full h-3 mb-3 overflow-hidden border border-border">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${syncProgress.percent}%`,
+                      background: syncProgress.percent === 100
+                        ? 'linear-gradient(90deg, #10b981, #34d399)'
+                        : 'linear-gradient(90deg, #3b82f6, #60a5fa)',
+                    }}
+                  />
+                </div>
+
+                {/* Info */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-secondary font-medium">{syncProgress.label}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-text-muted">
+                      Paso {syncProgress.step}/{syncProgress.totalSteps}
+                    </span>
+                    <span className="text-sm font-bold text-accent-blue">{syncProgress.percent}%</span>
+                  </div>
+                </div>
+
+                {syncProgress.percent === 100 && (
+                  <div className="mt-4 flex items-center gap-2 justify-center text-emerald-400">
+                    <CheckCircle size={16} />
+                    <span className="text-xs font-semibold">¡Completado!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Sync Push/Pull */}
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Sincronización Manual</h3>
+            <div className="flex items-center justify-between p-4 bg-bg-secondary rounded-xl border border-border">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Respaldo y Restauración</p>
+                <p className="text-[11px] text-text-muted mt-1">
+                  {lastSync ? `Última sincronización: ${new Date(lastSync).toLocaleString()}` : 'No se ha sincronizado aún'}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSyncPush}
+                  disabled={isSyncing || !apiValues.firebaseApiKey}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue/10 text-accent-blue text-xs font-bold hover:bg-accent-blue/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
+                >
+                  <UploadCloud size={16} />
+                  {isSyncing ? 'Sincronizando...' : 'Subir Respaldo'}
+                </button>
+                <button
+                  onClick={handleSyncPull}
+                  disabled={isSyncing || !apiValues.firebaseApiKey}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-purple/10 text-accent-purple text-xs font-bold hover:bg-accent-purple/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
+                >
+                  <DownloadCloud size={16} />
+                  {isSyncing ? 'Sincronizando...' : 'Restaurar Último'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Backup Version History */}
+          <BackupHistorySection />
+        </div>
+      )}
 
       {/* Tab: Sistema */}
-      {
-        activeTab === 'sistema' && (
-          <div className="flex flex-col gap-6">
-            {/* Editable system parameters */}
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Parámetros de la Empresa</h3>
-              <div className="flex flex-col gap-4">
-                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                  <label className="text-xs font-semibold mb-1 block">Nombre de la Empresa</label>
-                  <input
-                    type="text"
-                    value={sysValues.empresaNombre}
-                    onChange={e => setSysValues(p => ({ ...p, empresaNombre: e.target.value }))}
-                    placeholder="ISP Carabayllo"
-                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                  />
-                </div>
-                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                  <label className="text-xs font-semibold mb-1 block">Teléfono</label>
-                  <input
-                    type="text"
-                    value={sysValues.empresaTelefono}
-                    onChange={e => setSysValues(p => ({ ...p, empresaTelefono: e.target.value }))}
-                    placeholder="999-000-111"
-                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                  />
-                </div>
-                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                  <label className="text-xs font-semibold mb-1 block">Email de Soporte</label>
-                  <input
-                    type="email"
-                    value={sysValues.empresaEmail}
-                    onChange={e => setSysValues(p => ({ ...p, empresaEmail: e.target.value }))}
-                    placeholder="soporte@isp.com"
-                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                  />
-                </div>
-                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                  <label className="text-xs font-semibold mb-1 block">Dirección</label>
-                  <input
-                    type="text"
-                    value={sysValues.empresaDireccion}
-                    onChange={e => setSysValues(p => ({ ...p, empresaDireccion: e.target.value }))}
-                    placeholder="Carabayllo, Lima"
-                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                    <label className="text-xs font-semibold mb-1 block">Moneda</label>
-                    <input
-                      type="text"
-                      value={sysValues.moneda}
-                      onChange={e => setSysValues(p => ({ ...p, moneda: e.target.value }))}
-                      placeholder="PEN"
-                      className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                    />
-                  </div>
-                  <div className="p-4 rounded-xl bg-bg-secondary border border-border">
-                    <label className="text-xs font-semibold mb-1 block">Zona Horaria</label>
-                    <input
-                      type="text"
-                      value={sysValues.zonaHoraria}
-                      onChange={e => setSysValues(p => ({ ...p, zonaHoraria: e.target.value }))}
-                      placeholder="America/Lima"
-                      className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted"
-                    />
-                  </div>
-                </div>
+      {activeTab === 'sistema' && (
+        <div className="flex flex-col gap-6">
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Parámetros de la Empresa</h3>
+            <div className="flex flex-col gap-4">
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Nombre de la Empresa</label>
+                <input type="text" value={sysValues.empresaNombre} onChange={e => setSysValues(p => ({ ...p, empresaNombre: e.target.value }))} placeholder="ISP Carabayllo" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
               </div>
-              <div className="flex items-center gap-3 mt-4">
-                <button onClick={handleSaveSys} className="py-2.5 px-6 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
-                  <Save size={14} /> Guardar Parámetros
-                </button>
-                {sysSaved && (
-                  <span className="text-xs text-accent-green flex items-center gap-1">
-                    <CheckCircle size={14} /> Guardado correctamente
-                  </span>
-                )}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Teléfono</label>
+                <input type="text" value={sysValues.empresaTelefono} onChange={e => setSysValues(p => ({ ...p, empresaTelefono: e.target.value }))} placeholder="999-000-111" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Email de Soporte</label>
+                <input type="email" value={sysValues.empresaEmail} onChange={e => setSysValues(p => ({ ...p, empresaEmail: e.target.value }))} placeholder="soporte@isp.com" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Dirección</label>
+                <input type="text" value={sysValues.empresaDireccion} onChange={e => setSysValues(p => ({ ...p, empresaDireccion: e.target.value }))} placeholder="Carabayllo, Lima" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                  <label className="text-xs font-semibold mb-1 block">Moneda</label>
+                  <input type="text" value={sysValues.moneda} onChange={e => setSysValues(p => ({ ...p, moneda: e.target.value }))} placeholder="PEN" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+                </div>
+                <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                  <label className="text-xs font-semibold mb-1 block">Zona Horaria</label>
+                  <input type="text" value={sysValues.zonaHoraria} onChange={e => setSysValues(p => ({ ...p, zonaHoraria: e.target.value }))} placeholder="America/Lima" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+                </div>
               </div>
             </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Almacenamiento Local</h3>
-              <div className="flex flex-col gap-3">
-                <InfoRow label="Método" value="Zustand (memoria) + LocalStorage (persistencia de sesión)" />
-                <InfoRow label="Datos en memoria" value={`${clients.length} clientes, ${tickets.length} tickets, ${equipos.length} equipos`} />
-                <InfoRow label="Motor ETL" value="9 reglas de limpieza (dataTransformer.js)" />
-                <InfoRow label="Formatos soportados" value=".xlsx, .xls (lectura vía SheetJS)" />
-              </div>
-            </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Stack Tecnológico</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { name: 'React 18', desc: 'UI Framework' },
-                  { name: 'Vite 5', desc: 'Build tool' },
-                  { name: 'Tailwind CSS v4', desc: 'Estilos' },
-                  { name: 'Zustand', desc: 'Estado global' },
-                  { name: 'SheetJS', desc: 'Lectura Excel' },
-                  { name: 'Lucide React', desc: 'Iconografía' },
-                  { name: 'Google OAuth 2.0', desc: 'Autenticación' },
-                  { name: 'Google Sheets API', desc: 'CRUD datos' },
-                  { name: 'GitHub Pages', desc: 'Deploy' },
-                ].map(tech => (
-                  <div key={tech.name} className="p-3 rounded-xl bg-bg-secondary border border-border text-center">
-                    <p className="text-xs font-bold">{tech.name}</p>
-                    <p className="text-[10px] text-text-muted">{tech.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-bg-card rounded-2xl p-6 border border-border">
-              <h3 className="text-sm font-semibold mb-4 text-text-secondary">Módulos del Sistema</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { name: 'Dashboard', desc: 'KPIs y métricas generales', active: true },
-                  { name: 'Clientes', desc: 'Gestión de clientes con búsqueda y filtros', active: true },
-                  { name: 'Tickets & Soporte', desc: 'Sistema de tickets con estados', active: true },
-                  { name: 'Averías', desc: 'Registro y seguimiento de incidencias', active: true },
-                  { name: 'Soporte Remoto', desc: 'Sesiones de diagnóstico remoto', active: true },
-                  { name: 'Reportes & Cobranza', desc: 'Análisis financiero y exportación', active: true },
-                  { name: 'Inventario de Equipos', desc: 'ONTs, CPEs, routers', active: true },
-                  { name: 'Importar Datos', desc: 'Importación Excel con ETL', active: true },
-                  { name: 'Configuración', desc: 'Parámetros del sistema', active: true },
-                ].map(mod => (
-                  <div key={mod.name} className="flex items-center gap-3 p-3 rounded-lg bg-bg-secondary border border-border">
-                    <CheckCircle size={14} className={mod.active ? 'text-emerald-400' : 'text-text-muted'} />
-                    <div>
-                      <p className="text-xs font-semibold">{mod.name}</p>
-                      <p className="text-[10px] text-text-muted">{mod.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="flex items-center gap-3 mt-4">
+              <button onClick={handleSaveSys} className="py-2.5 px-6 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
+                <Save size={14} /> Guardar Parámetros
+              </button>
+              {sysSaved && (
+                <span className="text-xs text-accent-green flex items-center gap-1">
+                  <CheckCircle size={14} /> Guardado correctamente
+                </span>
+              )}
             </div>
           </div>
-        )}
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Almacenamiento Local</h3>
+            <div className="flex flex-col gap-3">
+              <InfoRow label="Método" value="Zustand (memoria) + IndexedDB (persistencia)" />
+              <InfoRow label="Datos en memoria" value={`${clients.length} clientes, ${tickets.length} tickets, ${equipos.length} equipos`} />
+              <InfoRow label="Motor ETL" value="9 reglas de limpieza (dataTransformer.js)" />
+              <InfoRow label="Formatos soportados" value=".xlsx, .xls (lectura vía SheetJS)" />
+            </div>
+          </div>
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Stack Tecnológico</h3>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { name: 'React 18', desc: 'UI Framework' },
+                { name: 'Vite 5', desc: 'Build tool' },
+                { name: 'Tailwind CSS v4', desc: 'Estilos' },
+                { name: 'Zustand', desc: 'Estado global' },
+                { name: 'Firebase', desc: 'Cloud Backup' },
+                { name: 'SheetJS', desc: 'Lectura Excel' },
+                { name: 'Lucide React', desc: 'Iconografía' },
+                { name: 'Google OAuth 2.0', desc: 'Autenticación' },
+                { name: 'IndexedDB', desc: 'Storage local' },
+              ].map(tech => (
+                <div key={tech.name} className="p-3 rounded-xl bg-bg-secondary border border-border text-center">
+                  <p className="text-xs font-bold">{tech.name}</p>
+                  <p className="text-[10px] text-text-muted">{tech.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -641,7 +745,7 @@ function InfoRow({ label, value, badge }) {
     <div className="flex justify-between items-center py-1.5 text-xs">
       <span className="text-text-muted">{label}</span>
       {badge ? (
-        <span className={`px - 2 py - 0.5 rounded - full text - [11px] font - medium ${badge} `}>{value}</span>
+        <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${badge}`}>{value}</span>
       ) : (
         <span className="font-medium text-text-primary">{value}</span>
       )}
@@ -653,7 +757,7 @@ function StatRow({ label, value, color }) {
   return (
     <div className="flex justify-between items-center py-1.5 text-xs">
       <span className="text-text-muted">{label}</span>
-      <span className={`font - mono font - bold ${color} `}>{value}</span>
+      <span className={`font-mono font-bold ${color}`}>{value}</span>
     </div>
   );
 }
@@ -687,7 +791,6 @@ function ThemeOption({ id, label, color, accent, icon: Icon, active, onClick }) 
       `}
     >
       <div className="w-full h-16 rounded-lg mb-1 relative overflow-hidden border border-border/50 shadow-inner" style={{ background: color }}>
-        {/* Mock UI inside preview */}
         <div className="absolute top-2 left-2 w-8 h-2 rounded bg-white/20"></div>
         <div className="absolute top-6 left-2 w-12 h-2 rounded bg-white/10"></div>
         <div className="absolute bottom-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-white" style={{ background: accent }}>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 
-export default function Input({
+const Input = React.memo(function Input({
     label,
     error,
     icon: Icon,
@@ -42,9 +42,11 @@ export default function Input({
             {error && <span className="text-xs text-red-500">{error}</span>}
         </div>
     );
-}
+});
 
-export function SearchInput({ className = '', ...props }) {
+export default Input;
+
+export const SearchInput = React.memo(function SearchInput({ className = '', ...props }) {
     return (
         <Input
             icon={Search}
@@ -53,4 +55,4 @@ export function SearchInput({ className = '', ...props }) {
             {...props}
         />
     );
-}
+});

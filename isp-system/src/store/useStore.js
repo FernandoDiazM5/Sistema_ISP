@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { DEMO_RAW_DATA } from '../utils/constants';
 import { transformClientData } from '../api/dataTransformer';
-import * as db from '../utils/db'; // Importamos el wrapper de IndexedDB
+import * as db from '../utils/db';
 
-// ===================== HELPERS PERSISTENCIA (MIGRADO A DB) =====================
-// Ya no usamos saveToLS ni loadFromLS sincrónicos.
-// Cada setter debe ser asíncrono o "fire and forget" hacia la DB.
+// ===================== SLICE IMPORTS =====================
+import { createClientsSlice } from './slices/clientsSlice';
+import { createTicketsSlice } from './slices/ticketsSlice';
+import { createOperationsSlice } from './slices/operationsSlice';
+import { createUISlice } from './slices/uiSlice';
 
+// ===================== HELPERS =====================
 async function saveToDB(key, data) {
   try {
     await db.set(key, data);
@@ -15,26 +18,10 @@ async function saveToDB(key, data) {
   }
 }
 
-// Helper para generar IDs autoincrementales
-function getNextId(collection, prefix, idField = 'id') {
-  if (!collection || collection.length === 0) return `${prefix}-001`;
-  const maxId = collection.reduce((max, item) => {
-    if (!item[idField]) return max;
-    const parts = item[idField].split('-');
-    const num = parseInt(parts[parts.length - 1] || 0);
-    return !isNaN(num) && num > max ? num : max;
-  }, 0);
-  return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
-}
-
-// ===================== DEMO DATA (CONSTAMTES) =====================
+// ===================== DEMO DATA =====================
 import { getSeedData } from '../utils/seedData';
 
-// ===================== DEMO DATA (MIGRADO A seedData.js) =====================
-// Las constantes se han movido a src/utils/seedData.js para mantener este archivo limpio.
-// Se cargarán bajo demanda con loadDemoData().
-
-// ===================== CATÁLOGOS =====================
+// ===================== CATÁLOGOS (solo lectura) =====================
 const CATEGORIAS = [
   { id: 'CAT-01', nombre: 'Falla de Internet', descripcion: 'Problemas de navegación, velocidad y latencia' },
   { id: 'CAT-02', nombre: 'Falla de Cable', descripcion: 'Problemas con señal de TV o decodificadores' },
@@ -109,16 +96,21 @@ const CATALOGO_SERVICIOS = [
   { id: 'SRV-07', nombre: 'Reconexión', tipo: 'Remoto', precio: 0, descripcion: 'Reconexión de servicio por pago' },
 ];
 
+// ===================== STORE COMPOSITION =====================
 const useStore = create((set, get) => ({
-  storeReady: false, // Flag de hidratación
+  storeReady: false,
+
+  // ===================== COMPOSE SLICES =====================
+  ...createClientsSlice(set, get),
+  ...createTicketsSlice(set, get),
+  ...createOperationsSlice(set, get),
+  ...createUISlice(set, get),
 
   // ===================== HYDRATION & MIGRATION =====================
   hydrateStore: async () => {
     try {
       const dbKeys = await db.keys();
 
-      // === LÓGICA DE MIGRACIÓN ===
-      // Si la DB está vacía, intentamos migrar de localStorage
       if (dbKeys.length === 0) {
         console.log('IndexedDB vacía. Iniciando migración desde localStorage...');
         const lsMigrationKeys = [
@@ -145,19 +137,12 @@ const useStore = create((set, get) => ({
         if (entries.length > 0) {
           await db.setMany(entries);
           console.log(`Migrados ${entries.length} items a IndexedDB.`);
-          // Opcional: Limpiar LS después de migrar
-          // lsMigrationKeys.forEach(key => localStorage.removeItem(key));
-        } else {
-          console.log('No hay datos en localStorage para migrar.');
         }
       }
 
-      // === CARGAR DATOS DESDE DB ===
-      // Leemos de nuevo las keys (por si acabamos de migrar)
       const currentKeys = await db.keys();
       const loadedState = {};
 
-      // Mapeo de keys de DB a keys del State
       const keyMap = {
         'isp_clients': 'clients',
         'isp_dataSource': 'dataSource',
@@ -193,184 +178,34 @@ const useStore = create((set, get) => ({
 
     } catch (e) {
       console.error("Error durante hydrateStore:", e);
-      // En caso de error crítico, al menos habilitamos la UI
       set({ storeReady: true });
     }
   },
 
-
-  // ===================== AUTH STATE =====================
-  // Auth se mantiene en LS por simplicidad y porque no ocupa espacio significativo
-  user: null,
-  loading: true,
-
-  setUser: (user) => {
-    set({ user });
-    if (user) localStorage.setItem('isp_user', JSON.stringify(user));
-    else localStorage.removeItem('isp_user');
-  },
-
-  initAuth: () => {
-    const saved = localStorage.getItem('isp_user');
-    if (saved) {
-      try { set({ user: JSON.parse(saved), loading: false }); }
-      catch { localStorage.removeItem('isp_user'); set({ loading: false }); }
-    } else {
-      set({ loading: false });
-    }
-  },
-
-  logout: () => {
-    set({ user: null });
-    localStorage.removeItem('isp_user');
-  },
-
-  // ===================== CLIENTES =====================
-  clients: [],
-  clientsLoading: false,
-  dataSource: 'demo',
-
+  // ===================== DEMO DATA =====================
   loadDemoData: async () => {
     const seed = getSeedData(transformClientData);
     set({ dataSource: 'demo', ...seed });
 
-    // Guardar todo en DB
     for (const [key, val] of Object.entries(seed)) {
       await saveToDB(`isp_${key}`, val);
     }
     await saveToDB('isp_dataSource', 'demo');
   },
 
-  // ===================== FILES / IMAGES (MOCK) =====================
-  uploadImage: async (file, path) => {
-    // TODO: Integrar con Firebase Storage real
-    // Por ahora, simulamos subida y retornamos una URL local
-    console.log(`[STORE] Mock uploading ${file.name} to ${path}`);
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(URL.createObjectURL(file));
-      }, 800);
-    });
-  },
-
-  setClients: (clients) => {
-    set({ clients });
-    saveToDB('isp_clients', clients);
-  },
-
-  importClients: (newClients) => {
-    set({ clients: newClients, dataSource: 'excel' });
-    saveToDB('isp_clients', newClients);
-    saveToDB('isp_dataSource', 'excel');
-  },
-
-  // ===================== COLUMN PREFERENCES =====================
-  columnPrefs: {
-    visible: ['id', 'nombre', 'tecnologia', 'plan', 'precio', 'estado_cuenta', 'status', 'deuda_monto'],
-    order: ['id', 'nombre', 'tecnologia', 'plan', 'precio', 'estado_cuenta', 'status', 'deuda_monto'],
-  },
-  setColumnPrefs: (prefs) => {
-    set({ columnPrefs: prefs });
-    saveToDB('isp_col_prefs', prefs);
-  },
-
-  // ===================== IMPORTACIÓN =====================
-  lastImport: null,
-  setLastImport: (info) => {
-    set({ lastImport: info });
-    saveToDB('isp_lastImport', info);
-  },
-
-  importHistory: [],
-  addImportRecord: (record) => set(s => {
-    const maxId = s.importHistory.reduce((max, item) => {
-      const num = parseInt(item.id.split('-')[1] || 0);
-      return num > max ? num : max;
-    }, 0);
-    const newHistory = [{ ...record, id: `IMP-${String(maxId + 1).padStart(3, '0')}`, fecha: new Date().toISOString() }, ...s.importHistory];
-    saveToDB('isp_importHistory', newHistory);
-    return { importHistory: newHistory };
-  }),
-
-  cleaningOptions: {
-    separateNameStatus: true, classifyEmail: true, splitMobile: true,
-    parseDebt: true, parsePrices: true, inferTechnology: true,
-    separateTV: true, normalizeCortePorDeuda: true, formatDNI: true,
-  },
-  setCleaningOptions: (opts) => {
-    set({ cleaningOptions: opts });
-    saveToDB('isp_cleaningOptions', opts);
-  },
-
-  // ===================== THEME =====================
-  theme: 'default', // 'default' | 'light' | 'black' | 'purple'
-  setTheme: (theme) => {
-    set({ theme });
-    saveToDB('isp_theme', theme);
-    // Apply immediately to DOM
-    if (theme === 'default') {
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', theme);
-    }
-  },
-
-  // Navigation
-  activePage: 'dashboard',
-  setActivePage: (page) => set({ activePage: page }),
-
-  // ===================== CROSS-MODULE PREFILL =====================
-  prefillVisita: null,
-  setPrefillVisita: (data) => set({ prefillVisita: data }),
-  clearPrefillVisita: () => set({ prefillVisita: null }),
-
-  prefillSoporte: null,
-  setPrefillSoporte: (data) => set({ prefillSoporte: data }),
-  clearPrefillSoporte: () => set({ prefillSoporte: null }),
-
-  // ===================== TEMPLATES / WHATSAPP =====================
-  templates: [], // Inicialmente vacío
-
-  addTemplate: (tpl) => set(s => {
-    const newId = getNextId(s.templates, 'TPL');
-    const newTemplates = [{ ...tpl, id: newId, uso: 0 }, ...s.templates];
-    saveToDB('isp_templates', newTemplates);
-    return { templates: newTemplates };
-  }),
-
-  updateTemplate: (id, updates) => set(s => {
-    const newTemplates = s.templates.map(t => t.id === id ? { ...t, ...updates } : t);
-    saveToDB('isp_templates', newTemplates);
-    return { templates: newTemplates };
-  }),
-
-  deleteTemplate: (id) => set(s => {
-    const newTemplates = s.templates.filter(t => t.id !== id);
-    saveToDB('isp_templates', newTemplates);
-    return { templates: newTemplates };
-  }),
-
-  incrementTemplateUse: (id) => set(s => {
-    const newTemplates = s.templates.map(t => t.id === id ? { ...t, uso: (t.uso || 0) + 1 } : t);
-    saveToDB('isp_templates', newTemplates);
-    return { templates: newTemplates };
-  }),
-
-  whatsappLogs: [],
-  addWhatsappLog: (log) => set(s => {
-    const newId = getNextId(s.whatsappLogs, 'WA');
-    const newLogs = [{ ...log, id: newId, fecha: new Date().toISOString() }, ...s.whatsappLogs];
-    saveToDB('isp_whatsappLogs', newLogs);
-    return { whatsappLogs: newLogs };
-  }),
-
-  campaignActive: false, campaignQueue: [], campaignIndex: 0,
-  setCampaign: (data) => set(data),
-
   // ===================== TÉCNICOS =====================
   tecnicos: [],
 
   addTecnico: (tecnico) => set(s => {
+    const getNextId = (col, prefix) => {
+      if (!col || col.length === 0) return `${prefix}-001`;
+      const maxId = col.reduce((max, item) => {
+        const parts = item.id.split('-');
+        const num = parseInt(parts[parts.length - 1] || 0);
+        return !isNaN(num) && num > max ? num : max;
+      }, 0);
+      return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
+    };
     const newId = getNextId(s.tecnicos, 'TEC');
     const newTecnicos = [{ ...tecnico, id: newId }, ...s.tecnicos];
     saveToDB('isp_tecnicos', newTecnicos);
@@ -389,188 +224,6 @@ const useStore = create((set, get) => ({
     return { tecnicos: newTecnicos };
   }),
 
-  // ===================== TICKETS =====================
-  tickets: [],
-
-  addTicket: (ticket) => set(s => {
-    const newTickets = [{ ...ticket, id: getNextId(s.tickets, 'TK'), fecha: new Date().toISOString().split('T')[0], fechaUpdate: new Date().toISOString().split('T')[0] }, ...s.tickets];
-    saveToDB('isp_tickets', newTickets);
-    return { tickets: newTickets };
-  }),
-
-  updateTicket: (id, updates) => set(s => {
-    const newTickets = s.tickets.map(t => {
-      if (t.id === id) {
-        const updated = { ...t, ...updates, fechaUpdate: new Date().toISOString().split('T')[0] };
-
-        // Logic for history tracking
-        if (updates.estado && updates.estado !== t.estado) {
-          const historyItem = {
-            fecha: new Date().toISOString(),
-            estadoAnterior: t.estado,
-            estadoNuevo: updates.estado,
-            motivo: updates._historyComment || null // Capture reason if provided
-          };
-          updated.historial = [historyItem, ...(t.historial || [])];
-
-          // Clean up internal field if present
-          delete updated._historyComment;
-        }
-        return updated;
-      }
-      return t;
-    });
-    saveToDB('isp_tickets', newTickets);
-    return { tickets: newTickets };
-  }),
-
-  deleteTicket: (id) => set(s => {
-    const newTickets = s.tickets.filter(t => t.id !== id);
-    saveToDB('isp_tickets', newTickets);
-    return { tickets: newTickets };
-  }),
-
-  // ===================== AVERÍAS =====================
-  averias: [],
-
-  addAveria: (averia) => set(s => {
-    const newAverias = [{ ...averia, id: getNextId(s.averias, 'AV'), fecha: new Date().toISOString().split('T')[0], fechaResolucion: null }, ...s.averias];
-    saveToDB('isp_averias', newAverias);
-    return { averias: newAverias };
-  }),
-
-  updateAveria: (id, updates) => set(s => {
-    const newAverias = s.averias.map(a => {
-      if (a.id === id) {
-        const updated = { ...a, ...updates };
-
-        // Logic for history tracking
-        if (updates.estado && updates.estado !== a.estado) {
-          const historyItem = {
-            fecha: new Date().toISOString(),
-            estadoAnterior: a.estado,
-            estadoNuevo: updates.estado,
-            motivo: updates._historyComment || null
-          };
-          updated.historial = [historyItem, ...(a.historial || [])];
-
-          // Clean up internal field
-          delete updated._historyComment;
-        }
-        return updated;
-      }
-      return a;
-    });
-    saveToDB('isp_averias', newAverias);
-    return { averias: newAverias };
-  }),
-
-  // ===================== EQUIPOS =====================
-  equipos: [],
-
-  addEquipo: (equipo) => set(s => {
-    const newEquipos = [{ ...equipo, id: getNextId(s.equipos, 'EQ') }, ...s.equipos];
-    saveToDB('isp_equipos', newEquipos);
-    return { equipos: newEquipos };
-  }),
-
-  updateEquipo: (id, updates) => set(s => {
-    const newEquipos = s.equipos.map(e => e.id === id ? { ...e, ...updates } : e);
-    saveToDB('isp_equipos', newEquipos);
-    return { equipos: newEquipos };
-  }),
-
-  // ===================== SOPORTE REMOTO =====================
-  sesionesRemoto: [],
-
-  addSesionRemoto: (sesion) => set(s => {
-    const newSesiones = [{ ...sesion, id: getNextId(s.sesionesRemoto, 'SR'), fecha: new Date().toISOString().split('T')[0] }, ...s.sesionesRemoto];
-    saveToDB('isp_sesionesRemoto', newSesiones);
-    return { sesionesRemoto: newSesiones };
-  }),
-
-  updateSesionRemoto: (id, updates) => set(s => {
-    const newSesiones = s.sesionesRemoto.map(sr => sr.id === id ? { ...sr, ...updates } : sr);
-    saveToDB('isp_sesionesRemoto', newSesiones);
-    return { sesionesRemoto: newSesiones };
-  }),
-
-  // ===================== VISITAS TÉCNICAS =====================
-  visitas: [],
-
-  addVisita: (visita) => set(s => {
-    const newId = getNextId(s.visitas, 'VT');
-    const newVisitas = [{ ...visita, id: newId, fecha: visita.fecha || new Date().toISOString().split('T')[0] }, ...s.visitas];
-    saveToDB('isp_visitas', newVisitas);
-    return { visitas: newVisitas };
-  }),
-
-  updateVisita: (id, updates) => set(s => {
-    const newVisitas = s.visitas.map(v => {
-      if (v.id === id) {
-        const updated = { ...v, ...updates };
-        if (updates.estado && updates.estado !== v.estado) {
-          const historyItem = { fecha: new Date().toISOString(), estadoAnterior: v.estado, estadoNuevo: updates.estado };
-          updated.historial = [historyItem, ...(v.historial || [])];
-        }
-        return updated;
-      }
-      return v;
-    });
-    saveToDB('isp_visitas', newVisitas);
-    return { visitas: newVisitas };
-  }),
-
-  deleteVisita: (id) => set(s => {
-    const newVisitas = s.visitas.filter(v => v.id !== id);
-    saveToDB('isp_visitas', newVisitas);
-    return { visitas: newVisitas };
-  }),
-
-  // ===================== INSTALACIONES =====================
-  instalaciones: [],
-
-  addInstalacion: (inst) => set(s => {
-    const newId = getNextId(s.instalaciones, 'INS');
-    const newInstalaciones = [{ ...inst, id: newId, fecha: inst.fecha || new Date().toISOString().split('T')[0] }, ...s.instalaciones];
-    saveToDB('isp_instalaciones', newInstalaciones);
-    return { instalaciones: newInstalaciones };
-  }),
-
-  updateInstalacion: (id, updates) => set(s => {
-    const newInstalaciones = s.instalaciones.map(i => i.id === id ? { ...i, ...updates } : i);
-    saveToDB('isp_instalaciones', newInstalaciones);
-    return { instalaciones: newInstalaciones };
-  }),
-
-  deleteInstalacion: (id) => set(s => {
-    const newInstalaciones = s.instalaciones.filter(i => i.id !== id);
-    saveToDB('isp_instalaciones', newInstalaciones);
-    return { instalaciones: newInstalaciones };
-  }),
-
-  // ===================== DERIVACIONES PLANTA EXTERNA =====================
-  derivaciones: [],
-
-  addDerivacion: (deriv) => set(s => {
-    const newId = getNextId(s.derivaciones, 'DPE');
-    const newDerivaciones = [{ ...deriv, id: newId, fecha: deriv.fecha || new Date().toISOString().split('T')[0], fechaCompletado: null }, ...s.derivaciones];
-    saveToDB('isp_derivaciones', newDerivaciones);
-    return { derivaciones: newDerivaciones };
-  }),
-
-  updateDerivacion: (id, updates) => set(s => {
-    const newDerivaciones = s.derivaciones.map(d => d.id === id ? { ...d, ...updates } : d);
-    saveToDB('isp_derivaciones', newDerivaciones);
-    return { derivaciones: newDerivaciones };
-  }),
-
-  deleteDerivacion: (id) => set(s => {
-    const newDerivaciones = s.derivaciones.filter(d => d.id !== id);
-    saveToDB('isp_derivaciones', newDerivaciones);
-    return { derivaciones: newDerivaciones };
-  }),
-
   // ===================== CATÁLOGOS (solo lectura) =====================
   categorias: CATEGORIAS,
   subcategorias: SUBCATEGORIAS,
@@ -581,37 +234,6 @@ const useStore = create((set, get) => ({
   getSubcategoriasByCategoria: (catId) => SUBCATEGORIAS.filter(s => s.categoriaId === catId),
   getEstadosByEntidad: (entidad) => ESTADOS_CATALOGO.filter(e => e.entidad === entidad),
   getSLABySubcategoria: (subId) => PRIORIDADES_SLA.find(p => p.subcategoriaId === subId),
-
-  // ===================== POST-VENTA =====================
-  postVenta: [],
-
-  addPostVenta: (pv) => set(s => {
-    const newPostVenta = [{ ...pv, id: getNextId(s.postVenta, 'PV'), fecha: pv.fecha || new Date().toISOString().split('T')[0] }, ...s.postVenta];
-    saveToDB('isp_postVenta', newPostVenta);
-    return { postVenta: newPostVenta };
-  }),
-
-  updatePostVenta: (id, updates) => set(s => {
-    const newPostVenta = s.postVenta.map(p => p.id === id ? { ...p, ...updates } : p);
-    saveToDB('isp_postVenta', newPostVenta);
-    return { postVenta: newPostVenta };
-  }),
-
-  deletePostVenta: (id) => set(s => {
-    const newPostVenta = s.postVenta.filter(p => p.id !== id);
-    saveToDB('isp_postVenta', newPostVenta);
-    return { postVenta: newPostVenta };
-  }),
-
-  // ===================== MOVIMIENTOS EQUIPOS =====================
-  movimientosEquipos: [],
-
-  addMovimientoEquipo: (mov) => set(s => {
-    const newId = getNextId(s.movimientosEquipos, 'MOV');
-    const newMovimientos = [{ ...mov, id: newId, fecha: new Date().toISOString().split('T')[0] }, ...s.movimientosEquipos];
-    saveToDB('isp_movimientosEquipos', newMovimientos);
-    return { movimientosEquipos: newMovimientos };
-  }),
 
   // ===================== SISTEMA: RESTAURACIÓN =====================
   restoreSystem: (data) => set(() => {

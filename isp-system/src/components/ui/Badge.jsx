@@ -16,7 +16,7 @@ const SIZES = {
     lg: 'px-3 py-1 text-sm',
 };
 
-export default function Badge({
+const Badge = React.memo(function Badge({
     children,
     variant = 'default',
     size = 'md',
@@ -42,4 +42,6 @@ export default function Badge({
             {children}
         </span>
     );
-}
+});
+
+export default Badge;

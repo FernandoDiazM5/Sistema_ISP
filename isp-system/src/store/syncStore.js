@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud } from '../api/firebase';
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion } from '../api/firebase';
 
 const useSyncStore = create((set, get) => ({
     isSyncing: false,
@@ -8,10 +8,19 @@ const useSyncStore = create((set, get) => ({
     syncError: null,
     syncMode: 'manual', // 'manual' | 'auto'
 
+    // Versioned backup state
+    backupVersions: [],
+    loadingVersions: false,
+    restoringVersion: null, // versionId being restored
+
+    // Progress tracking
+    syncProgress: null, // { step, totalSteps, label, percent } or null
+
     setSyncMode: (mode) => set({ syncMode: mode }),
 
+    // ===================== PUSH (SUBIR RESPALDO) =====================
     syncPush: async () => {
-        set({ isSyncing: true, syncError: null });
+        set({ isSyncing: true, syncError: null, syncProgress: { step: 0, totalSteps: 1, label: 'Preparando datos...', percent: 0 } });
         try {
             const mainState = useStore.getState();
             const dataToSync = {
@@ -33,52 +42,34 @@ const useSyncStore = create((set, get) => ({
                 importHistory: mainState.importHistory,
             };
 
-            await pushToCloud(dataToSync);
+            const onProgress = (info) => set({ syncProgress: info });
+
+            const result = await pushToCloud(dataToSync, onProgress);
 
             const now = new Date().toISOString();
             localStorage.setItem('isp_last_sync', now);
-            set({ lastSync: now, isSyncing: false });
-            return true;
+            set({ lastSync: now, isSyncing: false, syncProgress: null });
+
+            // Refresh versions list after push
+            get().loadVersions();
+
+            return result;
         } catch (error) {
             console.error('Sync Push Error:', error);
-            set({ isSyncing: false, syncError: error.message });
+            set({ isSyncing: false, syncError: error.message, syncProgress: null });
             return false;
         }
     },
 
+    // ===================== PULL LATEST (RESTAURAR ÚLTIMO) =====================
     syncPull: async () => {
         set({ isSyncing: true, syncError: null });
         try {
             const data = await pullFromCloud();
             if (data) {
-                const importClients = useStore.getState().importClients;
-                // Importamos tickets y averias tambien?
-                // Por ahora el main store solo tiene importClients exposer, 
-                // deberiamos agregar acciones para setTickets y setAverias si queremos full restore.
-                // Asumiendo que importClients hace un reemplazo o merge.
-
-                // Dado que es una restauración, vamos a usar importClients para clientes.
-                // Para tickets y averias, necesitamos acceso a los setters del store principal.
-                // Accedemos directamente al estado para invocar los setters si existen, o usamos setState de useStore.
-
-                useStore.setState({
-                    clients: data.clients,
-                    tickets: data.tickets,
-                    averias: data.averias
-                });
-
-                // Guardar en IndexedDB también, ya que useStore (ahora con DB wrapper)
-                // persiste en cada cambio si la logica esta en los setters, 
-                // pero useStore.setState no dispara los side-effects de persistencia automatica 
-                // a menos que estemos usando el middleware o la logica interna.
-                // REVISAR: useStore.js tiene logica de persistencia en los actions.
-                // Si hago useStore.setState, no se llama a saveToDB.
-
-                // Solucion: Llamar a una accion de "restoreFullState" en useStore 
-                // o guardar manualmente en DB.
                 const restoreSystem = useStore.getState().restoreSystem;
                 if (restoreSystem) {
-                    await restoreSystem(data);
+                    restoreSystem(data);
                 }
 
                 const now = new Date().toISOString();
@@ -93,7 +84,73 @@ const useSyncStore = create((set, get) => ({
             set({ isSyncing: false, syncError: error.message });
             return false;
         }
-    }
+    },
+
+    // ===================== LISTAR VERSIONES =====================
+    loadVersions: async () => {
+        set({ loadingVersions: true });
+        try {
+            const versions = await listBackupVersions();
+            set({ backupVersions: versions, loadingVersions: false });
+            return versions;
+        } catch (error) {
+            console.error('Error loading versions:', error);
+            set({ loadingVersions: false, syncError: error.message });
+            return [];
+        }
+    },
+
+    // ===================== RESTAURAR VERSIÓN ESPECÍFICA =====================
+    restoreVersion: async (versionId) => {
+        set({ restoringVersion: versionId, syncError: null });
+        try {
+            const data = await pullBackupVersion(versionId);
+            if (data) {
+                const restoreSystem = useStore.getState().restoreSystem;
+                if (restoreSystem) {
+                    restoreSystem(data);
+                }
+                const now = new Date().toISOString();
+                localStorage.setItem('isp_last_sync', now);
+                set({ restoringVersion: null, lastSync: now });
+                return true;
+            }
+            throw new Error('No se encontraron datos para esa versión.');
+        } catch (error) {
+            console.error('Restore Version Error:', error);
+            set({ restoringVersion: null, syncError: error.message });
+            return false;
+        }
+    },
+
+    // ===================== ELIMINAR VERSIÓN =====================
+    removeVersion: async (versionId) => {
+        try {
+            await deleteBackupVersion(versionId);
+            set(s => ({
+                backupVersions: s.backupVersions.filter(v => v.id !== versionId)
+            }));
+            return true;
+        } catch (error) {
+            console.error('Delete Version Error:', error);
+            set({ syncError: error.message });
+            return false;
+        }
+    },
+
+    // ===================== DESCARGAR VERSIÓN (Local) =====================
+    downloadVersionData: async (versionId) => {
+        set({ restoringVersion: versionId });
+        try {
+            const data = await pullBackupVersion(versionId);
+            set({ restoringVersion: null });
+            return data;
+        } catch (error) {
+            console.error('Download Version Error:', error);
+            set({ restoringVersion: null, syncError: error.message });
+            return null;
+        }
+    },
 }));
 
 export default useSyncStore;

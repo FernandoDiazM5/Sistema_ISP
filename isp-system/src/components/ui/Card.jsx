@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Card({
+const Card = React.memo(function Card({
     children,
     className = '',
     title,
@@ -28,4 +28,6 @@ export default function Card({
             </div>
         </div>
     );
-}
+});
+
+export default Card;

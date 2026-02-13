@@ -92,7 +92,7 @@ export default function TicketCreateModal({ onClose, onSuccess, initialData = nu
             adjuntos: newAdjuntos,
         };
 
-        if (initialData) {
+        if (initialData?.id) {
             updateTicket(initialData.id, ticketData);
         } else {
             addTicket(ticketData);

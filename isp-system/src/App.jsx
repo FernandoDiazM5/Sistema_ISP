@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ReloadPrompt from './components/common/ReloadPrompt';
+import ToastContainer from './components/ui/Toast';
 import useStore from './store/useStore';
 
 // Lazy Load Pages
@@ -88,6 +89,7 @@ export default function App() {
     <AuthProvider>
       <AppContent />
       <ReloadPrompt />
+      <ToastContainer />
     </AuthProvider>
   );
 }

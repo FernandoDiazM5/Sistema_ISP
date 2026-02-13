@@ -39,11 +39,11 @@ export default function ClientesTable({ data, columns, pagination, setPagination
                                 {headerGroup.headers.map(header => (
                                     <th
                                         key={header.id}
-                                        className="py-2.5 px-3.5 text-left font-semibold text-[11px] text-text-secondary uppercase tracking-wide border-b border-border select-none group whitespace-nowrap"
+                                        className="py-2.5 px-3.5 text-center font-semibold text-[11px] text-text-secondary uppercase tracking-wide border-b border-border select-none group whitespace-nowrap"
                                         style={{ width: header.getSize() }}
                                         onClick={header.column.getToggleSortingHandler()}
                                     >
-                                        <div className={`flex items-center gap-1.5 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`}>
+                                        <div className={`flex items-center justify-center gap-1.5 ${header.column.getCanSort() ? 'cursor-pointer' : ''}`}>
                                             {flexRender(header.column.columnDef.header, header.getContext())}
                                             {{
                                                 asc: <ArrowUp size={12} className="text-accent-blue" />,
@@ -70,11 +70,10 @@ export default function ClientesTable({ data, columns, pagination, setPagination
                             table.getRowModel().rows.map(row => (
                                 <tr
                                     key={row.id}
-                                    onClick={() => navigate(`/clientes/${row.original.id}`)}
-                                    className="border-b border-border cursor-pointer transition-colors hover:bg-bg-card-hover"
+                                    className="border-b border-border transition-colors hover:bg-bg-card-hover"
                                 >
                                     {row.getVisibleCells().map(cell => (
-                                        <td key={cell.id} className="py-2.5 px-3.5">
+                                        <td key={cell.id} className="py-2.5 px-3.5 text-center">
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </td>
                                     ))}

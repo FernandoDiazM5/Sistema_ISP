@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   Plus, AlertCircle, Loader2, CheckCircle2, ArrowUpRight,
-  LayoutList, Kanban, Clock, X, Search
+  LayoutList, Kanban, Clock, X, Search, Trash2, AlertTriangle
 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
@@ -51,6 +51,7 @@ export default function TicketsPage() {
   const tickets = useStore(s => s.tickets);
   const clients = useStore(s => s.clients);
   const deleteTicket = useStore(s => s.deleteTicket);
+  const deleteTicketCascade = useStore(s => s.deleteTicketCascade);
   const updateTicket = useStore(s => s.updateTicket);
   const visitas = useStore(s => s.visitas);
   const sesionesRemoto = useStore(s => s.sesionesRemoto);
@@ -112,6 +113,9 @@ export default function TicketsPage() {
   const [showResolutionModal, setShowResolutionModal] = useState(false);
   const [resolutionTarget, setResolutionTarget] = useState(null);
 
+  // Cascade delete confirmation
+  const [confirmDelete, setConfirmDelete] = useState(null); // { ticketId, ticket, relatedVisitas, relatedSesiones }
+
   // Stats
   const stats = useMemo(() => ({
     abiertos: tickets.filter(t => t.estado === 'Abierto').length,
@@ -128,18 +132,27 @@ export default function TicketsPage() {
   };
 
   const handleDeleteTicket = (ticketId) => {
-    const hasVisitas = visitas.some(v => v.ticketId === ticketId);
-    const hasSoporte = sesionesRemoto.some(s => s.ticketId === ticketId);
+    const ticket = tickets.find(t => t.id === ticketId);
+    const relatedVisitas = visitas.filter(v => v.ticketId === ticketId);
+    const relatedSesiones = sesionesRemoto.filter(s => s.ticketId === ticketId);
 
-    if (hasVisitas || hasSoporte) {
-      alert('No se puede eliminar este ticket porque tiene visitas técnicas o sesiones de soporte asociadas.');
-      return;
+    if (relatedVisitas.length > 0 || relatedSesiones.length > 0) {
+      // Tiene dependencias — mostrar modal de confirmación en cascada
+      setConfirmDelete({ ticketId, ticket, relatedVisitas, relatedSesiones });
+    } else {
+      // Sin dependencias — confirmación simple
+      if (window.confirm('¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer.')) {
+        deleteTicket(ticketId);
+        setSelectedTicket(null);
+      }
     }
+  };
 
-    if (window.confirm('¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer.')) {
-      deleteTicket(ticketId);
-      setSelectedTicket(null);
-    }
+  const handleConfirmCascadeDelete = () => {
+    if (!confirmDelete) return;
+    deleteTicketCascade(confirmDelete.ticketId);
+    setSelectedTicket(null);
+    setConfirmDelete(null);
   };
 
   const handleStatusChange = (ticketId, newEstado) => {
@@ -425,6 +438,97 @@ export default function TicketsPage() {
         newStatus={resolutionTarget?.newEstado || ''}
         accentColor={resolutionTarget?.newEstado === 'Cerrado' ? 'accent-gray' : 'accent-green'}
       />
+
+      {/* ====== MODAL CONFIRMACIÓN ELIMINACIÓN EN CASCADA ====== */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-card border border-red-500/30 rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-red-500/10 p-5 flex items-center gap-3 border-b border-red-500/20">
+              <div className="w-11 h-11 rounded-xl bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={22} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">Eliminar ticket y datos asociados</h3>
+                <p className="text-[11px] text-text-muted mt-0.5">Esta acción no se puede deshacer</p>
+              </div>
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="ml-auto p-1.5 rounded-lg hover:bg-red-500/20 text-text-muted hover:text-red-400 transition-colors cursor-pointer bg-transparent border-none"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5">
+              <p className="text-sm text-text-secondary mb-4">
+                El ticket <span className="font-bold text-text-primary">{confirmDelete.ticketId}</span>
+                {confirmDelete.ticket?.clienteNombre && (
+                  <span> de <span className="font-semibold text-text-primary">{confirmDelete.ticket.clienteNombre}</span></span>
+                )} tiene registros asociados que también serán eliminados:
+              </p>
+
+              <div className="flex flex-col gap-2 mb-4">
+                {confirmDelete.relatedVisitas.length > 0 && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+                      <Trash2 size={14} className="text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-primary">
+                        {confirmDelete.relatedVisitas.length} Visita{confirmDelete.relatedVisitas.length > 1 ? 's' : ''} Técnica{confirmDelete.relatedVisitas.length > 1 ? 's' : ''}
+                      </p>
+                      <p className="text-[10px] text-text-muted">
+                        {confirmDelete.relatedVisitas.map(v => v.id).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {confirmDelete.relatedSesiones.length > 0 && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                      <Trash2 size={14} className="text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-primary">
+                        {confirmDelete.relatedSesiones.length} Sesión{confirmDelete.relatedSesiones.length > 1 ? 'es' : ''} de Soporte Remoto
+                      </p>
+                      <p className="text-[10px] text-text-muted">
+                        {confirmDelete.relatedSesiones.map(s => s.id).join(', ')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
+                <p className="text-[11px] text-yellow-300 leading-relaxed">
+                  <strong>⚠ Advertencia:</strong> Se eliminará el ticket junto con todas las visitas técnicas y sesiones de soporte remoto listadas. Esta acción es irreversible.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center gap-3 p-4 border-t border-border">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-sm font-semibold text-text-secondary hover:bg-bg-tertiary transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmCascadeDelete}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-red-600 border-none text-white text-sm font-bold hover:bg-red-700 transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Trash2 size={14} />
+                Eliminar Todo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

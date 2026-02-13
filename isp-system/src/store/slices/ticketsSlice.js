@@ -1,0 +1,154 @@
+import * as db from '../../utils/db';
+
+async function saveToDB(key, data) {
+    try {
+        await db.set(key, data);
+    } catch (e) {
+        console.error(`Error saving to DB (${key}):`, e);
+    }
+}
+
+function getNextId(collection, prefix, idField = 'id') {
+    if (!collection || collection.length === 0) return `${prefix}-001`;
+    const maxId = collection.reduce((max, item) => {
+        if (!item[idField]) return max;
+        const parts = item[idField].split('-');
+        const num = parseInt(parts[parts.length - 1] || 0);
+        return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
+}
+
+export const createTicketsSlice = (set, get) => ({
+    // ===================== TICKETS =====================
+    tickets: [],
+
+    addTicket: (ticket) => set(s => {
+        const newTickets = [{ ...ticket, id: getNextId(s.tickets, 'TK'), fecha: new Date().toISOString().split('T')[0], fechaUpdate: new Date().toISOString().split('T')[0] }, ...s.tickets];
+        saveToDB('isp_tickets', newTickets);
+        return { tickets: newTickets };
+    }),
+
+    updateTicket: (id, updates) => set(s => {
+        const newTickets = s.tickets.map(t => {
+            if (t.id === id) {
+                const updated = { ...t, ...updates, fechaUpdate: new Date().toISOString().split('T')[0] };
+                if (updates.estado && updates.estado !== t.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: t.estado,
+                        estadoNuevo: updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(t.historial || [])];
+                    delete updated._historyComment;
+                }
+                return updated;
+            }
+            return t;
+        });
+        saveToDB('isp_tickets', newTickets);
+        return { tickets: newTickets };
+    }),
+
+    deleteTicket: (id) => set(s => {
+        const newTickets = s.tickets.filter(t => t.id !== id);
+        saveToDB('isp_tickets', newTickets);
+        return { tickets: newTickets };
+    }),
+
+    // Eliminación en cascada: ticket + visitas + sesiones de soporte vinculadas
+    deleteTicketCascade: (ticketId) => set(s => {
+        const newTickets = s.tickets.filter(t => t.id !== ticketId);
+        const newVisitas = s.visitas.filter(v => v.ticketId !== ticketId);
+        const newSesiones = s.sesionesRemoto.filter(sr => sr.ticketId !== ticketId);
+
+        saveToDB('isp_tickets', newTickets);
+        saveToDB('isp_visitas', newVisitas);
+        saveToDB('isp_sesionesRemoto', newSesiones);
+
+        return {
+            tickets: newTickets,
+            visitas: newVisitas,
+            sesionesRemoto: newSesiones,
+        };
+    }),
+
+    // ===================== AVERÍAS =====================
+    averias: [],
+
+    addAveria: (averia) => set(s => {
+        const newAverias = [{ ...averia, id: getNextId(s.averias, 'AV'), fecha: new Date().toISOString().split('T')[0], fechaResolucion: null }, ...s.averias];
+        saveToDB('isp_averias', newAverias);
+        return { averias: newAverias };
+    }),
+
+    updateAveria: (id, updates) => set(s => {
+        const newAverias = s.averias.map(a => {
+            if (a.id === id) {
+                const updated = { ...a, ...updates };
+                if (updates.estado && updates.estado !== a.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: a.estado,
+                        estadoNuevo: updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(a.historial || [])];
+                    delete updated._historyComment;
+                }
+                return updated;
+            }
+            return a;
+        });
+        saveToDB('isp_averias', newAverias);
+        return { averias: newAverias };
+    }),
+
+    // ===================== SOPORTE REMOTO =====================
+    sesionesRemoto: [],
+
+    addSesionRemoto: (sesion) => set(s => {
+        const newSesiones = [{ ...sesion, id: getNextId(s.sesionesRemoto, 'SR'), fecha: new Date().toISOString().split('T')[0] }, ...s.sesionesRemoto];
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        return { sesionesRemoto: newSesiones };
+    }),
+
+    updateSesionRemoto: (id, updates) => set(s => {
+        const newSesiones = s.sesionesRemoto.map(sr => sr.id === id ? { ...sr, ...updates } : sr);
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        return { sesionesRemoto: newSesiones };
+    }),
+
+    // ===================== VISITAS TÉCNICAS =====================
+    visitas: [],
+
+    addVisita: (visita) => set(s => {
+        const newId = getNextId(s.visitas, 'VT');
+        const newVisitas = [{ ...visita, id: newId, fecha: visita.fecha || new Date().toISOString().split('T')[0] }, ...s.visitas];
+        saveToDB('isp_visitas', newVisitas);
+        return { visitas: newVisitas };
+    }),
+
+    updateVisita: (id, updates) => set(s => {
+        const newVisitas = s.visitas.map(v => {
+            if (v.id === id) {
+                const updated = { ...v, ...updates };
+                if (updates.estado && updates.estado !== v.estado) {
+                    const historyItem = { fecha: new Date().toISOString(), estadoAnterior: v.estado, estadoNuevo: updates.estado };
+                    updated.historial = [historyItem, ...(v.historial || [])];
+                }
+                return updated;
+            }
+            return v;
+        });
+        saveToDB('isp_visitas', newVisitas);
+        return { visitas: newVisitas };
+    }),
+
+    deleteVisita: (id) => set(s => {
+        const newVisitas = s.visitas.filter(v => v.id !== id);
+        saveToDB('isp_visitas', newVisitas);
+        return { visitas: newVisitas };
+    }),
+});

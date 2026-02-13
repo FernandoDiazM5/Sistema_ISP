@@ -17,7 +17,7 @@ const SIZES = {
     icon: 'p-2',
 };
 
-export default function Button({
+const Button = React.memo(function Button({
     children,
     variant = 'primary',
     size = 'md',
@@ -49,4 +49,6 @@ export default function Button({
             {children}
         </button>
     );
-}
+});
+
+export default Button;
