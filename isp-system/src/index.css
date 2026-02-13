@@ -1,24 +1,226 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #0a0e1a;
-  --color-bg-secondary: #111827;
-  --color-bg-card: #1a2035;
-  --color-bg-card-hover: #1e2642;
-  --color-bg-sidebar: #0d1117;
-  --color-text-primary: #e8edf5;
-  --color-text-secondary: #8b95a8;
-  --color-text-muted: #5a6478;
-  --color-accent-blue: #3b82f6;
-  --color-accent-green: #10b981;
-  --color-accent-red: #ef4444;
-  --color-accent-yellow: #f59e0b;
-  --color-accent-purple: #8b5cf6;
-  --color-accent-cyan: #06b6d4;
-  --color-border: #1e293b;
-  --color-border-light: #2a3548;
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-sidebar: var(--bg-sidebar);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-green: var(--accent-green);
+  --color-accent-red: var(--accent-red);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-cyan: var(--accent-cyan);
+
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+
   --font-sans: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* === THEME DEFINITIONS === */
+:root {
+  /* 
+    Default Theme: "Azul Noche" (Refinado)
+    Fondo oscuro profundo con tintes azules muy sutiles.
+    Texto blanco hueso para no cansar la vista.
+  */
+  --bg-primary: #0f172a;
+  /* Slate-900: Más neutro y profesional que el anterior */
+  --bg-secondary: #1e293b;
+  /* Slate-800 */
+  --bg-card: #1e293b;
+  /* Slate-800 */
+  --bg-card-hover: #334155;
+  /* Slate-700 */
+  --bg-sidebar: #020617;
+  /* Slate-950 */
+
+  --text-primary: #f8fafc;
+  /* Slate-50 */
+  --text-secondary: #94a3b8;
+  /* Slate-400 */
+  --text-muted: #64748b;
+  /* Slate-500 */
+
+  --accent-blue: #3b82f6;
+  /* Blue-500 */
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --accent-purple: #8b5cf6;
+  --accent-cyan: #06b6d4;
+
+  --border: #334155;
+  /* Slate-700 */
+  --border-light: #475569;
+  /* Slate-600 */
+}
+
+/* Light Theme: "Modo Claro" (Refinado) */
+:root[data-theme="light"] {
+  --bg-primary: #f1f5f9;
+  /* Slate-100 */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  /* Slate-50 */
+  --bg-sidebar: #0f172a;
+  /* Mantenemos sidebar oscura para contraste pro */
+
+  --text-primary: #0f172a;
+  /* Slate-900 */
+  --text-secondary: #475569;
+  /* Slate-600 */
+  --text-muted: #94a3b8;
+  /* Slate-400 */
+
+  --accent-blue: #2563eb;
+  /* Blue-600 (Más oscuro para contraste en blanco) */
+  --border: #e2e8f0;
+  /* Slate-200 */
+  --border-light: #cbd5e1;
+  /* Slate-300 */
+}
+
+/* Midnight Black Theme: "Negro OLED" */
+:root[data-theme="black"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a0a;
+  /* Neutral-950 */
+  --bg-card: #121212;
+  /* Material Dark */
+  --bg-card-hover: #1e1e1e;
+  --bg-sidebar: #000000;
+
+  --text-primary: #e5e5e5;
+  /* Neutral-200 */
+  --text-secondary: #a3a3a3;
+  /* Neutral-400 */
+  --text-muted: #525252;
+  /* Neutral-600 */
+
+  --border: #262626;
+  /* Neutral-800 */
+  --border-light: #404040;
+  /* Neutral-700 */
+}
+
+/* Lila / Purple Theme: "Lila Cuántico" (Nuevo Pastel) */
+:root[data-theme="purple"] {
+  --bg-primary: #faf5ff;
+  /* Purple-50 (Lila muy suave) */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f3e8ff;
+  /* Purple-100 */
+  --bg-sidebar: #f3e8ff;
+  /* Purple-100 (Sidebar clara/pastel) */
+
+  --text-primary: #3b0764;
+  /* Purple-950 (Texto oscuro) */
+  --text-secondary: #6b21a8;
+  /* Purple-800 */
+  --text-muted: #7e22ce;
+  /* Purple-700 */
+
+  --accent-blue: #7e22ce;
+  /* Purple-700 */
+  --border: #d8b4fe;
+  /* Purple-300 */
+  --border-light: #e9d5ff;
+  /* Purple-200 */
+}
+
+/* === NUEVOS TEMAS PASTEL PROFESIONALES (Optimizado Final - Sidebars Claras) === */
+/* 
+   Estrategia: Sidebars claras y coherentes con el fondo pastel para evitar el "peso" visual.
+   Contraste de texto maximizado.
+*/
+
+/* Nordic Rose: "Rosa Nórdico" */
+:root[data-theme="rose"] {
+  --bg-primary: #fff1f2;
+  /* Rose-50 */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #ffe4e6;
+  /* Rose-100 */
+  --bg-sidebar: #ffe4e6;
+  /* Rose-100 (Sidebar clara) */
+
+  --text-primary: #4c0519;
+  /* Rose-950 */
+  --text-secondary: #9f1239;
+  /* Rose-800 */
+  --text-muted: #be123c;
+  /* Rose-600 */
+
+  --accent-blue: #be123c;
+  /* Rose-700 */
+  --border: #fecdd3;
+  /* Rose-200 */
+  --border-light: #fda4af;
+  /* Rose-300 */
+}
+
+/* Ocean Breeze: "Brisa Marina" */
+:root[data-theme="ocean"] {
+  --bg-primary: #f0f9ff;
+  /* Sky-50 */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #e0f2fe;
+  /* Sky-100 */
+  --bg-sidebar: #e0f2fe;
+  /* Sky-100 (Sidebar clara) */
+
+  --text-primary: #082f49;
+  /* Sky-950 */
+  --text-secondary: #0369a1;
+  /* Sky-700 */
+  --text-muted: #0ea5e9;
+  /* Sky-500 */
+
+  --accent-blue: #0284c7;
+  /* Sky-600 */
+  --border: #bae6fd;
+  /* Sky-200 */
+  --border-light: #7dd3fc;
+  /* Sky-300 */
+}
+
+/* Sage Garden: "Jardín Salvia" */
+:root[data-theme="sage"] {
+  --bg-primary: #f6fdf9;
+  /* Emerald-50 muy suave */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #d1fae5;
+  /* Emerald-100 */
+  --bg-sidebar: #d1fae5;
+  /* Emerald-100 (Sidebar clara) */
+
+  --text-primary: #022c22;
+  /* Emerald-950 */
+  --text-secondary: #047857;
+  /* Emerald-700 */
+  --text-muted: #059669;
+  /* Emerald-600 */
+
+  --accent-blue: #059669;
+  /* Emerald-600 */
+  --border: #a7f3d0;
+  /* Emerald-200 */
+  --border-light: #6ee7b7;
+  /* Emerald-300 */
 }
 
 @layer base {
@@ -39,18 +241,22 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: var(--color-bg-secondary);
   }
+
   ::-webkit-scrollbar-thumb {
     background: var(--color-border-light);
     border-radius: 3px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
   }
 
-  input, select {
+  input,
+  select {
     font-family: var(--font-sans);
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
@@ -61,9 +267,12 @@
     outline: none;
     transition: border-color 0.2s;
   }
-  input:focus, select:focus {
+
+  input:focus,
+  select:focus {
     border-color: var(--color-accent-blue);
   }
+
   input::placeholder {
     color: var(--color-text-muted);
   }
@@ -71,30 +280,68 @@
 
 @layer utilities {
   @keyframes fade-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   @keyframes slide-in {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
+
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .animate-fade {
     animation: fade-in 0.4s ease-out both;
   }
+
   .animate-slide {
     animation: slide-in 0.3s ease-out both;
   }
+
   .animate-spin-slow {
     animation: spin 1s linear infinite;
   }
-  .stagger-1 { animation-delay: 0.05s; }
-  .stagger-2 { animation-delay: 0.1s; }
-  .stagger-3 { animation-delay: 0.15s; }
-  .stagger-4 { animation-delay: 0.2s; }
-  .stagger-5 { animation-delay: 0.25s; }
-  .stagger-6 { animation-delay: 0.3s; }
+
+  .stagger-1 {
+    animation-delay: 0.05s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.15s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-5 {
+    animation-delay: 0.25s;
+  }
+
+  .stagger-6 {
+    animation-delay: 0.3s;
+  }
 }

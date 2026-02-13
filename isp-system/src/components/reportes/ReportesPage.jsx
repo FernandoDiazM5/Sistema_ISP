@@ -4,6 +4,10 @@ import * as XLSX from 'xlsx';
 import useStore from '../../store/useStore';
 import KPICard from '../common/KPICard';
 
+// UI Components
+import Card from '../ui/Card';
+import Badge from '../ui/Badge';
+
 export default function ReportesPage() {
   const clients = useStore(s => s.clients);
   const tickets = useStore(s => s.tickets);
@@ -80,120 +84,113 @@ export default function ReportesPage() {
 
       {/* KPIs Financieros */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="animate-fade stagger-1">
-          <KPICard title="Ingreso Mensual" value={`S/. ${cobranza.ingresoMensual.toLocaleString()}`}
-            subtitle="Facturación estimada" icon={<DollarSign size={20} />} color="#10b981" />
-        </div>
-        <div className="animate-fade stagger-2">
-          <KPICard title="Deuda Total" value={`S/. ${cobranza.totalDeuda.toLocaleString()}`}
-            subtitle={`${cobranza.conDeuda} clientes morosos`} icon={<AlertTriangle size={20} />} color="#ef4444" />
-        </div>
-        <div className="animate-fade stagger-3">
-          <KPICard title="Cortados" value={cobranza.cortados}
-            subtitle="Por deuda" icon={<Users size={20} />} color="#f59e0b" />
-        </div>
-        <div className="animate-fade stagger-4">
-          <KPICard title="Tickets Abiertos" value={tickets.filter(t => t.estado === 'Abierto').length}
-            subtitle={`${averias.filter(a => a.estado !== 'Resuelta').length} averías activas`} icon={<TrendingUp size={20} />} color="#8b5cf6" />
-        </div>
+        <KPICard title="Ingreso Mensual" value={`S/. ${cobranza.ingresoMensual.toLocaleString()}`}
+          subtitle="Facturación estimada" icon={<DollarSign size={20} />} color="#10b981" />
+        <KPICard title="Deuda Total" value={`S/. ${cobranza.totalDeuda.toLocaleString()}`}
+          subtitle={`${cobranza.conDeuda} clientes morosos`} icon={<AlertTriangle size={20} />} color="#ef4444" />
+        <KPICard title="Cortados" value={cobranza.cortados}
+          subtitle="Por deuda" icon={<Users size={20} />} color="#f59e0b" />
+        <KPICard title="Tickets Abiertos" value={tickets.filter(t => t.estado === 'Abierto').length}
+          subtitle={`${averias.filter(a => a.estado !== 'Resuelta').length} averías activas`} icon={<TrendingUp size={20} />} color="#8b5cf6" />
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Ingreso por tecnología */}
-        <div className="bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-4 text-text-secondary">Ingreso por Tecnología</h3>
-          <div className="flex flex-col gap-4">
+        <Card title="Ingreso por Tecnología" subtitle="Distribución por tipo de conexión">
+          <div className="flex flex-col gap-5">
             <div>
-              <div className="flex justify-between mb-1.5 text-sm">
-                <span className="text-accent-blue font-semibold">Radio Enlace ({cobranza.radioCount})</span>
-                <span className="font-mono">S/. {cobranza.ingresoRadio.toLocaleString()}</span>
+              <div className="flex justify-between mb-2 text-sm">
+                <span className="text-accent-blue font-bold">Radio Enlace ({cobranza.radioCount})</span>
+                <span className="font-mono text-text-primary">S/. {cobranza.ingresoRadio.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-bg-secondary rounded">
-                <div className="h-full bg-accent-blue rounded transition-all" style={{ width: `${cobranza.ingresoMensual ? (cobranza.ingresoRadio / cobranza.ingresoMensual * 100) : 0}%` }} />
+              <div className="h-2.5 bg-bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-accent-blue rounded-full transition-all duration-500" style={{ width: `${cobranza.ingresoMensual ? (cobranza.ingresoRadio / cobranza.ingresoMensual * 100) : 0}%` }} />
               </div>
             </div>
             <div>
-              <div className="flex justify-between mb-1.5 text-sm">
-                <span className="text-accent-purple font-semibold">Fibra Óptica ({cobranza.fibraCount})</span>
-                <span className="font-mono">S/. {cobranza.ingresoFibra.toLocaleString()}</span>
+              <div className="flex justify-between mb-2 text-sm">
+                <span className="text-accent-purple font-bold">Fibra Óptica ({cobranza.fibraCount})</span>
+                <span className="font-mono text-text-primary">S/. {cobranza.ingresoFibra.toLocaleString()}</span>
               </div>
-              <div className="h-2 bg-bg-secondary rounded">
-                <div className="h-full bg-accent-purple rounded transition-all" style={{ width: `${cobranza.ingresoMensual ? (cobranza.ingresoFibra / cobranza.ingresoMensual * 100) : 0}%` }} />
+              <div className="h-2.5 bg-bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-accent-purple rounded-full transition-all duration-500" style={{ width: `${cobranza.ingresoMensual ? (cobranza.ingresoFibra / cobranza.ingresoMensual * 100) : 0}%` }} />
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Deuda por zona */}
-        <div className="bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-4 text-text-secondary">Deuda por Zona</h3>
-          <div className="flex flex-col gap-2">
+        <Card title="Deuda por Zona" subtitle="Zonas con mayor morosidad">
+          <div className="flex flex-col gap-1 overflow-y-auto max-h-[160px] pr-2 custom-scrollbar">
             {cobranza.zonas.map(([zona, info]) => (
-              <div key={zona} className="flex items-center justify-between py-1.5 text-xs">
-                <span className="font-medium">{zona}</span>
+              <div key={zona} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                <span className="text-sm font-medium text-text-primary">{zona}</span>
                 <div className="flex items-center gap-4">
-                  <span className="text-text-muted">{info.clientes} clientes</span>
-                  <span className="font-mono text-accent-red font-semibold">S/. {info.monto.toFixed(2)}</span>
+                  <Badge variant="default" size="sm" className="bg-bg-secondary">{info.clientes} cl.</Badge>
+                  <span className="font-mono text-red-500 font-bold text-sm">S/. {info.monto.toFixed(2)}</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Top morosos */}
-      <div className="bg-bg-card rounded-2xl p-6 border border-border mb-6">
-        <h3 className="text-sm font-semibold mb-4 text-text-secondary">Top 10 Clientes con Mayor Deuda</h3>
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="text-left text-[11px] text-text-muted uppercase">
-              <th className="py-2 px-3">ID</th>
-              <th className="py-2 px-3">Nombre</th>
-              <th className="py-2 px-3">Móvil</th>
-              <th className="py-2 px-3">Plan</th>
-              <th className="py-2 px-3">Meses</th>
-              <th className="py-2 px-3">Monto</th>
-              <th className="py-2 px-3">Último Pago</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cobranza.morosos.map(c => (
-              <tr key={c.id} className="border-t border-border">
-                <td className="py-2 px-3 font-mono text-text-muted text-[11px]">{c.id}</td>
-                <td className="py-2 px-3 font-medium">{c.nombre}</td>
-                <td className="py-2 px-3 font-mono text-xs">{c.movil_1}</td>
-                <td className="py-2 px-3 text-[11px] text-text-secondary max-w-[200px] truncate">{c.plan}</td>
-                <td className="py-2 px-3 text-center font-mono">{c.deuda_meses}</td>
-                <td className="py-2 px-3 font-mono text-accent-red font-semibold">S/. {c.deuda_monto.toFixed(2)}</td>
-                <td className="py-2 px-3 text-text-muted text-xs">{c.ultimo_pago || '—'}</td>
+      <Card title="Top 10 Clientes con Mayor Deuda" subtitle="Seguimiento de cobranza crítica" className="mb-6">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-left text-[11px] text-text-muted uppercase tracking-wider">
+                <th className="py-3 px-3 font-semibold">ID</th>
+                <th className="py-3 px-3 font-semibold">Nombre</th>
+                <th className="py-3 px-3 font-semibold">Móvil</th>
+                <th className="py-3 px-3 font-semibold">Plan</th>
+                <th className="py-3 px-3 font-semibold text-center">Meses</th>
+                <th className="py-3 px-3 font-semibold text-right">Monto</th>
+                <th className="py-3 px-3 font-semibold">Último Pago</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {cobranza.morosos.map(c => (
+                <tr key={c.id} className="hover:bg-bg-card-hover transition-colors">
+                  <td className="py-3 px-3 font-mono text-text-muted text-[11px]">{c.id}</td>
+                  <td className="py-3 px-3 font-medium text-text-primary">{c.nombre}</td>
+                  <td className="py-3 px-3 font-mono text-xs text-text-secondary">{c.movil_1}</td>
+                  <td className="py-3 px-3 text-[11px] text-text-secondary max-w-[200px] truncate">{c.plan}</td>
+                  <td className="py-3 px-3 text-center font-mono font-bold text-text-primary">{c.deuda_meses}</td>
+                  <td className="py-3 px-3 text-right font-mono text-red-500 font-bold">S/. {c.deuda_monto.toFixed(2)}</td>
+                  <td className="py-3 px-3 text-text-muted text-xs italic">{c.ultimo_pago || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {/* Exportar */}
-      <div className="bg-bg-card rounded-2xl p-6 border border-border">
-        <h3 className="text-sm font-semibold mb-4 text-text-secondary">Exportar Reportes</h3>
-        <div className="grid grid-cols-3 gap-3">
+      <Card title="Exportar Reportes" subtitle="Descarga de datos en formato Excel">
+        <div className="grid grid-cols-3 gap-4">
           {[
-            { type: 'cobranza', label: 'Reporte de Cobranza', desc: 'Clientes con deuda pendiente', color: 'bg-accent-red' },
-            { type: 'clientes', label: 'Reporte Completo', desc: 'Todos los clientes con detalles', color: 'bg-accent-blue' },
-            { type: 'cortados', label: 'Suspendidos / Cortados', desc: 'Clientes sin servicio activo', color: 'bg-accent-yellow' },
+            { type: 'cobranza', label: 'Reporte de Cobranza', desc: 'Clientes con deuda pendiente', bgColor: 'bg-red-500/10', textColor: 'text-red-500' },
+            { type: 'clientes', label: 'Reporte Completo', desc: 'Base de datos completa', bgColor: 'bg-blue-500/10', textColor: 'text-blue-500' },
+            { type: 'cortados', label: 'Suspendidos / Cortados', desc: 'Clientes sin servicio activo', bgColor: 'bg-yellow-500/10', textColor: 'text-yellow-500' },
           ].map(r => (
-            <button key={r.type} onClick={() => exportReport(r.type)}
-              className="flex items-center gap-3 p-4 rounded-xl bg-bg-secondary border border-border text-left cursor-pointer transition-all hover:border-accent-blue/50 group">
-              <div className={`w-10 h-10 rounded-lg ${r.color}/15 flex items-center justify-center`}>
-                <Download size={18} className={r.color.replace('bg-', 'text-')} />
+            <button
+              key={r.type}
+              onClick={() => exportReport(r.type)}
+              className="flex items-center gap-4 p-4 rounded-2xl bg-bg-secondary/50 border border-border text-left cursor-pointer transition-all hover:border-accent-blue/50 hover:bg-bg-secondary group"
+            >
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${r.bgColor} group-hover:scale-110 transition-transform`}>
+                <Download size={20} className={r.textColor} />
               </div>
-              <div>
-                <p className="text-sm font-semibold">{r.label}</p>
-                <p className="text-[11px] text-text-muted">{r.desc}</p>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-text-primary group-hover:text-accent-blue transition-colors">{r.label}</p>
+                <p className="text-[11px] text-text-muted leading-tight mt-0.5">{r.desc}</p>
               </div>
             </button>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -74,7 +74,7 @@ export default defineConfig({
       }
     })
   ],
-  base: '/isp-system/',
+
   build: {
     rollupOptions: {
       output: {

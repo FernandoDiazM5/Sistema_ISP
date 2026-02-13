@@ -1,7 +1,14 @@
 import { useState, useMemo } from 'react';
-import { Box, Plus, Search, Monitor, Wifi, Router, Server, Wrench, Package, ChevronDown, X, Edit2, Save } from 'lucide-react';
+import { Box, Plus, Monitor, Wifi, Router, Server, Wrench, Package, X, Edit2, Save, Search } from 'lucide-react';
 import useStore from '../../store/useStore';
+import { useFilters } from '../../hooks/useFilters';
 import KPICard from '../common/KPICard';
+
+// UI Components
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Badge from '../ui/Badge';
+import Card from '../ui/Card';
 
 const TIPOS_EQUIPO = ['ONU', 'Router', 'Antena CPE', 'Antena AP', 'Switch', 'OLT', 'Media Converter'];
 const MARCAS = ['Huawei', 'VSOL', 'Mikrotik', 'Ubiquiti', 'TP-Link', 'Tenda', 'ZTE', 'Nokia'];
@@ -17,11 +24,11 @@ const tipoIconMap = {
   'Media Converter': Box,
 };
 
-const estadoColors = {
-  'Disponible': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', dot: 'bg-emerald-400' },
-  'En uso': { bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' },
-  'En reparación': { bg: 'bg-amber-500/10', text: 'text-amber-400', dot: 'bg-amber-400' },
-  'Dado de baja': { bg: 'bg-red-500/10', text: 'text-red-400', dot: 'bg-red-400' },
+const estadoVariantMap = {
+  'Disponible': 'success',
+  'En uso': 'info',
+  'En reparación': 'warning',
+  'Dado de baja': 'danger',
 };
 
 export default function EquiposPage() {
@@ -30,12 +37,22 @@ export default function EquiposPage() {
   const updateEquipo = useStore(s => s.updateEquipo);
   const clients = useStore(s => s.clients);
 
-  const [search, setSearch] = useState('');
-  const [filterTipo, setFilterTipo] = useState('');
-  const [filterEstado, setFilterEstado] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ tipo: '', marca: '', modelo: '', serial: '', estado: 'Disponible', clienteId: '', clienteNombre: '', ubicacion: '' });
+
+  // Custom Hook for Filters
+  const {
+    filteredData,
+    searchInput,
+    setSearchInput,
+    filters,
+    updateFilter,
+    resetFilters
+  } = useFilters(equipos, {
+    searchFields: ['serial', 'modelo', 'marca', 'clienteNombre'],
+    initialFilters: { tipo: 'all', estado: 'all' }
+  });
 
   const stats = useMemo(() => {
     const total = equipos.length;
@@ -44,19 +61,6 @@ export default function EquiposPage() {
     const enReparacion = equipos.filter(e => e.estado === 'En reparación').length;
     return { total, enUso, disponibles, enReparacion };
   }, [equipos]);
-
-  const filtered = useMemo(() => {
-    return equipos.filter(e => {
-      const matchSearch = !search ||
-        e.serial.toLowerCase().includes(search.toLowerCase()) ||
-        e.modelo.toLowerCase().includes(search.toLowerCase()) ||
-        e.marca.toLowerCase().includes(search.toLowerCase()) ||
-        (e.clienteNombre || '').toLowerCase().includes(search.toLowerCase());
-      const matchTipo = !filterTipo || e.tipo === filterTipo;
-      const matchEstado = !filterEstado || e.estado === filterEstado;
-      return matchSearch && matchTipo && matchEstado;
-    });
-  }, [equipos, search, filterTipo, filterEstado]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -92,125 +96,133 @@ export default function EquiposPage() {
 
   return (
     <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-[26px] font-bold tracking-tight">Inventario de Equipos</h1>
           <p className="text-text-secondary text-sm mt-1">Gestión de ONTs, CPEs, routers y equipos de red</p>
         </div>
-        <button onClick={openCreate}
-          className="flex items-center gap-2 py-2.5 px-4 bg-accent-blue text-white rounded-xl font-semibold text-sm border-none cursor-pointer hover:opacity-90 transition-opacity">
-          <Plus size={16} /> Registrar Equipo
-        </button>
+        <Button onClick={openCreate} icon={Plus}>
+          Registrar Equipo
+        </Button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="animate-fade stagger-1">
-          <KPICard title="Total Equipos" value={stats.total} subtitle="Inventario completo" icon={<Box size={20} />} color="#3b82f6" />
-        </div>
-        <div className="animate-fade stagger-2">
-          <KPICard title="En Uso" value={stats.enUso} subtitle="Asignados a clientes" icon={<Monitor size={20} />} color="#10b981" />
-        </div>
-        <div className="animate-fade stagger-3">
-          <KPICard title="Disponibles" value={stats.disponibles} subtitle="En almacén" icon={<Package size={20} />} color="#8b5cf6" />
-        </div>
-        <div className="animate-fade stagger-4">
-          <KPICard title="En Reparación" value={stats.enReparacion} subtitle="Taller técnico" icon={<Wrench size={20} />} color="#f59e0b" />
-        </div>
+        <KPICard title="Total Equipos" value={stats.total} subtitle="Inventario completo" icon={<Box size={20} />} color="#3b82f6" />
+        <KPICard title="En Uso" value={stats.enUso} subtitle="Asignados a clientes" icon={<Monitor size={20} />} color="#10b981" />
+        <KPICard title="Disponibles" value={stats.disponibles} subtitle="En almacén" icon={<Package size={20} />} color="#8b5cf6" />
+        <KPICard title="En Reparación" value={stats.enReparacion} subtitle="Taller técnico" icon={<Wrench size={20} />} color="#f59e0b" />
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3 mb-5">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full py-2.5 pl-9 pr-4 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/50"
-            placeholder="Buscar por serial, modelo, marca o cliente..." />
+      <div className="flex gap-3 mb-5 flex-wrap">
+        <div className="flex-1 min-w-[300px]">
+          <Input
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Buscar por serial, modelo, marca o cliente..."
+            icon={Search}
+          />
         </div>
-        <div className="relative">
-          <select value={filterTipo} onChange={e => setFilterTipo(e.target.value)}
-            className="appearance-none py-2.5 pl-3 pr-8 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary cursor-pointer focus:outline-none">
-            <option value="">Todos los tipos</option>
-            {TIPOS_EQUIPO.map(t => <option key={t}>{t}</option>)}
+        <div className="w-[180px]">
+          <select
+            value={filters.tipo}
+            onChange={e => updateFilter('tipo', e.target.value)}
+            className="w-full h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary focus:border-accent-blue outline-none cursor-pointer"
+          >
+            <option value="all">Todos los tipos</option>
+            {TIPOS_EQUIPO.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
         </div>
-        <div className="relative">
-          <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)}
-            className="appearance-none py-2.5 pl-3 pr-8 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary cursor-pointer focus:outline-none">
-            <option value="">Todos los estados</option>
-            {ESTADOS_EQUIPO.map(e => <option key={e}>{e}</option>)}
+        <div className="w-[180px]">
+          <select
+            value={filters.estado}
+            onChange={e => updateFilter('estado', e.target.value)}
+            className="w-full h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary focus:border-accent-blue outline-none cursor-pointer"
+          >
+            <option value="all">Todos los estados</option>
+            {ESTADOS_EQUIPO.map(e => <option key={e} value={e}>{e}</option>)}
           </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
         </div>
+        {(searchInput || filters.tipo !== 'all' || filters.estado !== 'all') && (
+          <Button variant="ghost" icon={X} onClick={resetFilters}>Limpiar</Button>
+        )}
       </div>
 
       {/* Tabla de equipos */}
-      <div className="bg-bg-card rounded-2xl border border-border overflow-hidden">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="text-left text-[11px] text-text-muted uppercase border-b border-border">
-              <th className="py-3 px-4">ID</th>
-              <th className="py-3 px-4">Tipo</th>
-              <th className="py-3 px-4">Marca / Modelo</th>
-              <th className="py-3 px-4">Serial</th>
-              <th className="py-3 px-4">Estado</th>
-              <th className="py-3 px-4">Asignado a</th>
-              <th className="py-3 px-4">Ubicación</th>
-              <th className="py-3 px-4 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(eq => {
-              const TipoIcon = tipoIconMap[eq.tipo] || Box;
-              const eColor = estadoColors[eq.estado] || estadoColors['Disponible'];
-              return (
-                <tr key={eq.id} className="border-t border-border hover:bg-white/[0.02] transition-colors">
-                  <td className="py-3 px-4 font-mono text-text-muted text-[11px]">{eq.id}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <TipoIcon size={14} className="text-accent-blue" />
-                      <span className="font-medium">{eq.tipo}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="font-semibold">{eq.marca}</span>
-                    <span className="text-text-muted ml-1.5">{eq.modelo}</span>
-                  </td>
-                  <td className="py-3 px-4 font-mono text-xs">{eq.serial}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium ${eColor.bg} ${eColor.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${eColor.dot}`} />
-                      {eq.estado}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-xs">
-                    {eq.clienteNombre ? (
-                      <span className="font-medium">{eq.clienteNombre}</span>
-                    ) : (
-                      <span className="text-text-muted">—</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-xs text-text-secondary">{eq.ubicacion}</td>
-                  <td className="py-3 px-4 text-center">
-                    <button onClick={() => openEdit(eq)}
-                      className="p-1.5 rounded-lg bg-transparent border-none cursor-pointer text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 transition-all">
-                      <Edit2 size={14} />
-                    </button>
+      <Card padding="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-left text-[11px] text-text-muted uppercase border-b border-border">
+                <th className="py-4 px-4 font-semibold tracking-wider">ID</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Tipo</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Marca / Modelo</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Serial</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Estado</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Asignado a</th>
+                <th className="py-4 px-4 font-semibold tracking-wider">Ubicación</th>
+                <th className="py-4 px-4 text-center font-semibold tracking-wider">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {filteredData.map(eq => {
+                const TipoIcon = tipoIconMap[eq.tipo] || Box;
+                return (
+                  <tr key={eq.id} className="hover:bg-bg-card-hover transition-colors">
+                    <td className="py-4 px-4 font-mono text-text-muted text-[11px]">{eq.id}</td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-accent-blue/5">
+                          <TipoIcon size={14} className="text-accent-blue" />
+                        </div>
+                        <span className="font-medium text-text-primary">{eq.tipo}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-text-primary">{eq.marca}</span>
+                        <span className="text-[11px] text-text-muted">{eq.modelo}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4 font-mono text-xs">{eq.serial}</td>
+                    <td className="py-4 px-4">
+                      <Badge variant={estadoVariantMap[eq.estado]} dot>
+                        {eq.estado}
+                      </Badge>
+                    </td>
+                    <td className="py-4 px-4 text-xs">
+                      {eq.clienteNombre ? (
+                        <span className="font-medium text-text-primary">{eq.clienteNombre}</span>
+                      ) : (
+                        <span className="text-text-muted">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4 text-xs text-text-secondary">{eq.ubicacion}</td>
+                    <td className="py-4 px-4 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEdit(eq)}
+                      >
+                        <Edit2 size={14} />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {filteredData.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-text-muted text-sm">
+                    No se encontraron equipos
                   </td>
                 </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={8} className="py-12 text-center text-text-muted text-sm">
-                  No se encontraron equipos
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {/* Resumen por tipo */}
       <div className="grid grid-cols-3 gap-4 mt-6">
@@ -219,104 +231,113 @@ export default function EquiposPage() {
           const inUse = equipos.filter(e => e.tipo === tipo && e.estado === 'En uso').length;
           const TIcon = tipoIconMap[tipo] || Box;
           return (
-            <div key={tipo} className="bg-bg-card rounded-2xl p-5 border border-border">
-              <div className="flex items-center gap-3 mb-3">
+            <Card key={tipo} padding="p-5" className="hover:border-accent-blue/30 transition-colors">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
                   <TIcon size={18} className="text-accent-blue" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold">{tipo}</p>
-                  <p className="text-[11px] text-text-muted">{count} unidades</p>
+                  <p className="text-[11px] text-text-muted uppercase tracking-wider">{count} unidades</p>
                 </div>
               </div>
-              <div className="h-2 bg-bg-secondary rounded">
-                <div className="h-full bg-accent-blue rounded transition-all"
+              <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
+                <div className="h-full bg-accent-blue rounded-full transition-all duration-500"
                   style={{ width: `${count > 0 ? (inUse / count * 100) : 0}%` }} />
               </div>
-              <p className="text-[11px] text-text-muted mt-1.5">{inUse} en uso / {count - inUse} disponibles</p>
-            </div>
+              <div className="flex justify-between mt-2.5">
+                <p className="text-[11px] font-medium text-text-primary">{inUse} en uso</p>
+                <p className="text-[11px] text-text-muted">{count - inUse} disponibles</p>
+              </div>
+            </Card>
           );
         })}
       </div>
 
-      {/* Modal */}
+      {/* Modal Re-styled */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowModal(false)}>
-          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200" onClick={() => setShowModal(false)}>
+          <Card
+            className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200"
+            padding="p-0"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center px-6 py-4 border-b border-border">
               <h3 className="text-base font-bold">{editingId ? 'Editar Equipo' : 'Registrar Equipo'}</h3>
               <button onClick={() => setShowModal(false)} className="text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none">
                 <X size={18} />
               </button>
             </div>
-            <div className="p-6 flex flex-col gap-4">
+            <div className="p-6 flex flex-col gap-5">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Tipo *</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Tipo *</label>
                   <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary">
+                    className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
                     {TIPOS_EQUIPO.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Marca</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Marca</label>
                   <select value={form.marca} onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary">
+                    className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
                     {MARCAS.map(m => <option key={m}>{m}</option>)}
                   </select>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Modelo</label>
-                  <input value={form.modelo} onChange={e => setForm(f => ({ ...f, modelo: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary placeholder-text-muted"
-                    placeholder="ej. HG8310M" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Modelo</label>
+                  <Input
+                    value={form.modelo}
+                    onChange={e => setForm(f => ({ ...f, modelo: e.target.value }))}
+                    placeholder="ej. HG8310M"
+                  />
                 </div>
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Serial *</label>
-                  <input value={form.serial} onChange={e => setForm(f => ({ ...f, serial: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary placeholder-text-muted"
-                    placeholder="Número de serie" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Serial *</label>
+                  <Input
+                    value={form.serial}
+                    onChange={e => setForm(f => ({ ...f, serial: e.target.value }))}
+                    placeholder="Número de serie"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Estado</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Estado</label>
                   <select value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary">
+                    className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
                     {ESTADOS_EQUIPO.map(e => <option key={e}>{e}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Ubicación</label>
-                  <input value={form.ubicacion} onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary placeholder-text-muted"
-                    placeholder="ej. Almacén, VILLA 5" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Ubicación</label>
+                  <Input
+                    value={form.ubicacion}
+                    onChange={e => setForm(f => ({ ...f, ubicacion: e.target.value }))}
+                    placeholder="ej. Almacén, VILLA 5"
+                  />
                 </div>
               </div>
               {form.estado === 'En uso' && (
-                <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Asignar a Cliente</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Asignar a Cliente</label>
                   <select value={form.clienteId} onChange={handleClientSelect}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary">
+                    className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
                     <option value="">Sin asignar</option>
                     {clients.map(c => <option key={c.id} value={c.id}>{c.id} - {c.nombre}</option>)}
                   </select>
                 </div>
               )}
             </div>
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
-              <button onClick={() => setShowModal(false)}
-                className="py-2 px-4 rounded-lg bg-bg-secondary text-text-secondary text-sm border border-border cursor-pointer hover:bg-white/[0.04]">
-                Cancelar
-              </button>
-              <button onClick={handleSave}
-                className="flex items-center gap-2 py-2 px-4 rounded-lg bg-accent-blue text-white text-sm font-semibold border-none cursor-pointer hover:opacity-90">
-                <Save size={14} /> {editingId ? 'Guardar Cambios' : 'Registrar'}
-              </button>
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-border bg-bg-secondary/20">
+              <Button variant="ghost" onClick={() => setShowModal(false)}>Cancelar</Button>
+              <Button onClick={handleSave} icon={Save}>
+                {editingId ? 'Guardar Cambios' : 'Registrar Equipo'}
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

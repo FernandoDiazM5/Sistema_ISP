@@ -1,38 +1,44 @@
 import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
-import useStore from '../../store/useStore';
+import { NavLink } from 'react-router-dom';
 
 const navSections = [
-  { label: 'Principal', items: [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'clientes', label: 'Clientes', icon: Users },
-  ]},
-  { label: 'Soporte', items: [
-    { id: 'tickets', label: 'Tickets', icon: Ticket },
-    { id: 'averias', label: 'Averías', icon: AlertTriangle },
-    { id: 'soporte', label: 'Soporte Remoto', icon: MonitorSmartphone },
-    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
-  ]},
-  { label: 'Operaciones', items: [
-    { id: 'tecnicos', label: 'Técnicos', icon: Wrench },
-    { id: 'visitas', label: 'Visitas Técnicas', icon: Calendar },
-    { id: 'instalaciones', label: 'Instalaciones', icon: HardHat },
-    { id: 'planta-externa', label: 'Planta Externa', icon: Cable },
-    { id: 'post-venta', label: 'Post-Venta', icon: ShoppingBag },
-  ]},
-  { label: 'Sistema', items: [
-    { id: 'equipos', label: 'Equipos', icon: Box },
-    { id: 'reportes', label: 'Reportes', icon: BarChart3 },
-    { id: 'importar', label: 'Importar Datos', icon: CloudUpload },
-    { id: 'config', label: 'Configuración', icon: Settings },
-  ]},
+  {
+    label: 'Principal', items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/clientes', label: 'Clientes', icon: Users },
+    ]
+  },
+  {
+    label: 'Soporte', items: [
+      { to: '/tickets', label: 'Tickets', icon: Ticket },
+      { to: '/averias', label: 'Averías', icon: AlertTriangle },
+      { to: '/soporte', label: 'Soporte Remoto', icon: MonitorSmartphone },
+      { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    ]
+  },
+  {
+    label: 'Operaciones', items: [
+      { to: '/tecnicos', label: 'Técnicos', icon: Wrench },
+      { to: '/visitas', label: 'Visitas Técnicas', icon: Calendar },
+      { to: '/instalaciones', label: 'Instalaciones', icon: HardHat },
+      { to: '/planta-externa', label: 'Planta Externa', icon: Cable },
+      { to: '/post-venta', label: 'Post-Venta', icon: ShoppingBag },
+    ]
+  },
+  {
+    label: 'Sistema', items: [
+      { to: '/equipos', label: 'Equipos', icon: Box },
+      { to: '/reportes', label: 'Reportes', icon: BarChart3 },
+      { to: '/importar', label: 'Importar Datos', icon: CloudUpload },
+      { to: '/config', label: 'Configuración', icon: Settings },
+    ]
+  },
 ];
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const activePage = useStore(s => s.activePage);
-  const setActivePage = useStore(s => s.setActivePage);
   const role = ROLES[user?.rol] || ROLES.TECNICO;
 
   return (
@@ -51,17 +57,16 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
-        {navSections.map(section => (
-          <div key={section.label}>
+        {navSections.map((section, idx) => (
+          <div key={idx}>
             <p className="text-[9px] uppercase tracking-widest text-text-muted px-3 pt-3 pb-1 font-semibold">{section.label}</p>
             {section.items.map(item => {
-              const isActive = activePage === item.id;
               const Icon = item.icon;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => setActivePage(item.id)}
-                  className={`flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => `flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
                     ${isActive
                       ? 'bg-accent-blue/12 text-accent-blue font-semibold'
                       : 'bg-transparent text-text-secondary font-normal hover:bg-white/[0.04]'
@@ -69,7 +74,7 @@ export default function Sidebar() {
                 >
                   <Icon size={16} />
                   {item.label}
-                </button>
+                </NavLink>
               );
             })}
           </div>

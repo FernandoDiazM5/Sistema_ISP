@@ -176,7 +176,8 @@ const useStore = create((set, get) => ({
         'isp_instalaciones': 'instalaciones',
         'isp_derivaciones': 'derivaciones',
         'isp_postVenta': 'postVenta',
-        'isp_movimientosEquipos': 'movimientosEquipos'
+        'isp_movimientosEquipos': 'movimientosEquipos',
+        'isp_theme': 'theme'
       };
 
       for (const dbKey of currentKeys) {
@@ -299,6 +300,19 @@ const useStore = create((set, get) => ({
   setCleaningOptions: (opts) => {
     set({ cleaningOptions: opts });
     saveToDB('isp_cleaningOptions', opts);
+  },
+
+  // ===================== THEME =====================
+  theme: 'default', // 'default' | 'light' | 'black' | 'purple'
+  setTheme: (theme) => {
+    set({ theme });
+    saveToDB('isp_theme', theme);
+    // Apply immediately to DOM
+    if (theme === 'default') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
   },
 
   // Navigation

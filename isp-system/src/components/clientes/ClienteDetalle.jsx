@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import useStore from '../../store/useStore';
 import StatusBadge from '../common/StatusBadge';
 
 // Helper seguro para moneda (evita crash si el valor es string o null)
@@ -26,12 +29,28 @@ function Field({ label, value, mono }) {
   );
 }
 
-export default function ClienteDetalle({ cliente: c, onBack }) {
+export default function ClienteDetalle() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const clients = useStore(s => s.clients);
+
+  const c = clients.find(client => client.id === id);
+
+  useEffect(() => {
+    if (!c && clients.length > 0) {
+      // Si hay clientes cargados pero no encontramos este ID, volver.
+      // (Si clients.length es 0, podría ser que aún están cargando, así que esperamos)
+      navigate('/clientes');
+    }
+  }, [c, clients, navigate]);
+
+  if (!c) return <div className="p-8 text-center text-text-muted">Cargando cliente o no encontrado...</div>;
+
   return (
     <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={onBack}
+        <button onClick={() => navigate('/clientes')}
           className="bg-bg-card border border-border rounded-[10px] py-2 px-4 text-text-primary cursor-pointer text-[13px] font-medium hover:border-accent-blue transition-colors">
           ← Volver
         </button>
@@ -89,10 +108,10 @@ export default function ClienteDetalle({ cliente: c, onBack }) {
 
         <Section title="Notas Técnicas / Servicios TV">
           <Field label="Notas del Equipo" value={c.notas_tecnicas} />
-          {c.servicios_adicionales.length > 0 ? (
+          {c.servicios_adicionales?.length > 0 ? (
             <div>
               <span className="text-[11px] text-text-muted block mb-1.5">Servicios Adicionales</span>
-              {c.servicios_adicionales.map((s, i) => (
+              {c.servicios_adicionales?.map((s, i) => (
                 <div key={i} className="flex justify-between py-1 px-2.5 bg-bg-secondary rounded-md mb-1 text-xs">
                   <span>{s.tipo}</span>
                   <span className="font-mono text-accent-cyan">S/. {formatMoney(s.precio)}</span>
