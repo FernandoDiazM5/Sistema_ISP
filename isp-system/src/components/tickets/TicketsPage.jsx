@@ -20,6 +20,7 @@ import TicketDetailModal from './modals/TicketDetailModal';
 import InlineVisitaModal from './modals/InlineVisitaModal';
 import InlineSoporteModal from './modals/InlineSoporteModal';
 import HistoryItemModal from './modals/HistoryItemModal';
+import EscalationModal from './modals/EscalationModal';
 
 const ESTADOS_COLOR = {
   'Abierto': 'danger',
@@ -112,6 +113,8 @@ export default function TicketsPage() {
   // Resolution modal
   const [showResolutionModal, setShowResolutionModal] = useState(false);
   const [resolutionTarget, setResolutionTarget] = useState(null);
+  const [showEscalationModal, setShowEscalationModal] = useState(false);
+  const [escalationTarget, setEscalationTarget] = useState(null);
 
   // Cascade delete confirmation
   const [confirmDelete, setConfirmDelete] = useState(null); // { ticketId, ticket, relatedVisitas, relatedSesiones }
@@ -159,11 +162,39 @@ export default function TicketsPage() {
     if (newEstado === 'Resuelto' || newEstado === 'Cerrado') {
       setResolutionTarget({ ticketId, newEstado });
       setShowResolutionModal(true);
+    } else if (newEstado === 'Escalado') {
+      setEscalationTarget({ ticketId, newEstado });
+      setShowEscalationModal(true);
     } else {
       updateTicket(ticketId, {
         estado: newEstado,
         _historyComment: 'Cambio de estado manual'
       });
+    }
+  };
+
+  const handleEscalationConfirm = ({ tipo, motivo }) => {
+    if (!escalationTarget) return;
+    const ticketId = escalationTarget.ticketId;
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    const tipoLabel = tipo === 'visita' ? 'Visita Técnica' : tipo === 'soporte' ? 'Soporte Remoto' : 'Planta Externa';
+
+    updateTicket(ticketId, {
+      estado: 'Escalado',
+      _historyEstadoLabel: `Escalado - ${tipoLabel}`,
+      _historyComment: `Derivado a ${tipoLabel}: ${motivo}`
+    });
+
+    setShowEscalationModal(false);
+    setEscalationTarget(null);
+
+    // Si es visita o soporte, abrir modal de creación
+    if (tipo === 'visita') {
+      setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId) });
+    } else if (tipo === 'soporte') {
+      setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId) });
     }
   };
 
@@ -437,6 +468,13 @@ export default function TicketsPage() {
         entityLabel="Ticket"
         newStatus={resolutionTarget?.newEstado || ''}
         accentColor={resolutionTarget?.newEstado === 'Cerrado' ? 'accent-gray' : 'accent-green'}
+      />
+
+      <EscalationModal
+        open={showEscalationModal}
+        onClose={() => { setShowEscalationModal(false); setEscalationTarget(null); }}
+        onConfirm={handleEscalationConfirm}
+        ticketId={escalationTarget?.ticketId}
       />
 
       {/* ====== MODAL CONFIRMACIÓN ELIMINACIÓN EN CASCADA ====== */}

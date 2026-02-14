@@ -20,6 +20,13 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
   const [acciones, setAcciones] = useState('');
   const [adjuntos, setAdjuntos] = useState([]);
 
+  // Technical fields
+  const [ping, setPing] = useState('');
+  const [download, setDownload] = useState('');
+  const [upload, setUpload] = useState('');
+  const [packetLoss, setPacketLoss] = useState('');
+  const [jitter, setJitter] = useState('');
+
   if (!open) return null;
 
   const handleConfirm = () => {
@@ -28,16 +35,25 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
       solucion: solucion.trim(),
       accionesRealizadas: acciones.trim(),
       adjuntosResolucion: adjuntos,
+      diagnosticosFinales: newStatus === 'Resuelto' ? {
+        ping: ping ? parseFloat(ping) : null,
+        download: download ? parseFloat(download) : null,
+        upload: upload ? parseFloat(upload) : null,
+        packetLoss: packetLoss ? parseFloat(packetLoss) : null,
+        jitter: jitter ? parseFloat(jitter) : null,
+      } : null
     });
     setSolucion('');
     setAcciones('');
     setAdjuntos([]);
+    setPing(''); setDownload(''); setUpload(''); setPacketLoss(''); setJitter('');
   };
 
   const handleClose = () => {
     setSolucion('');
     setAcciones('');
     setAdjuntos([]);
+    setPing(''); setDownload(''); setUpload(''); setPacketLoss(''); setJitter('');
     onClose();
   };
 
@@ -95,9 +111,68 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
           <Adjuntos
             value={adjuntos}
             onChange={setAdjuntos}
-            max={5}
+            max={10}
             label="Evidencia / Adjuntos"
           />
+
+          {/* Technical Info (Only for Resolved) */}
+          {newStatus === 'Resuelto' && (
+            <div className="bg-bg-secondary/50 border border-border rounded-lg p-4 mt-1">
+              <p className="text-[10px] text-accent-blue uppercase tracking-wide font-semibold mb-3">Parámetros Técnicos Finales</p>
+              <div className="grid grid-cols-5 gap-2">
+                <div>
+                  <label className="text-[10px] text-text-secondary mb-1 block">Ping (ms)</label>
+                  <input
+                    type="number"
+                    value={ping}
+                    onChange={e => setPing(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-secondary mb-1 block">Down (Mbps)</label>
+                  <input
+                    type="number"
+                    value={download}
+                    onChange={e => setDownload(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-secondary mb-1 block">Up (Mbps)</label>
+                  <input
+                    type="number"
+                    value={upload}
+                    onChange={e => setUpload(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-secondary mb-1 block">Pkt Loss (%)</label>
+                  <input
+                    type="number"
+                    value={packetLoss}
+                    onChange={e => setPacketLoss(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-secondary mb-1 block">Jitter (ms)</label>
+                  <input
+                    type="number"
+                    value={jitter}
+                    onChange={e => setJitter(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex gap-3 mt-1">

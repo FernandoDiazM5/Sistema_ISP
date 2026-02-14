@@ -78,7 +78,7 @@ export default function TicketCreateModal({ onClose, onSuccess, initialData = nu
             clienteNombre: selectedClient.nombre,
             tipo: autoTipoAtencion || 'Soporte',
             prioridad: slaInfo ? slaInfo.prioridad : 'Media',
-            estado: initialData ? initialData.estado : 'Abierto',
+            estado: initialData?.estado || 'Abierto',
             asignado: tec ? tec.nombre : 'Sin asignar',
             tecnicoId: tec ? tec.id : null,
             descripcion: newDescription,

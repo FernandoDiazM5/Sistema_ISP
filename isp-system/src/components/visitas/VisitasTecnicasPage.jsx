@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info } from 'lucide-react';
+import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info, Kanban, ArrowUpRight } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';

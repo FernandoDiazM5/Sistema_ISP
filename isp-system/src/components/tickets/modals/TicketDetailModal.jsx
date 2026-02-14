@@ -166,7 +166,10 @@ export default function TicketDetailModal({
                                 <div key={i} className="flex items-center">
                                     <div className="group relative flex items-center gap-2 bg-bg-card border border-border/60 rounded-full px-3 py-1.5 cursor-help transition-colors hover:border-accent-blue/50 hover:bg-bg-secondary" title={h.motivo}>
                                         <div className="flex items-center gap-1.5">
-                                            <span className={`w-2 h-2 rounded-full ${ESTADOS_COLOR[h.estadoNuevo]?.dot || 'bg-gray-400'}`}></span>
+                                            <span className={`w-2 h-2 rounded-full ${h.estadoNuevo.startsWith('Escalado')
+                                                    ? ESTADOS_COLOR['Escalado']?.dot
+                                                    : (ESTADOS_COLOR[h.estadoNuevo]?.dot || 'bg-gray-400')
+                                                }`}></span>
                                             <span className="text-xs font-medium text-text-primary">{h.estadoNuevo}</span>
                                         </div>
                                         <span className="text-border mx-1">|</span>

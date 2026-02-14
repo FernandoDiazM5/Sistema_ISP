@@ -37,11 +37,12 @@ export const createTicketsSlice = (set, get) => ({
                     const historyItem = {
                         fecha: new Date().toISOString(),
                         estadoAnterior: t.estado,
-                        estadoNuevo: updates.estado,
+                        estadoNuevo: updates._historyEstadoLabel || updates.estado,
                         motivo: updates._historyComment || null
                     };
                     updated.historial = [historyItem, ...(t.historial || [])];
                     delete updated._historyComment;
+                    delete updated._historyEstadoLabel;
                 }
                 return updated;
             }
