@@ -1,8 +1,23 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info, Kanban, ArrowUpRight } from 'lucide-react';
+import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info, Edit3, Trash2, AlertTriangle, Activity, History, ArrowRight } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
+import DiagnosticFields, { getEmptyDiag } from '../common/DiagnosticFields';
+
+// Helper for Read-only display
+function DiagValue({ label, value, unit, warn }) {
+  if (value === undefined || value === null || value === '') return null;
+  return (
+    <div className={`bg-bg-secondary rounded-lg p-2.5 border ${warn ? 'border-accent-orange/50' : 'border-border/50'}`}>
+      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">{label}</p>
+      <p className={`text-sm font-mono font-semibold ${warn ? 'text-accent-orange' : 'text-text-primary'}`}>
+        {value}{unit ? ` ${unit}` : ''}
+        {warn && <AlertTriangle size={12} className="inline ml-1 text-accent-orange" />}
+      </p>
+    </div>
+  );
+}
 
 const ESTADO_COLORS = {
   'Programada': { bg: 'bg-blue-500/20', text: 'text-blue-400', dot: 'bg-blue-400', hex: '#3b82f6' },
@@ -11,6 +26,8 @@ const ESTADO_COLORS = {
   'Completada': { bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400', hex: '#10b981' },
   'Cancelada': { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-400', hex: '#6b7280' },
   'Ausente': { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400', hex: '#f97316' },
+  'Reprogramada': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', dot: 'bg-cyan-400', hex: '#06b6d4' },
+  'Derivado a Planta Externa': { bg: 'bg-amber-500/20', text: 'text-amber-400', dot: 'bg-amber-400', hex: '#f59e0b' },
 };
 
 const PRIORIDAD_COLOR = {
@@ -84,6 +101,8 @@ export default function VisitasTecnicasPage() {
   const clients = useStore(s => s.clients);
   const tecnicos = useStore(s => s.tecnicos);
   const tickets = useStore(s => s.tickets);
+  const updateTicket = useStore(s => s.updateTicket);
+  const addDerivacion = useStore(s => s.addDerivacion);
 
   const [viewMode, setViewMode] = useState('calendar');
   const [search, setSearch] = useState('');
@@ -93,6 +112,68 @@ export default function VisitasTecnicasPage() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedVisita, setSelectedVisita] = useState(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [editingDiag, setEditingDiag] = useState(getEmptyDiag());
+  const [isEditingDiag, setIsEditingDiag] = useState(false);
+
+  // Initialize diag when selecting visita
+  useEffect(() => {
+    if (selectedVisita) {
+      if (selectedVisita.diagnosticoCompleto) {
+        setEditingDiag(selectedVisita.diagnosticoCompleto);
+      } else {
+        const empty = getEmptyDiag();
+        const fromFlat = {};
+        Object.keys(empty).forEach(k => {
+          fromFlat[k] = selectedVisita[k] || '';
+        });
+        setEditingDiag(fromFlat);
+      }
+      setIsEditingDiag(false);
+    }
+  }, [selectedVisita]);
+
+  const handleSaveDiag = () => {
+    if (!selectedVisita) return;
+    updateVisita(selectedVisita.id, {
+      diagnosticoCompleto: editingDiag,
+      ...editingDiag,
+      _historyEntry: {
+        accion: 'Actualización Diagnóstico',
+        motivo: 'Se actualizaron los parámetros técnicos'
+      }
+    });
+
+    // Update local state to reflect changes immediately
+    setSelectedVisita(prev => ({
+      ...prev,
+      diagnosticoCompleto: editingDiag,
+      ...editingDiag
+    }));
+    setIsEditingDiag(false);
+  };
+
+  const handleDeleteDiag = () => {
+    if (!selectedVisita) return;
+    if (!window.confirm('¿Estás seguro de limpiar los parámetros de diagnóstico?')) return;
+
+    const empty = getEmptyDiag();
+    updateVisita(selectedVisita.id, {
+      diagnosticoCompleto: empty,
+      ...empty,
+      _historyEntry: {
+        accion: 'Limpieza Diagnóstico',
+        motivo: 'Se eliminaron los parámetros técnicos'
+      }
+    });
+
+    setEditingDiag(empty);
+    setSelectedVisita(prev => ({
+      ...prev,
+      diagnosticoCompleto: empty,
+      ...empty
+    }));
+    setIsEditingDiag(false);
+  };
 
   const [formClientSearch, setFormClientSearch] = useState('');
   const [formClientId, setFormClientId] = useState('');
@@ -296,8 +377,17 @@ export default function VisitasTecnicasPage() {
     updateVisita(resolutionTarget.visitaId, {
       estado: resolutionTarget.newEstado,
       ...resolutionData,
-      _historyComment: resolutionData.solucion // This will be captured as 'motivo' in store
+      _historyComment: resolutionData.solucion
     });
+
+    // Propagate resolution to parent ticket
+    const visita = visitas.find(v => v.id === resolutionTarget.visitaId);
+    if (visita?.ticketId) {
+      updateTicket(visita.ticketId, {
+        estado: 'Resuelto',
+        _historyComment: `Resuelto desde Visita Técnica (${visita.id})`
+      });
+    }
 
     setShowResolutionModal(false);
     setResolutionTarget(null);
@@ -322,16 +412,22 @@ export default function VisitasTecnicasPage() {
       }
     }
 
-    const updates = {
-      estado: 'Programada', // Al reprogramar vuelve a programada
+    updateVisita(selectedVisita.id, {
+      estado: 'Reprogramada',
       fecha: rescheduleDate || selectedVisita.fecha,
       horaInicio: rescheduleTime || selectedVisita.horaInicio,
       motivoReprogramacion: rescheduleReason,
       evidenciaReprogramacion: uploadedUrls,
-      _historyComment: `Reprogramado: ${rescheduleReason}` // Store will append this to history
-    };
+      _historyEntry: {
+        accion: 'Visita Reprogramada',
+        estadoAnterior: selectedVisita.estado,
+        estadoNuevo: 'Reprogramada',
+        motivo: rescheduleReason,
+        adjuntos: rescheduleAdjuntos,
+        detalles: `Nueva fecha: ${rescheduleDate || selectedVisita.fecha} ${rescheduleTime || selectedVisita.horaInicio}`
+      }
+    });
 
-    updateVisita(selectedVisita.id, updates);
     setShowRescheduleModal(false);
   };
 
@@ -352,10 +448,17 @@ export default function VisitasTecnicasPage() {
     }
 
     updateVisita(selectedVisita.id, {
-      estado: 'Cancelada',
+      estado: 'Cancelada', // Podría ser 'Ausente' si se desea mantener ese estado
       resultado: `Cliente Ausente: ${absentReason}`,
       evidenciaResultado: uploadedUrls,
-      _historyComment: `Cliente Ausente: ${absentReason}`
+      _historyEntry: {
+        accion: 'Cliente Ausente',
+        estadoAnterior: selectedVisita.estado,
+        estadoNuevo: 'Cancelada', // O 'Ausente'
+        motivo: absentReason,
+        adjuntos: absentAdjuntos,
+        detalles: 'Se marcó al cliente como ausente en el domicilio'
+      }
     });
 
     setShowAbsentModal(false);
@@ -373,11 +476,43 @@ export default function VisitasTecnicasPage() {
   function getStatusTransitions(estado) {
     switch (estado) {
       case 'Programada': return ['En Ruta'];
+      case 'Reprogramada': return ['En Ruta'];
       case 'En Ruta': return ['En Sitio'];
       case 'En Sitio': return ['Completada'];
       default: return [];
     }
   }
+
+  const handleDerivarPlantaExterna = () => {
+    if (!selectedVisita) return;
+    const client = clients.find(c => c.id === selectedVisita.clienteId);
+    // 1. Update visita state
+    updateVisita(selectedVisita.id, {
+      estado: 'Derivado a Planta Externa',
+      _historyComment: 'Derivado a Planta Externa - problema de infraestructura'
+    });
+    // 2. Create derivación
+    addDerivacion({
+      clienteId: selectedVisita.clienteId,
+      clienteNombre: selectedVisita.clienteNombre || client?.NOMBRE || '',
+      zona: client?.NODO || '',
+      tipo: 'Fibra Óptica',
+      prioridad: selectedVisita.prioridad || 'Alta',
+      estado: 'Pendiente',
+      descripcion: `Derivado de Visita Técnica (${selectedVisita.id}). ${selectedVisita.descripcion || ''}`,
+      ticketId: selectedVisita.ticketId || null,
+      visitaOrigenId: selectedVisita.id,
+    });
+    // 3. Update parent ticket history
+    if (selectedVisita.ticketId) {
+      updateTicket(selectedVisita.ticketId, {
+        estado: 'Escalado',
+        _historyEstadoLabel: 'Escalado - Planta Externa',
+        _historyComment: `Derivado desde Visita Técnica (${selectedVisita.id}) a Planta Externa`
+      });
+    }
+    setSelectedVisita({ ...selectedVisita, estado: 'Derivado a Planta Externa' });
+  };
 
   const weekLabel = useMemo(() => {
     const start = weekDays[0];
@@ -1090,6 +1225,116 @@ export default function VisitasTecnicasPage() {
               </div>
             </div>
 
+
+            {/* Parámetros de Diagnóstico (Lectura / Edición) */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold flex items-center gap-1">
+                  <Activity size={12} /> Parámetros Técnicos
+                </p>
+                {!isEditingDiag && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setIsEditingDiag(true)}
+                      className="p-1 text-text-muted hover:text-accent-blue transition-colors"
+                      title="Editar parámetros"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    {(editingDiag.ping || editingDiag.velocidadBajada || editingDiag.observaciones) && (
+                      <button
+                        onClick={handleDeleteDiag}
+                        className="p-1 text-text-muted hover:text-red-400 transition-colors"
+                        title="Limpiar parámetros"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {isEditingDiag ? (
+                <div className="bg-bg-secondary/30 p-3 rounded-xl border border-accent-blue/30">
+                  <DiagnosticFields
+                    tecnologia={selectedVisita.tecnologia || clients.find(c => c.id === selectedVisita.clienteId)?.tecnologia}
+                    value={editingDiag}
+                    onChange={setEditingDiag}
+                  />
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button
+                      onClick={() => setIsEditingDiag(false)}
+                      className="px-3 py-1.5 rounded-lg border border-border text-text-secondary text-xs hover:bg-bg-secondary transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleSaveDiag}
+                      className="px-3 py-1.5 rounded-lg bg-accent-blue text-white text-xs font-semibold hover:bg-accent-blue/90 transition-colors shadow-lg shadow-accent-blue/20"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
+                  {/* Read Only View */}
+                  {(editingDiag.ping || editingDiag.velocidadBajada || editingDiag.nivelOLT || editingDiag.senalAP || editingDiag.observaciones) ? (
+                    <div className="flex flex-col gap-3">
+                      {/* Common */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <DiagValue label="Ping" value={editingDiag.ping} unit="ms" />
+                        <DiagValue label="Bajada" value={editingDiag.velocidadBajada} unit="Mbps" />
+                        <DiagValue label="Subida" value={editingDiag.velocidadSubida} unit="Mbps" />
+                      </div>
+
+                      {/* Fibra Check */}
+                      {(editingDiag.nivelOLT || editingDiag.nivelONT || editingDiag.atenuacion) && (
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+                          <DiagValue label="Nivel OLT" value={editingDiag.nivelOLT} unit="dBm" warn={parseFloat(editingDiag.nivelOLT) < -25} />
+                          <DiagValue label="Nivel ONT" value={editingDiag.nivelONT} unit="dBm" warn={parseFloat(editingDiag.nivelONT) < -27} />
+                          <DiagValue label="Atenuación" value={editingDiag.atenuacion} unit="dB" />
+                          <DiagValue label="Puerto PON" value={editingDiag.puertoPON} />
+                        </div>
+                      )}
+
+                      {/* Radio Check */}
+                      {(editingDiag.senalAP || editingDiag.senalCPE || editingDiag.ccq) && (
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+                          <DiagValue label="Señal AP" value={editingDiag.senalAP} unit="dBm" warn={parseFloat(editingDiag.senalAP) < -70} />
+                          <DiagValue label="Señal CPE" value={editingDiag.senalCPE} unit="dBm" warn={parseFloat(editingDiag.senalCPE) < -70} />
+                          <DiagValue label="CCQ" value={editingDiag.ccq} unit="%" warn={parseFloat(editingDiag.ccq) < 90} />
+                          <DiagValue label="Frecuencia" value={editingDiag.frecuencia} unit="MHz" />
+                          <DiagValue label="Equipo AP" value={editingDiag.equipoAP} />
+                          <DiagValue label="Equipo CPE" value={editingDiag.equipoCPE} />
+                        </div>
+                      )}
+
+                      {editingDiag.observaciones && (
+                        <div className="mt-1 pt-2 border-t border-border/50">
+                          <p className="text-[10px] text-text-muted mb-1">OBSERVACIONES TÉCNICAS</p>
+                          <p className="text-xs text-text-secondary italic">{editingDiag.observaciones}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-text-muted">
+                      <Activity size={24} className="mx-auto mb-2 opacity-20" />
+                      <p className="text-xs">Sin parámetros registrados</p>
+                      <button
+                        onClick={() => setIsEditingDiag(true)}
+                        className="mt-2 text-xs text-accent-cyan hover:underline"
+                      >
+                        + Agregar parámetros
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Resolución Técnica (Solución + Fotos Cierre) */}
+
             {/* Resolución Técnica (Solución + Fotos Cierre) */}
             {(selectedVisita.resultado || selectedVisita.solucion || selectedVisita.accionesRealizadas || (selectedVisita.adjuntosResolucion && selectedVisita.adjuntosResolucion.length > 0)) && (
               <div className="mb-5">
@@ -1131,60 +1376,56 @@ export default function VisitasTecnicasPage() {
 
 
 
-            {/* Historial de Estados (Ruta de Proceso / Process Route) */}
+            {/* Historial de Actividad Completo */}
             {selectedVisita.historial && selectedVisita.historial.length > 0 && (
-              <div className="bg-bg-secondary rounded-lg p-3 mb-5 border border-border/50">
+              <div className="mb-6">
                 <p className="text-[10px] text-text-muted uppercase tracking-wide mb-3 font-semibold flex items-center gap-1">
-                  <Kanban size={12} /> Ruta de la Visita
+                  <History size={12} /> Historial de Actividad
                 </p>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Render history in chronological order (Oldest -> Newest) */}
-                  {[...selectedVisita.historial].reverse().map((h, i, arr) => (
-                    <div key={i} className="flex items-center">
-                      <div
-                        className="group relative flex items-center gap-2 bg-bg-card border border-border/60 rounded-full px-3 py-1.5 cursor-help transition-colors hover:border-accent-blue/50 hover:bg-bg-secondary"
-                        title={h.motivo || 'Sin motivo registrado'}
-                      >
-                        {/* Estado Dot + Texto */}
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${ESTADO_COLORS[h.estadoNuevo]?.dot || 'bg-gray-400'}`}></span>
-                          <span className="text-xs font-medium text-text-primary">{h.estadoNuevo}</span>
-                        </div>
+                <div className="border-l-2 border-border/50 ml-1.5 space-y-6">
+                  {[...selectedVisita.historial].reverse().map((h, i) => (
+                    <div key={i} className="relative pl-5">
+                      {/* Timeline Dot */}
+                      <div className={`absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-bg-card ${ESTADO_COLORS[h.estadoNuevo]?.dot || 'bg-gray-500'}`}></div>
 
-                        {/* Separator & Time */}
-                        <span className="text-border mx-1">|</span>
-                        <span className="text-[10px] text-text-muted font-mono leading-none">
+                      {/* Header: Action/Status + Date */}
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <span className="text-xs font-bold text-text-primary block">
+                            {h.accion || h.estadoNuevo}
+                          </span>
+                          {h.estadoAnterior && h.accion && (
+                            <span className="text-[10px] text-text-muted">
+                              {h.estadoAnterior} <ArrowRight size={8} className="inline mx-0.5" /> {h.estadoNuevo}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-text-muted font-mono">
                           {new Date(h.fecha).toLocaleString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </span>
-
-                        {/* Tooltip on Hover */}
-                        {h.motivo && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] hidden group-hover:block z-50">
-                            <div className="bg-gray-900 text-white text-[10px] p-2 rounded shadow-xl border border-white/10 relative">
-                              {h.motivo}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-gray-900"></div>
-                            </div>
-                          </div>
-                        )}
                       </div>
 
-                      {/* Connector Arrow (if not last item) */}
-                      {i < arr.length - 1 && (
-                        <div className="mx-1 text-text-muted/40">
-                          <ArrowUpRight size={14} strokeWidth={1.5} />
+                      {/* Motivo / Detalles */}
+                      {h.motivo && (
+                        <div className="bg-bg-secondary/50 rounded p-2 text-xs text-text-secondary mt-1">
+                          {h.motivo}
+                        </div>
+                      )}
+
+                      {/* Detalles técnicos extra */}
+                      {h.detalles && (
+                        <p className="text-[10px] text-text-muted mt-1 italic">{h.detalles}</p>
+                      )}
+
+                      {/* Adjuntos en el historial */}
+                      {h.adjuntos && h.adjuntos.length > 0 && (
+                        <div className="mt-2">
+                          <Adjuntos value={h.adjuntos} onChange={() => { }} readOnly max={3} />
                         </div>
                       )}
                     </div>
                   ))}
-
-                  {/* Current State Indicator (Active) */}
-                  <div className="mx-1 text-text-muted/40">
-                    <ArrowUpRight size={14} strokeWidth={1.5} />
-                  </div>
-                  <div className="px-2 py-1 rounded bg-accent-blue/10 border border-accent-blue/30 text-[10px] font-bold text-accent-blue uppercase tracking-wider">
-                    Actual
-                  </div>
                 </div>
               </div>
             )}
@@ -1244,6 +1485,14 @@ export default function VisitasTecnicasPage() {
                     Cliente Ausente
                   </button>
                 </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={handleDerivarPlantaExterna}
+                    className="flex-1 py-2 rounded-lg bg-amber-500/20 text-amber-400 text-xs font-semibold cursor-pointer hover:bg-amber-500/30 transition-colors"
+                  >
+                    Derivar a Planta Externa
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1266,7 +1515,8 @@ export default function VisitasTecnicasPage() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Resolution Modal */}
       <ResolutionModal
@@ -1284,106 +1534,110 @@ export default function VisitasTecnicasPage() {
       />
 
       {/* Reschedule Modal */}
-      {showRescheduleModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => setShowRescheduleModal(false)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[450px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Reprogramar Visita</h3>
+      {
+        showRescheduleModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => setShowRescheduleModal(false)}>
+            <div className="bg-bg-card rounded-2xl p-6 w-[450px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold mb-4">Reprogramar Visita</h3>
 
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-text-muted mb-1.5 block font-medium">Nueva Fecha</label>
+                    <input
+                      type="date"
+                      value={rescheduleDate}
+                      onChange={e => setRescheduleDate(e.target.value)}
+                      className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-2 px-3 text-sm outline-none focus:border-accent-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-text-muted mb-1.5 block font-medium">Nueva Hora</label>
+                    <input
+                      type="time"
+                      value={rescheduleTime}
+                      onChange={e => setRescheduleTime(e.target.value)}
+                      className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-2 px-3 text-sm outline-none focus:border-accent-blue"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="text-xs text-text-muted mb-1.5 block font-medium">Nueva Fecha</label>
-                  <input
-                    type="date"
-                    value={rescheduleDate}
-                    onChange={e => setRescheduleDate(e.target.value)}
-                    className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-2 px-3 text-sm outline-none focus:border-accent-blue"
+                  <label className="text-xs text-text-muted mb-1.5 block font-medium">
+                    Motivo {(rescheduleDate && rescheduleTime) ? '(opcional)' : '(obligatorio si no hay fecha)'}
+                  </label>
+                  <textarea
+                    value={rescheduleReason}
+                    onChange={e => setRescheduleReason(e.target.value)}
+                    placeholder="Indica el motivo de la reprogramación..."
+                    className="w-full bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue"
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-text-muted mb-1.5 block font-medium">Nueva Hora</label>
-                  <input
-                    type="time"
-                    value={rescheduleTime}
-                    onChange={e => setRescheduleTime(e.target.value)}
-                    className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-2 px-3 text-sm outline-none focus:border-accent-blue"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="text-xs text-text-muted mb-1.5 block font-medium">
-                  Motivo {(rescheduleDate && rescheduleTime) ? '(opcional)' : '(obligatorio si no hay fecha)'}
-                </label>
-                <textarea
-                  value={rescheduleReason}
-                  onChange={e => setRescheduleReason(e.target.value)}
-                  placeholder="Indica el motivo de la reprogramación..."
-                  className="w-full bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue"
+                <Adjuntos
+                  value={rescheduleAdjuntos}
+                  onChange={setRescheduleAdjuntos}
+                  max={5}
+                  label="Evidencia (opcional)"
                 />
-              </div>
 
-              <Adjuntos
-                value={rescheduleAdjuntos}
-                onChange={setRescheduleAdjuntos}
-                max={5}
-                label="Evidencia (opcional)"
-              />
-
-              <div className="flex gap-3 mt-2">
-                <button
-                  onClick={() => setShowRescheduleModal(false)}
-                  className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:text-text-primary transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmReschedule}
-                  disabled={!((rescheduleDate && rescheduleTime) || rescheduleReason.trim())}
-                  className="flex-1 py-2.5 rounded-lg bg-accent-blue border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Confirmar
-                </button>
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => setShowRescheduleModal(false)}
+                    className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:text-text-primary transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmReschedule}
+                    disabled={!((rescheduleDate && rescheduleTime) || rescheduleReason.trim())}
+                    className="flex-1 py-2.5 rounded-lg bg-accent-blue border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Confirmar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Absent Modal */}
-      {showAbsentModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => setShowAbsentModal(false)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[450px] border border-border" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4 text-orange-400 flex items-center gap-2">
-              <User size={20} /> Cliente Ausente
-            </h3>
+      {
+        showAbsentModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => setShowAbsentModal(false)}>
+            <div className="bg-bg-card rounded-2xl p-6 w-[450px] border border-border" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold mb-4 text-orange-400 flex items-center gap-2">
+                <User size={20} /> Cliente Ausente
+              </h3>
 
-            <div className="flex flex-col gap-4">
-              <p className="text-xs text-text-secondary">
-                Se registrará la visita como <strong>Ausente</strong>. Es obligatorio indicar una observación y se recomienda adjuntar evidencia (foto de fachada/medidor).
-              </p>
+              <div className="flex flex-col gap-4">
+                <p className="text-xs text-text-secondary">
+                  Se registrará la visita como <strong>Ausente</strong>. Es obligatorio indicar una observación y se recomienda adjuntar evidencia (foto de fachada/medidor).
+                </p>
 
-              <div>
-                <label className="text-xs text-text-muted mb-1.5 block font-medium">Observaciones *</label>
-                <textarea
-                  value={absentReason}
-                  onChange={e => setAbsentReason(e.target.value)}
-                  placeholder="Ej: Se tocó timbre por 10 min, se llamó al cliente y no contestó..."
-                  className="w-full bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue"
-                  autoFocus
-                />
-              </div>
+                <div>
+                  <label className="text-xs text-text-muted mb-1.5 block font-medium">Observaciones *</label>
+                  <textarea
+                    value={absentReason}
+                    onChange={e => setAbsentReason(e.target.value)}
+                    placeholder="Ej: Se tocó timbre por 10 min, se llamó al cliente y no contestó..."
+                    className="w-full bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue"
+                    autoFocus
+                  />
+                </div>
 
-              <Adjuntos value={absentAdjuntos} onChange={setAbsentAdjuntos} max={5} label="Evidencia de visita (opcional)" />
+                <Adjuntos value={absentAdjuntos} onChange={setAbsentAdjuntos} max={5} label="Evidencia de visita (opcional)" />
 
-              <div className="flex gap-3 mt-2">
-                <button onClick={() => setShowAbsentModal(false)} className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:text-text-primary transition-colors">Cancelar</button>
-                <button onClick={confirmAbsent} disabled={!absentReason.trim()} className="flex-1 py-2.5 rounded-lg bg-orange-500 text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">Confirmar Ausencia</button>
+                <div className="flex gap-3 mt-2">
+                  <button onClick={() => setShowAbsentModal(false)} className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:text-text-primary transition-colors">Cancelar</button>
+                  <button onClick={confirmAbsent} disabled={!absentReason.trim()} className="flex-1 py-2.5 rounded-lg bg-orange-500 text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">Confirmar Ausencia</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

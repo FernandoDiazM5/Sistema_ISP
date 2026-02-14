@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapPin, CheckCircle2 } from 'lucide-react';
 import useStore from '../../../store/useStore';
 import Adjuntos from '../../common/Adjuntos';
+import DiagnosticFields, { getEmptyDiag } from '../../common/DiagnosticFields';
 
-export default function InlineVisitaModal({ ticket, client, onClose, onSuccess }) {
+export default function InlineVisitaModal({ ticket, client, onClose, onSuccess, diagnostico: initialDiag }) {
     const tecnicos = useStore(s => s.tecnicos);
     const addVisita = useStore(s => s.addVisita);
 
@@ -15,6 +16,7 @@ export default function InlineVisitaModal({ ticket, client, onClose, onSuccess }
     const [visitaDireccion, setVisitaDireccion] = useState('');
     const [visitaDescripcion, setVisitaDescripcion] = useState('');
     const [visitaAdjuntos, setVisitaAdjuntos] = useState([]);
+    const [diagnostico, setDiagnostico] = useState(getEmptyDiag());
     const [success, setSuccess] = useState(false);
 
     // Initialize form
@@ -28,9 +30,10 @@ export default function InlineVisitaModal({ ticket, client, onClose, onSuccess }
             setVisitaDireccion(client?.direccion || '');
             setVisitaDescripcion(`Visita por ticket ${ticket.id}: ${ticket.descripcion}`);
             setVisitaAdjuntos(ticket.adjuntos || []);
+            setDiagnostico(initialDiag || getEmptyDiag());
             setSuccess(false);
         }
-    }, [ticket, client]);
+    }, [ticket, client, initialDiag]);
 
     const activeTecnicos = useMemo(() => {
         return tecnicos.filter(t => t.estado === 'Activo');
@@ -57,6 +60,8 @@ export default function InlineVisitaModal({ ticket, client, onClose, onSuccess }
             plan: client?.plan || '',
             tecnologia: client?.tecnologia || '',
             adjuntos: visitaAdjuntos,
+            diagnosticoCompleto: diagnostico, // Guardamos el objeto completo
+            ...diagnostico, // Y también expandido para búsquedas fáciles si se requiere
         });
 
         setSuccess(true);
@@ -146,6 +151,12 @@ export default function InlineVisitaModal({ ticket, client, onClose, onSuccess }
                                 <label className="text-xs text-text-secondary font-medium mb-1.5 block">Descripción</label>
                                 <textarea value={visitaDescripcion} onChange={e => setVisitaDescripcion(e.target.value)} className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full" />
                             </div>
+
+                            <DiagnosticFields
+                                tecnologia={client?.tecnologia}
+                                value={diagnostico}
+                                onChange={setDiagnostico}
+                            />
 
                             <Adjuntos value={visitaAdjuntos} onChange={setVisitaAdjuntos} max={5} />
 

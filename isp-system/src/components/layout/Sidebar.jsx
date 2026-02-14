@@ -1,4 +1,4 @@
-import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag } from 'lucide-react';
+import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
@@ -25,6 +25,7 @@ const navSections = [
       { to: '/instalaciones', label: 'Instalaciones', icon: HardHat },
       { to: '/planta-externa', label: 'Planta Externa', icon: Cable },
       { to: '/post-venta', label: 'Post-Venta', icon: ShoppingBag },
+      { to: '/requerimientos', label: 'Requerimientos', icon: FileText },
     ]
   },
   {

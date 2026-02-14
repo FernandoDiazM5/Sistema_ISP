@@ -116,7 +116,24 @@ export const createTicketsSlice = (set, get) => ({
     }),
 
     updateSesionRemoto: (id, updates) => set(s => {
-        const newSesiones = s.sesionesRemoto.map(sr => sr.id === id ? { ...sr, ...updates } : sr);
+        const newSesiones = s.sesionesRemoto.map(sr => {
+            if (sr.id === id) {
+                const updated = { ...sr, ...updates };
+                if (updates.estado && updates.estado !== sr.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: sr.estado,
+                        estadoNuevo: updates._historyEstadoLabel || updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(sr.historial || [])];
+                    delete updated._historyComment;
+                    delete updated._historyEstadoLabel;
+                }
+                return updated;
+            }
+            return sr;
+        });
         saveToDB('isp_sesionesRemoto', newSesiones);
         return { sesionesRemoto: newSesiones };
     }),
@@ -135,10 +152,32 @@ export const createTicketsSlice = (set, get) => ({
         const newVisitas = s.visitas.map(v => {
             if (v.id === id) {
                 const updated = { ...v, ...updates };
-                if (updates.estado && updates.estado !== v.estado) {
-                    const historyItem = { fecha: new Date().toISOString(), estadoAnterior: v.estado, estadoNuevo: updates.estado };
+
+                // Handle history
+                let historyItem = null;
+
+                if (updates._historyEntry) {
+                    // Manual rich history entry
+                    historyItem = {
+                        fecha: new Date().toISOString(),
+                        ...updates._historyEntry
+                    };
+                    delete updated._historyEntry;
+                } else if (updates.estado && updates.estado !== v.estado) {
+                    // Automatic state change history
+                    historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: v.estado,
+                        estadoNuevo: updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    delete updated._historyComment;
+                }
+
+                if (historyItem) {
                     updated.historial = [historyItem, ...(v.historial || [])];
                 }
+
                 return updated;
             }
             return v;

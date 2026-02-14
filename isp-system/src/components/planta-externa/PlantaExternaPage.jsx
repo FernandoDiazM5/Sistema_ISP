@@ -7,6 +7,7 @@ import ResolutionModal from '../common/ResolutionModal';
 const ESTADO_STYLE = {
   'Pendiente': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
   'En progreso': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
+  'Reprogramada': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', dot: 'bg-cyan-400' },
   'Completada': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
   'Cancelada': { bg: 'bg-text-muted/20', text: 'text-text-muted', dot: 'bg-text-muted' },
 };
@@ -43,6 +44,7 @@ export default function PlantaExternaPage() {
   const updateDerivacion = useStore(s => s.updateDerivacion);
   const tecnicos = useStore(s => s.tecnicos);
   const instalaciones = useStore(s => s.instalaciones);
+  const updateTicket = useStore(s => s.updateTicket);
 
   const [search, setSearch] = useState('');
   const [filterTipo, setFilterTipo] = useState('all');
@@ -142,7 +144,7 @@ export default function PlantaExternaPage() {
       setResolutionTarget({ derivacionId: id, nuevoEstado });
       setShowResolutionModal(true);
     } else {
-      const updates = { estado: nuevoEstado };
+      const updates = { estado: nuevoEstado, _historyComment: `Cambio de estado manual a ${nuevoEstado}` };
       updateDerivacion(id, updates);
       if (selectedDerivacion && selectedDerivacion.id === id) {
         setSelectedDerivacion({ ...selectedDerivacion, estado: nuevoEstado });
@@ -156,10 +158,18 @@ export default function PlantaExternaPage() {
       estado: resolutionTarget.nuevoEstado,
       fechaCompletado: new Date().toISOString().split('T')[0],
       ...resolutionData,
+      _historyComment: resolutionData.solucion || 'Derivación completada'
     });
-    const updated = derivaciones.find(d => d.id === resolutionTarget.derivacionId);
-    if (updated && selectedDerivacion) {
-      setSelectedDerivacion({ ...updated, estado: 'Completada', ...resolutionData });
+    // Propagate to parent ticket
+    const deriv = derivaciones.find(d => d.id === resolutionTarget.derivacionId);
+    if (deriv?.ticketId) {
+      updateTicket(deriv.ticketId, {
+        estado: 'Resuelto',
+        _historyComment: `Resuelto desde Planta Externa (${deriv.id})`
+      });
+    }
+    if (deriv && selectedDerivacion) {
+      setSelectedDerivacion({ ...deriv, estado: 'Completada', ...resolutionData });
     }
     setShowResolutionModal(false);
     setResolutionTarget(null);
@@ -328,13 +338,12 @@ export default function PlantaExternaPage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    cat === 'radio'
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cat === 'radio'
                       ? 'bg-accent-blue/15 text-accent-blue'
                       : cat === 'fibra'
                         ? 'bg-accent-purple/15 text-accent-purple'
                         : 'bg-accent-yellow/15 text-accent-yellow'
-                  }`}>
+                    }`}>
                     {getTipoIcon(d.tipo)}
                   </div>
                   <div>
@@ -619,7 +628,7 @@ export default function PlantaExternaPage() {
             {selectedDerivacion.adjuntos && selectedDerivacion.adjuntos.length > 0 && (
               <div className="mb-4">
                 <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Adjuntos / Evidencia</p>
-                <Adjuntos value={selectedDerivacion.adjuntos} onChange={() => {}} readOnly max={5} />
+                <Adjuntos value={selectedDerivacion.adjuntos} onChange={() => { }} readOnly max={5} />
               </div>
             )}
 
@@ -783,6 +792,14 @@ export default function PlantaExternaPage() {
                       className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary text-xs cursor-pointer hover:border-accent-green/50"
                     >
                       Marcar Completada
+                    </button>
+                  )}
+                  {!showCompletionForm && (
+                    <button
+                      onClick={() => handleStatusChange(selectedDerivacion.id, 'Reprogramada')}
+                      className="py-2.5 px-4 rounded-lg bg-cyan-500/20 text-cyan-400 border-none text-xs font-semibold cursor-pointer hover:bg-cyan-500/30"
+                    >
+                      Reprogramar
                     </button>
                   )}
                   <button

@@ -1,32 +1,33 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X, Settings, Pencil, Trash2, DollarSign } from 'lucide-react';
 import useStore from '../../store/useStore';
 
 const ESTADO_COLORS = {
-  'Pendiente':    { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
-  'Aprobada':     { bg: 'bg-accent-blue/20',   text: 'text-accent-blue',   dot: 'bg-accent-blue' },
+  'Pendiente': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
+  'Aprobada': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
   'En Ejecución': { bg: 'bg-accent-purple/20', text: 'text-accent-purple', dot: 'bg-accent-purple' },
-  'Ejecutada':    { bg: 'bg-accent-green/20',  text: 'text-accent-green',  dot: 'bg-accent-green' },
-  'Rechazada':    { bg: 'bg-accent-red/20',    text: 'text-accent-red',    dot: 'bg-accent-red' },
+  'Reprogramada': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', dot: 'bg-cyan-400' },
+  'Ejecutada': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
+  'Rechazada': { bg: 'bg-accent-red/20', text: 'text-accent-red', dot: 'bg-accent-red' },
 };
 
 const SERVICIO_ICON = {
-  'Punto Adicional CATV':  <Tv size={14} />,
-  'Punto Adicional Red':   <Wifi size={14} />,
-  'Traslado de Servicio':  <MapPin size={14} />,
-  'Configuración IPTV':    <Tv size={14} />,
-  'Repetidor WiFi':        <Wifi size={14} />,
-  'Cambio de Plan':        <ArrowUpDown size={14} />,
-  'Reconexión':            <ShoppingBag size={14} />,
+  'Punto Adicional CATV': <Tv size={14} />,
+  'Punto Adicional Red': <Wifi size={14} />,
+  'Traslado de Servicio': <MapPin size={14} />,
+  'Configuración IPTV': <Tv size={14} />,
+  'Repetidor WiFi': <Wifi size={14} />,
+  'Cambio de Plan': <ArrowUpDown size={14} />,
+  'Reconexión': <ShoppingBag size={14} />,
 };
 
 const FILTER_TABS = [
-  { key: 'Todas',            label: 'Todas' },
-  { key: 'Punto CATV',       label: 'Punto CATV',    match: 'Punto Adicional CATV' },
-  { key: 'Config IPTV',      label: 'Config IPTV',   match: 'Configuración IPTV' },
-  { key: 'Repetidor WiFi',   label: 'Repetidor WiFi', match: 'Repetidor WiFi' },
-  { key: 'Cambio Plan',      label: 'Cambio Plan',   match: 'Cambio de Plan' },
-  { key: 'Reubicación',      label: 'Reubicación',   match: 'Traslado de Servicio' },
+  { key: 'Todas', label: 'Todas' },
+  { key: 'Punto CATV', label: 'Punto CATV', match: 'Punto Adicional CATV' },
+  { key: 'Config IPTV', label: 'Config IPTV', match: 'Configuración IPTV' },
+  { key: 'Repetidor WiFi', label: 'Repetidor WiFi', match: 'Repetidor WiFi' },
+  { key: 'Cambio Plan', label: 'Cambio Plan', match: 'Cambio de Plan' },
+  { key: 'Reubicación', label: 'Reubicación', match: 'Traslado de Servicio' },
 ];
 
 export default function PostVentaPage() {
@@ -36,6 +37,9 @@ export default function PostVentaPage() {
   const clients = useStore(s => s.clients);
   const tecnicos = useStore(s => s.tecnicos);
   const catalogoServicios = useStore(s => s.catalogoServicios);
+  const addServicioCatalogo = useStore(s => s.addServicioCatalogo);
+  const updateServicioCatalogo = useStore(s => s.updateServicioCatalogo);
+  const deleteServicioCatalogo = useStore(s => s.deleteServicioCatalogo);
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('Todas');
@@ -53,6 +57,15 @@ export default function PostVentaPage() {
 
   // --- Detail modal state ---
   const [detailCostoReal, setDetailCostoReal] = useState('');
+  const [detailMateriales, setDetailMateriales] = useState([]);
+
+  // --- Catalog Management ---
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [catalogForm, setCatalogForm] = useState({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+  const [editingCatalogId, setEditingCatalogId] = useState(null);
+  const [newMaterialName, setNewMaterialName] = useState('');
+  const [newMaterialUnit, setNewMaterialUnit] = useState('unidad');
+  const [newMaterialPrice, setNewMaterialPrice] = useState('');
 
   // ===================== COMPUTED =====================
 
@@ -158,7 +171,7 @@ export default function PostVentaPage() {
   const handleStatusChange = (newEstado) => {
     if (!selectedPV) return;
 
-    const updates = { estado: newEstado };
+    const updates = { estado: newEstado, _historyComment: `Cambio de estado a ${newEstado}` };
 
     if (newEstado === 'Ejecutada') {
       updates.fechaEjecucion = new Date().toISOString().split('T')[0];
@@ -168,6 +181,11 @@ export default function PostVentaPage() {
       } else {
         updates.costoReal = selectedPV.costoEstimado;
       }
+      if (detailMateriales.length > 0) {
+        updates.materialesUsados = detailMateriales;
+        updates.costoMateriales = detailMateriales.reduce((sum, m) => sum + (m.cantidad * m.precioUnitario), 0);
+      }
+      updates._historyComment = 'Servicio ejecutado con registro de costos';
     }
 
     updatePostVenta(selectedPV.id, updates);
@@ -179,6 +197,7 @@ export default function PostVentaPage() {
       'Pendiente': 'Aprobada',
       'Aprobada': 'En Ejecución',
       'En Ejecución': 'Ejecutada',
+      'Reprogramada': 'En Ejecución',
     };
     return flow[current] || null;
   };
@@ -188,6 +207,7 @@ export default function PostVentaPage() {
       'Pendiente': 'Aprobar Solicitud',
       'Aprobada': 'Iniciar Ejecución',
       'En Ejecución': 'Marcar Ejecutada',
+      'Reprogramada': 'Retomar Ejecución',
     };
     return labels[current] || null;
   };
@@ -197,8 +217,51 @@ export default function PostVentaPage() {
       'Pendiente': 'bg-accent-blue/20 text-accent-blue',
       'Aprobada': 'bg-accent-purple/20 text-accent-purple',
       'En Ejecución': 'bg-accent-green/20 text-accent-green',
+      'Reprogramada': 'bg-accent-purple/20 text-accent-purple',
     };
     return styles[current] || '';
+  };
+
+  // --- Catalog Handlers ---
+  const handleAddMaterialToCatalog = () => {
+    if (!newMaterialName || !newMaterialPrice) return;
+    setCatalogForm(prev => ({
+      ...prev,
+      materiales: [...prev.materiales, { nombre: newMaterialName, unidad: newMaterialUnit, precioUnitario: parseFloat(newMaterialPrice) || 0 }]
+    }));
+    setNewMaterialName('');
+    setNewMaterialUnit('unidad');
+    setNewMaterialPrice('');
+  };
+
+  const handleSaveCatalogItem = () => {
+    const item = {
+      nombre: catalogForm.nombre,
+      tipo: catalogForm.tipo,
+      precio: parseFloat(catalogForm.precio) || 0,
+      descripcion: catalogForm.descripcion,
+      costoManoObra: parseFloat(catalogForm.costoManoObra) || 0,
+      materiales: catalogForm.materiales,
+    };
+    if (editingCatalogId) {
+      updateServicioCatalogo(editingCatalogId, item);
+    } else {
+      addServicioCatalogo(item);
+    }
+    setCatalogForm({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+    setEditingCatalogId(null);
+  };
+
+  const handleEditCatalogItem = (srv) => {
+    setCatalogForm({
+      nombre: srv.nombre,
+      tipo: srv.tipo,
+      precio: String(srv.precio || 0),
+      descripcion: srv.descripcion || '',
+      costoManoObra: String(srv.costoManoObra || 0),
+      materiales: srv.materiales || [],
+    });
+    setEditingCatalogId(srv.id);
   };
 
   // ===================== RENDER =====================
@@ -213,12 +276,20 @@ export default function PostVentaPage() {
             Servicios adicionales para clientes existentes
           </p>
         </div>
-        <button
-          onClick={openNewModal}
-          className="py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
-        >
-          <Plus size={16} /> Nueva Solicitud
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCatalog(true)}
+            className="py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-text-secondary text-sm font-semibold cursor-pointer flex items-center gap-2 hover:border-accent-purple/50 transition-colors"
+          >
+            <Settings size={16} /> Catálogo
+          </button>
+          <button
+            onClick={openNewModal}
+            className="py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+          >
+            <Plus size={16} /> Nueva Solicitud
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -448,11 +519,10 @@ export default function PostVentaPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-text-muted">Tipo de atencion</p>
-                      <p className={`text-xs font-semibold mt-0.5 ${
-                        selectedServicioCatalog.tipo === 'Presencial'
-                          ? 'text-accent-purple'
-                          : 'text-accent-blue'
-                      }`}>
+                      <p className={`text-xs font-semibold mt-0.5 ${selectedServicioCatalog.tipo === 'Presencial'
+                        ? 'text-accent-purple'
+                        : 'text-accent-blue'
+                        }`}>
                         {selectedServicioCatalog.tipo}
                       </p>
                     </div>
@@ -613,11 +683,10 @@ export default function PostVentaPage() {
                 <div>
                   <p className="text-[11px] text-text-muted mb-0.5">Costo Real</p>
                   {selectedPV.costoReal != null ? (
-                    <p className={`text-xl font-bold font-mono ${
-                      selectedPV.costoReal > selectedPV.costoEstimado
-                        ? 'text-accent-red'
-                        : 'text-accent-green'
-                    }`}>
+                    <p className={`text-xl font-bold font-mono ${selectedPV.costoReal > selectedPV.costoEstimado
+                      ? 'text-accent-red'
+                      : 'text-accent-green'
+                      }`}>
                       S/ {selectedPV.costoReal.toFixed(2)}
                     </p>
                   ) : (
@@ -629,13 +698,12 @@ export default function PostVentaPage() {
                 <div className="mt-2 pt-2 border-t border-border">
                   <p className="text-[11px] text-text-muted">
                     Diferencia:{' '}
-                    <span className={`font-bold ${
-                      selectedPV.costoReal - selectedPV.costoEstimado > 0
-                        ? 'text-accent-red'
-                        : selectedPV.costoReal - selectedPV.costoEstimado < 0
-                          ? 'text-accent-green'
-                          : 'text-text-secondary'
-                    }`}>
+                    <span className={`font-bold ${selectedPV.costoReal - selectedPV.costoEstimado > 0
+                      ? 'text-accent-red'
+                      : selectedPV.costoReal - selectedPV.costoEstimado < 0
+                        ? 'text-accent-green'
+                        : 'text-text-secondary'
+                      }`}>
                       {selectedPV.costoReal - selectedPV.costoEstimado > 0 ? '+' : ''}
                       S/ {(selectedPV.costoReal - selectedPV.costoEstimado).toFixed(2)}
                     </span>
@@ -680,12 +748,221 @@ export default function PostVentaPage() {
                   Rechazar
                 </button>
               )}
+              {selectedPV.estado === 'En Ejecución' && (
+                <button
+                  onClick={() => handleStatusChange('Reprogramada')}
+                  className="py-2.5 px-4 rounded-lg bg-cyan-500/20 text-cyan-400 border-none text-xs font-semibold cursor-pointer hover:bg-cyan-500/30 transition-colors"
+                >
+                  Reprogramar
+                </button>
+              )}
               <button
                 onClick={closeDetail}
                 className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary text-xs cursor-pointer hover:bg-bg-secondary/80 transition-colors"
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL: Catálogo de Servicios ===================== */}
+      {showCatalog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCatalog(false)}>
+          <div
+            className="bg-bg-card rounded-2xl p-6 w-[700px] border border-border max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h3 className="text-lg font-bold">Catálogo de Servicios</h3>
+                <p className="text-xs text-text-muted mt-0.5">Gestiona los servicios post-venta disponibles</p>
+              </div>
+              <button
+                onClick={() => setShowCatalog(false)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted cursor-pointer hover:text-text-primary transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Existing Services */}
+            <div className="flex flex-col gap-2 mb-5">
+              {catalogoServicios.map(srv => (
+                <div key={srv.id} className="bg-bg-secondary rounded-lg p-3 border border-border flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[11px] text-text-muted">{srv.id}</span>
+                      <span className="text-sm font-semibold">{srv.nombre}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${srv.tipo === 'Presencial' ? 'bg-accent-purple/20 text-accent-purple' : 'bg-accent-blue/20 text-accent-blue'}`}>
+                        {srv.tipo}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-xs text-accent-green font-bold">
+                        {srv.precio > 0 ? `S/ ${srv.precio.toFixed(2)}` : 'Gratis'}
+                      </span>
+                      {srv.costoManoObra > 0 && (
+                        <span className="text-[10px] text-text-muted">Mano de obra: S/ {srv.costoManoObra.toFixed(2)}</span>
+                      )}
+                      {srv.materiales && srv.materiales.length > 0 && (
+                        <span className="text-[10px] text-text-muted">{srv.materiales.length} material(es)</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleEditCatalogItem(srv)}
+                      className="w-7 h-7 rounded flex items-center justify-center bg-accent-blue/15 text-accent-blue border-none cursor-pointer hover:bg-accent-blue/25 transition-colors"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      onClick={() => deleteServicioCatalogo(srv.id)}
+                      className="w-7 h-7 rounded flex items-center justify-center bg-accent-red/15 text-accent-red border-none cursor-pointer hover:bg-accent-red/25 transition-colors"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Add/Edit Form */}
+            <div className="bg-bg-secondary rounded-lg p-4 border border-border">
+              <p className="text-xs font-semibold text-text-secondary mb-3">
+                {editingCatalogId ? 'Editar Servicio' : 'Agregar Servicio'}
+              </p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Nombre</label>
+                  <input
+                    value={catalogForm.nombre}
+                    onChange={e => setCatalogForm(p => ({ ...p, nombre: e.target.value }))}
+                    placeholder="Nombre del servicio"
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Tipo</label>
+                  <select
+                    value={catalogForm.tipo}
+                    onChange={e => setCatalogForm(p => ({ ...p, tipo: e.target.value }))}
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple cursor-pointer"
+                  >
+                    <option value="Presencial">Presencial</option>
+                    <option value="Remoto">Remoto</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Precio Total (S/)</label>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={catalogForm.precio}
+                    onChange={e => setCatalogForm(p => ({ ...p, precio: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Costo Mano de Obra (S/)</label>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={catalogForm.costoManoObra}
+                    onChange={e => setCatalogForm(p => ({ ...p, costoManoObra: e.target.value }))}
+                    placeholder="0.00"
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                </div>
+              </div>
+              <div className="mb-3">
+                <label className="text-[10px] text-text-muted block mb-1">Descripción</label>
+                <input
+                  value={catalogForm.descripcion}
+                  onChange={e => setCatalogForm(p => ({ ...p, descripcion: e.target.value }))}
+                  placeholder="Descripción del servicio"
+                  className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                />
+              </div>
+
+              {/* Materials */}
+              <div className="mb-3">
+                <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
+                  <DollarSign size={10} /> Materiales del servicio
+                </p>
+                {catalogForm.materiales.length > 0 && (
+                  <div className="flex flex-col gap-1 mb-2">
+                    {catalogForm.materiales.map((m, i) => (
+                      <div key={i} className="flex items-center justify-between bg-bg-card rounded px-2 py-1.5 text-[11px]">
+                        <span>{m.nombre} ({m.unidad})</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-accent-green font-bold">S/ {m.precioUnitario.toFixed(2)}</span>
+                          <button
+                            onClick={() => setCatalogForm(p => ({ ...p, materiales: p.materiales.filter((_, idx) => idx !== i) }))}
+                            className="text-accent-red cursor-pointer border-none bg-transparent hover:opacity-70"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={newMaterialName}
+                    onChange={e => setNewMaterialName(e.target.value)}
+                    placeholder="Material"
+                    className="flex-1 py-1.5 px-2 bg-bg-card border border-border rounded text-[11px] text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                  <select
+                    value={newMaterialUnit}
+                    onChange={e => setNewMaterialUnit(e.target.value)}
+                    className="py-1.5 px-2 bg-bg-card border border-border rounded text-[11px] text-text-primary outline-none cursor-pointer"
+                  >
+                    <option value="unidad">unidad</option>
+                    <option value="metro">metro</option>
+                    <option value="rollo">rollo</option>
+                    <option value="pieza">pieza</option>
+                  </select>
+                  <input
+                    type="number" step="0.01" min="0"
+                    value={newMaterialPrice}
+                    onChange={e => setNewMaterialPrice(e.target.value)}
+                    placeholder="S/"
+                    className="w-20 py-1.5 px-2 bg-bg-card border border-border rounded text-[11px] text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddMaterialToCatalog}
+                    className="py-1.5 px-3 rounded bg-accent-green/20 text-accent-green border-none text-[11px] font-semibold cursor-pointer hover:bg-accent-green/30 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveCatalogItem}
+                  disabled={!catalogForm.nombre}
+                  className="flex-1 py-2 rounded-lg bg-accent-purple/20 text-accent-purple border-none text-xs font-semibold cursor-pointer hover:bg-accent-purple/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {editingCatalogId ? 'Guardar Cambios' : 'Agregar Servicio'}
+                </button>
+                {editingCatalogId && (
+                  <button
+                    onClick={() => {
+                      setCatalogForm({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+                      setEditingCatalogId(null);
+                    }}
+                    className="py-2 px-4 rounded-lg bg-bg-card border border-border text-text-muted text-xs cursor-pointer hover:text-text-primary"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

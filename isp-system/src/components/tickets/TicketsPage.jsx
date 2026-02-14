@@ -56,6 +56,8 @@ export default function TicketsPage() {
   const updateTicket = useStore(s => s.updateTicket);
   const visitas = useStore(s => s.visitas);
   const sesionesRemoto = useStore(s => s.sesionesRemoto);
+  const addRequerimiento = useStore(s => s.addRequerimiento);
+  const tiposRequerimiento = useStore(s => s.tiposRequerimiento);
 
   const [viewMode, setViewMode] = useState('list');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -173,13 +175,13 @@ export default function TicketsPage() {
     }
   };
 
-  const handleEscalationConfirm = ({ tipo, motivo }) => {
+  const handleEscalationConfirm = ({ tipo, motivo, diagnostico }) => {
     if (!escalationTarget) return;
     const ticketId = escalationTarget.ticketId;
     const ticket = tickets.find(t => t.id === ticketId);
     if (!ticket) return;
 
-    const tipoLabel = tipo === 'visita' ? 'Visita Técnica' : tipo === 'soporte' ? 'Soporte Remoto' : 'Planta Externa';
+    const tipoLabel = tipo === 'visita' ? 'Visita Técnica' : tipo === 'soporte' ? 'Soporte Remoto' : tipo === 'requerimiento' ? 'Req. Administrativo' : 'Planta Externa';
 
     updateTicket(ticketId, {
       estado: 'Escalado',
@@ -192,9 +194,22 @@ export default function TicketsPage() {
 
     // Si es visita o soporte, abrir modal de creación
     if (tipo === 'visita') {
-      setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId) });
+      setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico });
     } else if (tipo === 'soporte') {
-      setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId) });
+      setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico });
+    } else if (tipo === 'requerimiento') {
+      const defaultTipo = tiposRequerimiento.length > 0 ? tiposRequerimiento[0].nombre : 'Otro';
+      addRequerimiento({
+        titulo: `[${ticketId}] ${motivo}`,
+        tipo: defaultTipo,
+        prioridad: ticket.prioridad || 'Media',
+        solicitante: ticket.asignado || ticket.clienteNombre || '',
+        descripcion: `Requerimiento generado desde ticket ${ticketId}.\nCliente: ${ticket.clienteNombre || 'N/A'}\nMotivo: ${motivo}`,
+        montoEstimado: 0,
+        estado: 'Pendiente',
+        fechaLimite: null,
+        ticketOrigen: ticketId,
+      });
     }
   };
 

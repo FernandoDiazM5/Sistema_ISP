@@ -25,6 +25,7 @@ const VisitasTecnicasPage = lazy(() => import('./components/visitas/VisitasTecni
 const InstalacionesPage = lazy(() => import('./components/instalaciones/InstalacionesPage'));
 const PlantaExternaPage = lazy(() => import('./components/planta-externa/PlantaExternaPage'));
 const PostVentaPage = lazy(() => import('./components/post-venta/PostVentaPage'));
+const RequerimientosPage = lazy(() => import('./components/requerimientos/RequerimientosPage'));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -74,6 +75,7 @@ function AppContent() {
           <Route path="/instalaciones" element={<InstalacionesPage />} />
           <Route path="/planta-externa" element={<PlantaExternaPage />} />
           <Route path="/post-venta" element={<PostVentaPage />} />
+          <Route path="/requerimientos" element={<RequerimientosPage />} />
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/equipos" element={<EquiposPage />} />
           <Route path="/config" element={<ConfiguracionPage />} />

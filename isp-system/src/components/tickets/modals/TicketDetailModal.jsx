@@ -167,8 +167,8 @@ export default function TicketDetailModal({
                                     <div className="group relative flex items-center gap-2 bg-bg-card border border-border/60 rounded-full px-3 py-1.5 cursor-help transition-colors hover:border-accent-blue/50 hover:bg-bg-secondary" title={h.motivo}>
                                         <div className="flex items-center gap-1.5">
                                             <span className={`w-2 h-2 rounded-full ${h.estadoNuevo.startsWith('Escalado')
-                                                    ? ESTADOS_COLOR['Escalado']?.dot
-                                                    : (ESTADOS_COLOR[h.estadoNuevo]?.dot || 'bg-gray-400')
+                                                ? ESTADOS_COLOR['Escalado']?.dot
+                                                : (ESTADOS_COLOR[h.estadoNuevo]?.dot || 'bg-gray-400')
                                                 }`}></span>
                                             <span className="text-xs font-medium text-text-primary">{h.estadoNuevo}</span>
                                         </div>
@@ -232,7 +232,6 @@ export default function TicketDetailModal({
                         )}
                         {ticket.estado === 'En Proceso' && (
                             <>
-                                <button onClick={() => onStatusChange(ticket.id, 'Resuelto')} className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 border-none text-xs font-semibold cursor-pointer hover:bg-green-500/30">Marcar Resuelto</button>
                                 <button onClick={() => onStatusChange(ticket.id, 'Escalado')} className="px-4 py-2 rounded-lg bg-orange-500/20 text-orange-400 border-none text-xs font-semibold cursor-pointer hover:bg-orange-500/30">Escalar</button>
                                 <button onClick={() => onStatusChange(ticket.id, 'Abierto')} className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border-none text-xs font-semibold cursor-pointer hover:bg-red-500/30">Devolver a Abierto</button>
                             </>
@@ -240,7 +239,6 @@ export default function TicketDetailModal({
                         {ticket.estado === 'Escalado' && (
                             <>
                                 <button onClick={() => onStatusChange(ticket.id, 'En Proceso')} className="px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-400 border-none text-xs font-semibold cursor-pointer hover:bg-yellow-500/30">Devolver a En Proceso</button>
-                                <button onClick={() => onStatusChange(ticket.id, 'Resuelto')} className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 border-none text-xs font-semibold cursor-pointer hover:bg-green-500/30">Marcar Resuelto</button>
                             </>
                         )}
                         {ticket.estado === 'Resuelto' && (

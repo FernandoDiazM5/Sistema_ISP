@@ -7,6 +7,7 @@ import ResolutionModal from '../common/ResolutionModal';
 const ESTADO_STYLE = {
   'Activa': { bg: 'bg-accent-red/20', text: 'text-accent-red', dot: 'bg-accent-red' },
   'En reparación': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
+  'Coordinando': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
   'Resuelta': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
 };
 
@@ -126,7 +127,7 @@ export default function AveriasPage() {
 
       {/* Filters */}
       <div className="flex gap-3 mb-5">
-        {['all', 'Activa', 'En reparación', 'Resuelta'].map(e => (
+        {['all', 'Activa', 'En reparación', 'Coordinando', 'Resuelta'].map(e => (
           <button key={e} onClick={() => setFilterEstado(e)}
             className={`py-1.5 px-4 rounded-lg text-xs font-semibold border cursor-pointer transition-colors
               ${filterEstado === e ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border text-text-secondary hover:border-accent-blue/50'}`}>
@@ -347,12 +348,36 @@ export default function AveriasPage() {
                   </button>
                 )}
                 {selectedAveria.estado === 'En reparación' && (
-                  <button
-                    onClick={() => handleStatusChange(selectedAveria.id, 'Resuelta')}
-                    className="flex-1 py-2.5 rounded-lg bg-accent-green/20 text-accent-green border-none text-xs font-bold cursor-pointer hover:bg-accent-green/30 transition-colors"
-                  >
-                    Marcar Resuelta
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleStatusChange(selectedAveria.id, 'Resuelta')}
+                      className="flex-1 py-2.5 rounded-lg bg-accent-green/20 text-accent-green border-none text-xs font-bold cursor-pointer hover:bg-accent-green/30 transition-colors"
+                    >
+                      Marcar Resuelta
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(selectedAveria.id, 'Coordinando')}
+                      className="flex-1 py-2.5 rounded-lg bg-accent-blue/20 text-accent-blue border-none text-xs font-bold cursor-pointer hover:bg-accent-blue/30 transition-colors"
+                    >
+                      Coordinando / Reprogramar
+                    </button>
+                  </>
+                )}
+                {selectedAveria.estado === 'Coordinando' && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange(selectedAveria.id, 'En reparación')}
+                      className="flex-1 py-2.5 rounded-lg bg-accent-yellow/20 text-accent-yellow border-none text-xs font-bold cursor-pointer hover:bg-accent-yellow/30 transition-colors"
+                    >
+                      Retomar Reparación
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange(selectedAveria.id, 'Resuelta')}
+                      className="flex-1 py-2.5 rounded-lg bg-accent-green/20 text-accent-green border-none text-xs font-bold cursor-pointer hover:bg-accent-green/30 transition-colors"
+                    >
+                      Marcar Resuelta
+                    </button>
+                  </>
                 )}
                 {selectedAveria.estado === 'Resuelta' && (
                   <button

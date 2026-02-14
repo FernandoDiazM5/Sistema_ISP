@@ -68,7 +68,24 @@ export const createOperationsSlice = (set, get) => ({
     }),
 
     updateDerivacion: (id, updates) => set(s => {
-        const newDerivaciones = s.derivaciones.map(d => d.id === id ? { ...d, ...updates } : d);
+        const newDerivaciones = s.derivaciones.map(d => {
+            if (d.id === id) {
+                const updated = { ...d, ...updates };
+                if (updates.estado && updates.estado !== d.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: d.estado,
+                        estadoNuevo: updates._historyEstadoLabel || updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(d.historial || [])];
+                    delete updated._historyComment;
+                    delete updated._historyEstadoLabel;
+                }
+                return updated;
+            }
+            return d;
+        });
         saveToDB('isp_derivaciones', newDerivaciones);
         return { derivaciones: newDerivaciones };
     }),
@@ -89,7 +106,24 @@ export const createOperationsSlice = (set, get) => ({
     }),
 
     updatePostVenta: (id, updates) => set(s => {
-        const newPostVenta = s.postVenta.map(p => p.id === id ? { ...p, ...updates } : p);
+        const newPostVenta = s.postVenta.map(p => {
+            if (p.id === id) {
+                const updated = { ...p, ...updates };
+                if (updates.estado && updates.estado !== p.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: p.estado,
+                        estadoNuevo: updates._historyEstadoLabel || updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(p.historial || [])];
+                    delete updated._historyComment;
+                    delete updated._historyEstadoLabel;
+                }
+                return updated;
+            }
+            return p;
+        });
         saveToDB('isp_postVenta', newPostVenta);
         return { postVenta: newPostVenta };
     }),
@@ -98,6 +132,44 @@ export const createOperationsSlice = (set, get) => ({
         const newPostVenta = s.postVenta.filter(p => p.id !== id);
         saveToDB('isp_postVenta', newPostVenta);
         return { postVenta: newPostVenta };
+    }),
+
+    // ===================== REQUERIMIENTOS ADMINISTRATIVOS =====================
+    requerimientos: [],
+
+    addRequerimiento: (req) => set(s => {
+        const newId = getNextId(s.requerimientos, 'REQ');
+        const newReqs = [{ ...req, id: newId, fecha: req.fecha || new Date().toISOString().split('T')[0], historial: [] }, ...s.requerimientos];
+        saveToDB('isp_requerimientos', newReqs);
+        return { requerimientos: newReqs };
+    }),
+
+    updateRequerimiento: (id, updates) => set(s => {
+        const newReqs = s.requerimientos.map(r => {
+            if (r.id === id) {
+                const updated = { ...r, ...updates };
+                if (updates.estado && updates.estado !== r.estado) {
+                    const historyItem = {
+                        fecha: new Date().toISOString(),
+                        estadoAnterior: r.estado,
+                        estadoNuevo: updates.estado,
+                        motivo: updates._historyComment || null
+                    };
+                    updated.historial = [historyItem, ...(r.historial || [])];
+                    delete updated._historyComment;
+                }
+                return updated;
+            }
+            return r;
+        });
+        saveToDB('isp_requerimientos', newReqs);
+        return { requerimientos: newReqs };
+    }),
+
+    deleteRequerimiento: (id) => set(s => {
+        const newReqs = s.requerimientos.filter(r => r.id !== id);
+        saveToDB('isp_requerimientos', newReqs);
+        return { requerimientos: newReqs };
     }),
 
     // ===================== MOVIMIENTOS EQUIPOS =====================

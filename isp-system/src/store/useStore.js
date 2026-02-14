@@ -96,6 +96,20 @@ const CATALOGO_SERVICIOS = [
   { id: 'SRV-07', nombre: 'Reconexión', tipo: 'Remoto', precio: 0, descripcion: 'Reconexión de servicio por pago' },
 ];
 
+const TIPOS_REQUERIMIENTO = [
+  { id: 'TREQ-01', nombre: 'Compra de Materiales', categoria: 'Operativo' },
+  { id: 'TREQ-02', nombre: 'Compra de Equipos', categoria: 'Operativo' },
+  { id: 'TREQ-03', nombre: 'Solicitud de Presupuesto', categoria: 'Administrativo' },
+  { id: 'TREQ-04', nombre: 'Contratación de Servicio', categoria: 'Administrativo' },
+  { id: 'TREQ-05', nombre: 'Permiso Municipal', categoria: 'Legal' },
+  { id: 'TREQ-06', nombre: 'Trámite Legal', categoria: 'Legal' },
+  { id: 'TREQ-07', nombre: 'Pago a Proveedor', categoria: 'Financiero' },
+  { id: 'TREQ-08', nombre: 'Solicitud de Boleta', categoria: 'Financiero' },
+  { id: 'TREQ-09', nombre: 'Solicitud de Factura', categoria: 'Financiero' },
+  { id: 'TREQ-10', nombre: 'Cambio de Titularidad', categoria: 'Administrativo' },
+  { id: 'TREQ-11', nombre: 'Otro', categoria: 'General' },
+];
+
 // ===================== STORE COMPOSITION =====================
 const useStore = create((set, get) => ({
   storeReady: false,
@@ -162,6 +176,9 @@ const useStore = create((set, get) => ({
         'isp_derivaciones': 'derivaciones',
         'isp_postVenta': 'postVenta',
         'isp_movimientosEquipos': 'movimientosEquipos',
+        'isp_catalogoServicios': 'catalogoServicios',
+        'isp_requerimientos': 'requerimientos',
+        'isp_tiposRequerimiento': 'tiposRequerimiento',
         'isp_theme': 'theme'
       };
 
@@ -224,12 +241,59 @@ const useStore = create((set, get) => ({
     return { tecnicos: newTecnicos };
   }),
 
-  // ===================== CATÁLOGOS (solo lectura) =====================
+  // ===================== CATÁLOGOS =====================
   categorias: CATEGORIAS,
   subcategorias: SUBCATEGORIAS,
   prioridadesSLA: PRIORIDADES_SLA,
   estadosCatalogo: ESTADOS_CATALOGO,
   catalogoServicios: CATALOGO_SERVICIOS,
+  tiposRequerimiento: TIPOS_REQUERIMIENTO,
+
+  addServicioCatalogo: (servicio) => set(s => {
+    const maxId = s.catalogoServicios.reduce((max, srv) => {
+      const num = parseInt(srv.id.split('-')[1] || 0);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    const newId = `SRV-${String(maxId + 1).padStart(2, '0')}`;
+    const newCatalogo = [...s.catalogoServicios, { ...servicio, id: newId }];
+    saveToDB('isp_catalogoServicios', newCatalogo);
+    return { catalogoServicios: newCatalogo };
+  }),
+
+  updateServicioCatalogo: (id, updates) => set(s => {
+    const newCatalogo = s.catalogoServicios.map(srv => srv.id === id ? { ...srv, ...updates } : srv);
+    saveToDB('isp_catalogoServicios', newCatalogo);
+    return { catalogoServicios: newCatalogo };
+  }),
+
+  deleteServicioCatalogo: (id) => set(s => {
+    const newCatalogo = s.catalogoServicios.filter(srv => srv.id !== id);
+    saveToDB('isp_catalogoServicios', newCatalogo);
+    return { catalogoServicios: newCatalogo };
+  }),
+
+  addTipoRequerimiento: (tipo) => set(s => {
+    const maxId = s.tiposRequerimiento.reduce((max, t) => {
+      const num = parseInt(t.id.split('-')[1] || 0);
+      return !isNaN(num) && num > max ? num : max;
+    }, 0);
+    const newId = `TREQ-${String(maxId + 1).padStart(2, '0')}`;
+    const newTipos = [...s.tiposRequerimiento, { ...tipo, id: newId }];
+    saveToDB('isp_tiposRequerimiento', newTipos);
+    return { tiposRequerimiento: newTipos };
+  }),
+
+  updateTipoRequerimiento: (id, updates) => set(s => {
+    const newTipos = s.tiposRequerimiento.map(t => t.id === id ? { ...t, ...updates } : t);
+    saveToDB('isp_tiposRequerimiento', newTipos);
+    return { tiposRequerimiento: newTipos };
+  }),
+
+  deleteTipoRequerimiento: (id) => set(s => {
+    const newTipos = s.tiposRequerimiento.filter(t => t.id !== id);
+    saveToDB('isp_tiposRequerimiento', newTipos);
+    return { tiposRequerimiento: newTipos };
+  }),
 
   getSubcategoriasByCategoria: (catId) => SUBCATEGORIAS.filter(s => s.categoriaId === catId),
   getEstadosByEntidad: (entidad) => ESTADOS_CATALOGO.filter(e => e.entidad === entidad),
