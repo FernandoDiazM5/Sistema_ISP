@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Monitor, CheckCircle2 } from 'lucide-react';
 import useStore from '../../../store/useStore';
 import Adjuntos from '../../common/Adjuntos';
+import DiagnosticFields, { getEmptyDiag } from '../../common/DiagnosticFields';
 
 export default function InlineSoporteModal({ ticket, client, onClose, onSuccess }) {
     const tecnicos = useStore(s => s.tecnicos);
@@ -14,27 +15,8 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
     const [soporteObservaciones, setSoporteObservaciones] = useState('');
     const [soporteDerivar, setSoporteDerivar] = useState(false);
     const [soporteAdjuntos, setSoporteAdjuntos] = useState([]);
+    const [diagnostico, setDiagnostico] = useState(getEmptyDiag());
     const [success, setSuccess] = useState(false);
-
-    // Diagnostic params
-    const [diagPing, setDiagPing] = useState('');
-    const [diagDownload, setDiagDownload] = useState('');
-    const [diagUpload, setDiagUpload] = useState('');
-    const [diagPacketLoss, setDiagPacketLoss] = useState('');
-    const [diagJitter, setDiagJitter] = useState('');
-
-    // Radio params
-    const [diagSenalRecibida, setDiagSenalRecibida] = useState('');
-    const [diagNoiseFloor, setDiagNoiseFloor] = useState('');
-    const [diagCCQ, setDiagCCQ] = useState('');
-    const [diagFrecuencia, setDiagFrecuencia] = useState('');
-    const [diagCanal, setDiagCanal] = useState('');
-
-    // Fibra params
-    const [diagPotenciaRx, setDiagPotenciaRx] = useState('');
-    const [diagPotenciaTx, setDiagPotenciaTx] = useState('');
-    const [diagAtenuacion, setDiagAtenuacion] = useState('');
-    const [diagPuertoOLT, setDiagPuertoOLT] = useState('');
 
     // Initialize form
     useEffect(() => {
@@ -45,15 +27,8 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
             setSoporteObservaciones('');
             setSoporteDerivar(false);
             setSoporteAdjuntos([]);
+            setDiagnostico(getEmptyDiag());
             setSuccess(false);
-
-            // Reset diags
-            setDiagPing(''); setDiagDownload(''); setDiagUpload('');
-            setDiagPacketLoss(''); setDiagJitter('');
-            setDiagSenalRecibida(''); setDiagNoiseFloor(''); setDiagCCQ('');
-            setDiagFrecuencia(''); setDiagCanal('');
-            setDiagPotenciaRx(''); setDiagPotenciaTx(''); setDiagAtenuacion('');
-            setDiagPuertoOLT('');
         }
     }, [ticket, client]);
 
@@ -64,28 +39,6 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
     const handleSubmit = () => {
         if (!soporteTecnico) return;
         const tec = tecnicos.find(t => t.id === soporteTecnico);
-        const tecnologia = client?.tecnologia || '';
-
-        const diagnosticos = {
-            ping: diagPing ? parseFloat(diagPing) : null,
-            download: diagDownload ? parseFloat(diagDownload) : null,
-            upload: diagUpload ? parseFloat(diagUpload) : null,
-            packetLoss: diagPacketLoss ? parseFloat(diagPacketLoss) : null,
-            jitter: diagJitter ? parseFloat(diagJitter) : null,
-        };
-
-        if (tecnologia === 'Radio Enlace') {
-            diagnosticos.senalRecibida = diagSenalRecibida ? parseFloat(diagSenalRecibida) : null;
-            diagnosticos.noiseFloor = diagNoiseFloor ? parseFloat(diagNoiseFloor) : null;
-            diagnosticos.ccq = diagCCQ ? parseFloat(diagCCQ) : null;
-            diagnosticos.frecuencia = diagFrecuencia ? parseFloat(diagFrecuencia) : null;
-            diagnosticos.canal = diagCanal || null;
-        } else if (tecnologia === 'Fibra Óptica') {
-            diagnosticos.potenciaRx = diagPotenciaRx ? parseFloat(diagPotenciaRx) : null;
-            diagnosticos.potenciaTx = diagPotenciaTx ? parseFloat(diagPotenciaTx) : null;
-            diagnosticos.atenuacion = diagAtenuacion ? parseFloat(diagAtenuacion) : null;
-            diagnosticos.puertoOLT = diagPuertoOLT || null;
-        }
 
         addSesionRemoto({
             clienteId: ticket.clienteId,
@@ -95,8 +48,9 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
             tecnicoId: soporteTecnico,
             tecnicoNombre: tec ? tec.nombre : '',
             ip: soporteIP,
-            tecnologia: tecnologia,
-            diagnosticos,
+            tecnologia: client?.tecnologia || '',
+            diagnosticoCompleto: diagnostico, // Guardamos el objeto completo
+            ...diagnostico, // Y también expandido para búsquedas fáciles si se requiere
             observaciones: soporteObservaciones,
             estado: 'Completada',
             plan: client?.plan || '',
@@ -120,8 +74,10 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                 estado: 'Programada',
                 nodo: client?.nodo || client?.nodo_router || '',
                 plan: client?.plan || '',
-                tecnologia: tecnologia,
+                tecnologia: client?.tecnologia || '',
                 adjuntos: soporteAdjuntos,
+                diagnosticoCompleto: diagnostico,
+                ...diagnostico,
             });
         }
 
@@ -187,44 +143,11 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                                 </div>
                             </div>
 
-                            {/* Diagnostic Parameters */}
-                            <div className="border border-border rounded-lg p-4 bg-bg-secondary/50">
-                                <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-3">Parámetros de Diagnóstico</p>
-
-                                <p className="text-[10px] text-accent-blue uppercase tracking-wide font-semibold mb-2">Parámetros comunes</p>
-                                <div className="grid grid-cols-5 gap-2 mb-4">
-                                    <div><label className="text-xs text-text-secondary mb-1 block">Ping (ms)</label><input type="number" value={diagPing} onChange={e => setDiagPing(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                    <div><label className="text-xs text-text-secondary mb-1 block">Down (Mbps)</label><input type="number" value={diagDownload} onChange={e => setDiagDownload(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                    <div><label className="text-xs text-text-secondary mb-1 block">Up (Mbps)</label><input type="number" value={diagUpload} onChange={e => setDiagUpload(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                    <div><label className="text-xs text-text-secondary mb-1 block">Pkt Loss (%)</label><input type="number" value={diagPacketLoss} onChange={e => setDiagPacketLoss(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                    <div><label className="text-xs text-text-secondary mb-1 block">Jitter (ms)</label><input type="number" value={diagJitter} onChange={e => setDiagJitter(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                </div>
-
-                                {client?.tecnologia === 'Radio Enlace' && (
-                                    <>
-                                        <p className="text-[10px] text-accent-purple uppercase tracking-wide font-semibold mb-2">Radio Enlace</p>
-                                        <div className="grid grid-cols-5 gap-2">
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Señal Rx</label><input type="number" value={diagSenalRecibida} onChange={e => setDiagSenalRecibida(e.target.value)} className="w-full" step="any" placeholder="-65" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Noise</label><input type="number" value={diagNoiseFloor} onChange={e => setDiagNoiseFloor(e.target.value)} className="w-full" step="any" placeholder="-95" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">CCQ (%)</label><input type="number" value={diagCCQ} onChange={e => setDiagCCQ(e.target.value)} className="w-full" step="any" placeholder="100" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Frec (GHz)</label><input type="number" value={diagFrecuencia} onChange={e => setDiagFrecuencia(e.target.value)} className="w-full" step="any" placeholder="5.8" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Canal</label><input type="text" value={diagCanal} onChange={e => setDiagCanal(e.target.value)} className="w-full" placeholder="Auto" /></div>
-                                        </div>
-                                    </>
-                                )}
-
-                                {client?.tecnologia === 'Fibra Óptica' && (
-                                    <>
-                                        <p className="text-[10px] text-accent-green uppercase tracking-wide font-semibold mb-2">Fibra Óptica</p>
-                                        <div className="grid grid-cols-4 gap-2">
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Pot Rx</label><input type="number" value={diagPotenciaRx} onChange={e => setDiagPotenciaRx(e.target.value)} className="w-full" step="any" placeholder="-18" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Pot Tx</label><input type="number" value={diagPotenciaTx} onChange={e => setDiagPotenciaTx(e.target.value)} className="w-full" step="any" placeholder="2.5" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Atenuación</label><input type="number" value={diagAtenuacion} onChange={e => setDiagAtenuacion(e.target.value)} className="w-full" step="any" placeholder="0" /></div>
-                                            <div><label className="text-xs text-text-secondary mb-1 block">Puerto OLT</label><input type="text" value={diagPuertoOLT} onChange={e => setDiagPuertoOLT(e.target.value)} className="w-full" placeholder="GPON 0/1/1" /></div>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                            <DiagnosticFields
+                                tecnologia={client?.tecnologia}
+                                value={diagnostico}
+                                onChange={setDiagnostico}
+                            />
 
                             <div>
                                 <label className="text-xs text-text-secondary font-medium mb-1.5 block">Observaciones / Resultado</label>
