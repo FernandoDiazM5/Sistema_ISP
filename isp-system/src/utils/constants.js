@@ -1,22 +1,38 @@
+// Helper para obtener variables de entorno (PlanesFiwis approach)
+const getEnvVar = (key) => {
+  // 1. Prioridad: window.ENV_CONFIG (inyectado desde GitHub Secrets)
+  if (typeof window !== 'undefined' && window.ENV_CONFIG && window.ENV_CONFIG[key]) {
+    return window.ENV_CONFIG[key];
+  }
+  // 2. Fallback: localStorage (configuración manual)
+  if (typeof window !== 'undefined') {
+    const localKey = `isp_${key.toLowerCase()}`;
+    const localValue = localStorage.getItem(localKey);
+    if (localValue) return localValue;
+  }
+  // 3. Fallback final: import.meta.env (desarrollo local)
+  return import.meta.env[`VITE_${key}`] || '';
+};
+
 export const CONFIG = {
   // Google Sheets API
-  GOOGLE_API_KEY: import.meta.env.VITE_GOOGLE_API_KEY || '',
-  GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
-  GOOGLE_SHEET_ID: import.meta.env.VITE_GOOGLE_SHEET_ID || '',
+  GOOGLE_API_KEY: getEnvVar('GOOGLE_API_KEY'),
+  GOOGLE_CLIENT_ID: getEnvVar('GOOGLE_CLIENT_ID'),
+  GOOGLE_SHEET_ID: getEnvVar('GOOGLE_SHEET_ID'),
   SHEET_NAME: 'Sheet1',
   AUTH_SHEET: 'tb_Usuarios_Auth',
 
   // Gemini AI
-  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || '',
+  GEMINI_API_KEY: getEnvVar('GEMINI_API_KEY'),
 
   // Firebase
   FIREBASE: {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+    apiKey: getEnvVar('FIREBASE_API_KEY'),
+    authDomain: getEnvVar('FIREBASE_AUTH_DOMAIN'),
+    projectId: getEnvVar('FIREBASE_PROJECT_ID'),
+    storageBucket: getEnvVar('FIREBASE_STORAGE_BUCKET'),
+    messagingSenderId: getEnvVar('FIREBASE_MESSAGING_SENDER_ID'),
+    appId: getEnvVar('FIREBASE_APP_ID'),
   },
 };
 

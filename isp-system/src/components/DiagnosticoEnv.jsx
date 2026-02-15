@@ -3,21 +3,25 @@ import { useState } from 'react';
 export default function DiagnosticoEnv() {
   const [mostrar, setMostrar] = useState(false);
 
+  // Variables desde window.ENV_CONFIG (inyectadas desde GitHub Secrets - PlanesFiwis approach)
+  const windowVars = typeof window !== 'undefined' && window.ENV_CONFIG ? window.ENV_CONFIG : {};
+
   const vars = {
-    'VITE_GOOGLE_CLIENT_ID': import.meta.env.VITE_GOOGLE_CLIENT_ID,
-    'VITE_GOOGLE_API_KEY': import.meta.env.VITE_GOOGLE_API_KEY,
-    'VITE_GOOGLE_SHEET_ID': import.meta.env.VITE_GOOGLE_SHEET_ID,
-    'VITE_GEMINI_API_KEY': import.meta.env.VITE_GEMINI_API_KEY,
-    'VITE_FIREBASE_API_KEY': import.meta.env.VITE_FIREBASE_API_KEY,
-    'VITE_FIREBASE_AUTH_DOMAIN': import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    'VITE_FIREBASE_PROJECT_ID': import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    'VITE_FIREBASE_STORAGE_BUCKET': import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    'VITE_FIREBASE_MESSAGING_SENDER_ID': import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    'VITE_FIREBASE_APP_ID': import.meta.env.VITE_FIREBASE_APP_ID,
+    'GOOGLE_CLIENT_ID': windowVars.GOOGLE_CLIENT_ID || import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    'GOOGLE_API_KEY': windowVars.GOOGLE_API_KEY || import.meta.env.VITE_GOOGLE_API_KEY,
+    'GOOGLE_SHEET_ID': windowVars.GOOGLE_SHEET_ID || import.meta.env.VITE_GOOGLE_SHEET_ID,
+    'GEMINI_API_KEY': windowVars.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY,
+    'FIREBASE_API_KEY': windowVars.FIREBASE_API_KEY || import.meta.env.VITE_FIREBASE_API_KEY,
+    'FIREBASE_AUTH_DOMAIN': windowVars.FIREBASE_AUTH_DOMAIN || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    'FIREBASE_PROJECT_ID': windowVars.FIREBASE_PROJECT_ID || import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    'FIREBASE_STORAGE_BUCKET': windowVars.FIREBASE_STORAGE_BUCKET || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    'FIREBASE_MESSAGING_SENDER_ID': windowVars.FIREBASE_MESSAGING_SENDER_ID || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    'FIREBASE_APP_ID': windowVars.FIREBASE_APP_ID || import.meta.env.VITE_FIREBASE_APP_ID,
   };
 
   const enProduccion = import.meta.env.PROD;
   const mode = import.meta.env.MODE;
+  const hasWindowConfig = typeof window !== 'undefined' && window.ENV_CONFIG;
 
   if (!mostrar) {
     return (
@@ -87,6 +91,9 @@ export default function DiagnosticoEnv() {
         <div><strong>Modo:</strong> {mode}</div>
         <div><strong>Producción:</strong> {enProduccion ? 'Sí' : 'No'}</div>
         <div><strong>Base URL:</strong> {import.meta.env.BASE_URL}</div>
+        <div style={{ color: hasWindowConfig ? '#10b981' : '#ef4444' }}>
+          <strong>window.ENV_CONFIG:</strong> {hasWindowConfig ? '✅ Disponible (PlanesFiwis approach)' : '❌ No disponible'}
+        </div>
       </div>
 
       <h4 style={{ marginTop: '15px', marginBottom: '10px', fontSize: '13px', color: '#60a5fa' }}>
