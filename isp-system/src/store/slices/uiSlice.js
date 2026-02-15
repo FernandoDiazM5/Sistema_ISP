@@ -38,6 +38,8 @@ export const createUISlice = (set, get) => ({
         } else {
             set({ loading: false });
         }
+        // Load authorized emails on app start
+        get().loadAuthorizedEmails?.();
     },
 
     logout: () => {

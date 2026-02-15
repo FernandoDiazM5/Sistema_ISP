@@ -8,6 +8,7 @@ import { createClientsSlice } from './slices/clientsSlice';
 import { createTicketsSlice } from './slices/ticketsSlice';
 import { createOperationsSlice } from './slices/operationsSlice';
 import { createUISlice } from './slices/uiSlice';
+import { createAuthSlice } from './slices/authSlice';
 
 // ===================== HELPERS =====================
 async function saveToDB(key, data) {
@@ -119,6 +120,7 @@ const useStore = create((set, get) => ({
   ...createTicketsSlice(set, get),
   ...createOperationsSlice(set, get),
   ...createUISlice(set, get),
+  ...createAuthSlice(set, get),
 
   // ===================== HYDRATION & MIGRATION =====================
   hydrateStore: async () => {

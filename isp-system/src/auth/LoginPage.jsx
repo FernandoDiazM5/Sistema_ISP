@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Wifi } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
+import useStore from '../store/useStore';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -26,13 +27,29 @@ export default function LoginPage() {
     window.google?.accounts.id.initialize({
       client_id: CONFIG.GOOGLE_CLIENT_ID,
       callback: (response) => {
-        const payload = JSON.parse(atob(response.credential.split('.')[1]));
-        login({
-          email: payload.email,
-          nombre: payload.name,
-          foto: payload.picture,
-          rol: 'ADMIN', // En producción se lee desde tb_Usuarios_Auth
-        });
+        try {
+          const payload = JSON.parse(atob(response.credential.split('.')[1]));
+          const userEmail = payload.email;
+
+          // Verificar si el correo está autorizado
+          const isAuthorized = useStore.getState().isEmailAuthorized(userEmail);
+
+          if (!isAuthorized) {
+            setError('No tienes autorización para acceder a este sistema. Contacta al administrador.');
+            return;
+          }
+
+          // Si está autorizado, continuar con el login
+          login({
+            email: userEmail,
+            nombre: payload.name,
+            foto: payload.picture,
+            rol: 'ADMIN', // En producción se lee desde tb_Usuarios_Auth
+          });
+        } catch (err) {
+          setError('Error al procesar el inicio de sesión. Intenta nuevamente.');
+          console.error('Error en login:', err);
+        }
       },
     });
     window.google?.accounts.id.prompt();

@@ -7,6 +7,7 @@ import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
 import useToast from '../../hooks/useToast';
 import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from '../../utils/exportBackup';
+import AuthorizedUsersManager from './AuthorizedUsersManager';
 
 function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -473,7 +474,7 @@ export default function ConfiguracionPage() {
           </div>
 
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
-            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuarios Autorizados</h3>
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuarios Autorizados (Demo)</h3>
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-left text-[11px] text-text-muted uppercase">
@@ -504,6 +505,9 @@ export default function ConfiguracionPage() {
               * Los usuarios se gestionan desde Google Cloud Console y la hoja <code className="text-accent-blue">tb_Usuarios_Auth</code>
             </p>
           </div>
+
+          {/* Authorized Users Manager */}
+          <AuthorizedUsersManager />
         </div>
       )}
 
