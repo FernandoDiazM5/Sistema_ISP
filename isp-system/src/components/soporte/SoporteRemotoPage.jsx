@@ -145,28 +145,25 @@ export default function SoporteRemotoPage() {
   const [derivacionDiag, setDerivacionDiag] = useState(getEmptyDiag());
   const [derivacionTecnologia, setDerivacionTecnologia] = useState('');
 
-  // Reset diag when selecting session
-  // Reset diag when selecting session
+  /* ---- Diagnostic State ---- */
+  const [diag, setDiag] = useState(getEmptyDiag());
+
+  // Reset and prefill diag when selecting session
   useEffect(() => {
-    // Reset and prefill diag when selecting session
-    useEffect(() => {
-      if (selectedSesion) {
-        setDerivacionDiag(selectedSesion.diagnosticos ? { ...selectedSesion.diagnosticos } : getEmptyDiag());
-        setDerivacionTecnologia(selectedSesion.tecnologia || '');
-      }
-    }, [selectedSesion]);
+    if (selectedSesion) {
+      setDerivacionDiag(selectedSesion.diagnosticos ? { ...selectedSesion.diagnosticos } : getEmptyDiag());
+      setDerivacionTecnologia(selectedSesion.tecnologia || '');
+    }
+  }, [selectedSesion]);
 
-    // Sync technology from client
-    useEffect(() => {
-      if (selectedClient) {
-        setTecnologiaSesion(selectedClient.tecnologia || '');
-      } else {
-        setTecnologiaSesion('');
-      }
-    }, [selectedClient]);
-
-    /* ---- Diagnostic State ---- */
-    const [diag, setDiag] = useState(getEmptyDiag());
+  // Sync technology from client
+  useEffect(() => {
+    if (selectedClient) {
+      setTecnologiaSesion(selectedClient.tecnologia || '');
+    } else {
+      setTecnologiaSesion('');
+    }
+  }, [selectedClient]);
 
     /* ---- Derived ---- */
     const activeTecnicos = useMemo(() => tecnicos.filter(t => t.estado === 'Activo'), [tecnicos]);
