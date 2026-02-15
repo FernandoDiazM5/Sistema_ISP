@@ -3,12 +3,6 @@ import { Wifi } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
-import DiagnosticoEnv from '../components/DiagnosticoEnv';
-
-// Función para obtener el Client ID desde variable de entorno (PRIORIDAD) o localStorage (fallback)
-function getGoogleClientId() {
-  return CONFIG.GOOGLE_CLIENT_ID || localStorage.getItem('isp_google_client_id') || '';
-}
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -16,7 +10,7 @@ export default function LoginPage() {
   const googleInitialized = useRef(false);
 
   useEffect(() => {
-    const clientId = getGoogleClientId();
+    const clientId = CONFIG.GOOGLE_CLIENT_ID;
 
     if (!clientId || googleInitialized.current || !window.google) {
       return;
@@ -69,10 +63,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    const clientId = getGoogleClientId();
+    const clientId = CONFIG.GOOGLE_CLIENT_ID;
 
     if (!clientId) {
-      setError('Google OAuth no está configurado. Las variables de entorno aún no están disponibles. Por ahora usa el acceso demo.');
+      setError('⚠️ Google OAuth no configurado. Usa el acceso demo.');
       return;
     }
 
@@ -166,9 +160,6 @@ export default function LoginPage() {
           Solo usuarios autorizados pueden acceder
         </p>
       </div>
-
-      {/* Componente de diagnóstico */}
-      <DiagnosticoEnv />
     </div>
   );
 }

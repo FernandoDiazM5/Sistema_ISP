@@ -1,31 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
+import { CONFIG } from '../utils/constants';
 
-// Helper para obtener config desde window.ENV_CONFIG (PRIORIDAD), localStorage (fallback) o import.meta.env (dev)
-const getConfig = () => {
-    const getVar = (key, localKey) => {
-        // 1. window.ENV_CONFIG (GitHub Secrets)
-        if (typeof window !== 'undefined' && window.ENV_CONFIG && window.ENV_CONFIG[key]) {
-            return window.ENV_CONFIG[key];
-        }
-        // 2. localStorage (configuración manual)
-        if (typeof window !== 'undefined') {
-            const val = localStorage.getItem(localKey);
-            if (val) return val;
-        }
-        // 3. import.meta.env (desarrollo local)
-        return import.meta.env[`VITE_${key}`] || '';
-    };
-
-    return {
-        apiKey: getVar('FIREBASE_API_KEY', 'isp_firebase_api_key'),
-        authDomain: getVar('FIREBASE_AUTH_DOMAIN', 'isp_firebase_auth_domain'),
-        projectId: getVar('FIREBASE_PROJECT_ID', 'isp_firebase_project_id'),
-        storageBucket: getVar('FIREBASE_STORAGE_BUCKET', 'isp_firebase_storage_bucket'),
-        messagingSenderId: getVar('FIREBASE_MESSAGING_SENDER_ID', 'isp_firebase_messaging_sender_id'),
-        appId: getVar('FIREBASE_APP_ID', 'isp_firebase_app_id'),
-    };
-};
+// Obtener configuración de Firebase desde CONFIG (usa getters lazy)
+const getConfig = () => CONFIG.FIREBASE;
 
 let db = null;
 let app = null;

@@ -1,16 +1,8 @@
-// Función para obtener la API key desde window.ENV_CONFIG (PRIORIDAD), localStorage (fallback) o import.meta.env (dev)
+import { CONFIG } from '../utils/constants';
+
+// Obtener API key desde CONFIG (usa getters lazy)
 function getGeminiApiKey() {
-  // 1. window.ENV_CONFIG (GitHub Secrets)
-  if (typeof window !== 'undefined' && window.ENV_CONFIG && window.ENV_CONFIG.GEMINI_API_KEY) {
-    return window.ENV_CONFIG.GEMINI_API_KEY;
-  }
-  // 2. localStorage (configuración manual)
-  if (typeof window !== 'undefined') {
-    const localValue = localStorage.getItem('isp_gemini_api_key');
-    if (localValue) return localValue;
-  }
-  // 3. import.meta.env (desarrollo local)
-  return import.meta.env.VITE_GEMINI_API_KEY || '';
+  return CONFIG.GEMINI_API_KEY;
 }
 
 const MODELS = [
