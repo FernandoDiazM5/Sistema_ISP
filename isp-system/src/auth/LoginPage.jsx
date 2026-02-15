@@ -4,6 +4,11 @@ import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
 
+// Función para obtener el Client ID desde localStorage o variable de entorno
+function getGoogleClientId() {
+  return localStorage.getItem('isp_google_client_id') || CONFIG.GOOGLE_CLIENT_ID || '';
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const [error, setError] = useState('');
@@ -18,14 +23,16 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    if (!CONFIG.GOOGLE_CLIENT_ID) {
-      setError('Para activar Google OAuth, configura tu VITE_GOOGLE_CLIENT_ID en el archivo .env. Por ahora usa el acceso demo.');
+    const clientId = getGoogleClientId();
+
+    if (!clientId) {
+      setError('Para activar Google OAuth, configura tu Client ID en Configuración → Conexión API. Por ahora usa el acceso demo.');
       return;
     }
 
     // Google Identity Services flow
     window.google?.accounts.id.initialize({
-      client_id: CONFIG.GOOGLE_CLIENT_ID,
+      client_id: clientId,
       callback: (response) => {
         try {
           const payload = JSON.parse(atob(response.credential.split('.')[1]));
