@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = 'AIzaSyDI74IZBKKe6P5GqSfqULmlcKE7leMQVKk';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 const MODELS = [
   'gemini-2.0-flash-exp',
@@ -18,6 +18,7 @@ export { TONES };
 
 export async function rewriteWithAI(text, tone, clientContext = '') {
   if (!text) throw new Error('No hay texto para reescribir');
+  if (!GEMINI_API_KEY) throw new Error('API Key de Gemini no configurada. Por favor configúrala en las variables de entorno.');
 
   const prompt = `Actúa como un asistente experto de soporte técnico y cobranzas para un ISP (Proveedor de Internet).
 Tu tarea es reescribir el siguiente mensaje usando un tono: ${tone.toUpperCase()}.

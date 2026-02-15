@@ -2,8 +2,8 @@ import * as XLSX from 'xlsx';
 import useStore from '../store/useStore';
 import { CONFIG } from '../utils/constants'; // Asumiendo que existe, si no, usa las variables de entorno directo
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1010107284451-t2ibr0o7i7e7vnv4qftvgvov7hl387kj.apps.googleusercontent.com';
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || 'AIzaSyDcQj9F2Sj-vLwr3Bht80fPsii1SkrVi0A';
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || '';
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
 
