@@ -2,8 +2,15 @@ import * as XLSX from 'xlsx';
 import useStore from '../store/useStore';
 import { CONFIG } from '../utils/constants'; // Asumiendo que existe, si no, usa las variables de entorno directo
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || '';
+// Funciones para obtener credenciales desde localStorage o variables de entorno
+function getGoogleClientId() {
+  return localStorage.getItem('isp_google_client_id') || import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+}
+
+function getGoogleApiKey() {
+  return localStorage.getItem('isp_google_api_key') || import.meta.env.VITE_GOOGLE_API_KEY || '';
+}
+
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
 const SCOPES = 'https://www.googleapis.com/auth/drive';
 
@@ -43,6 +50,9 @@ export async function initGoogleDrive() {
 }
 
 async function doInit() {
+  const API_KEY = getGoogleApiKey();
+  const CLIENT_ID = getGoogleClientId();
+
   // Init GAPI
   if (!gapiInited) {
     await new Promise((resolve, reject) => {
