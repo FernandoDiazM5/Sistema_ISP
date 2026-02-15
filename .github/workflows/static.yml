@@ -35,80 +35,27 @@ jobs:
       - name: Build
         run: cd isp-system && npm run build
 
-      - name: Inyectar variables de entorno en index.html
-        env:
-          GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
-          GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
-          GOOGLE_SHEET_ID: ${{ secrets.VITE_GOOGLE_SHEET_ID }}
-          GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
-          FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
-          FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      - name: Crear config.js con variables de entorno
         run: |
           cd isp-system/dist
-
-          # Crear script de Python para inyectar las variables
-          cat > inject.py << 'PYTHONSCRIPT'
-          import os
-
-          # Leer variables de entorno y limpiar saltos de línea/espacios
-          google_client_id = os.environ.get('GOOGLE_CLIENT_ID', '').strip()
-          google_api_key = os.environ.get('GOOGLE_API_KEY', '').strip()
-          google_sheet_id = os.environ.get('GOOGLE_SHEET_ID', '').strip()
-          gemini_api_key = os.environ.get('GEMINI_API_KEY', '').strip()
-          firebase_api_key = os.environ.get('FIREBASE_API_KEY', '').strip()
-          firebase_auth_domain = os.environ.get('FIREBASE_AUTH_DOMAIN', '').strip()
-          firebase_project_id = os.environ.get('FIREBASE_PROJECT_ID', '').strip()
-          firebase_storage_bucket = os.environ.get('FIREBASE_STORAGE_BUCKET', '').strip()
-          firebase_messaging_sender_id = os.environ.get('FIREBASE_MESSAGING_SENDER_ID', '').strip()
-          firebase_app_id = os.environ.get('FIREBASE_APP_ID', '').strip()
-
-          # Leer el index.html
-          with open('index.html', 'r', encoding='utf-8') as f:
-              html = f.read()
-
-          # Script a inyectar (escapar comillas en los valores)
-          env_script = f"""<script>
-          window.ENV_CONFIG = {{
-            GOOGLE_CLIENT_ID: "{google_client_id}",
-            GOOGLE_API_KEY: "{google_api_key}",
-            GOOGLE_SHEET_ID: "{google_sheet_id}",
-            GEMINI_API_KEY: "{gemini_api_key}",
-            FIREBASE_API_KEY: "{firebase_api_key}",
-            FIREBASE_AUTH_DOMAIN: "{firebase_auth_domain}",
-            FIREBASE_PROJECT_ID: "{firebase_project_id}",
-            FIREBASE_STORAGE_BUCKET: "{firebase_storage_bucket}",
-            FIREBASE_MESSAGING_SENDER_ID: "{firebase_messaging_sender_id}",
-            FIREBASE_APP_ID: "{firebase_app_id}"
-          }};
-          console.log('✅ ENV_CONFIG cargado desde GitHub Secrets');
-          console.log('Keys disponibles:', Object.keys(window.ENV_CONFIG));
-          </script>
-          """
-
-          # Inyectar antes de </head>
-          html = html.replace('</head>', env_script + '\n  </head>')
-
-          # Guardar
-          with open('index.html', 'w', encoding='utf-8') as f:
-              f.write(html)
-
-          print('✅ ENV_CONFIG inyectado correctamente en index.html')
-          PYTHONSCRIPT
-
-          # Ejecutar el script de Python
-          python3 inject.py
-
-          # Limpiar
-          rm inject.py
-
-          # Verificar que se inyectó
-          echo "=== Verificando inyección ==="
-          grep -A 15 "window.ENV_CONFIG" index.html || echo "⚠️ ERROR: No se encontró ENV_CONFIG"
-          echo "=== Fin verificación ==="
+          cat > config.js << EOF
+          window.ENV_CONFIG = {
+            GOOGLE_CLIENT_ID: "${{ secrets.VITE_GOOGLE_CLIENT_ID }}",
+            GOOGLE_API_KEY: "${{ secrets.VITE_GOOGLE_API_KEY }}",
+            GOOGLE_SHEET_ID: "${{ secrets.VITE_GOOGLE_SHEET_ID }}",
+            GEMINI_API_KEY: "${{ secrets.VITE_GEMINI_API_KEY }}",
+            FIREBASE_API_KEY: "${{ secrets.VITE_FIREBASE_API_KEY }}",
+            FIREBASE_AUTH_DOMAIN: "${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}",
+            FIREBASE_PROJECT_ID: "${{ secrets.VITE_FIREBASE_PROJECT_ID }}",
+            FIREBASE_STORAGE_BUCKET: "${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}",
+            FIREBASE_MESSAGING_SENDER_ID: "${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}",
+            FIREBASE_APP_ID: "${{ secrets.VITE_FIREBASE_APP_ID }}"
+          };
+          console.log('✅ ENV_CONFIG cargado desde config.js');
+          EOF
+          echo "✅ config.js creado"
+          ls -la config.js
+          cat config.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
