@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { DayPicker } from 'react-day-picker';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
-import 'react-day-picker/dist/style.css';
+import 'react-day-picker/style.css';
 
 // Basic styles override for dark mode harmony if not using CSS variables
 const css = `

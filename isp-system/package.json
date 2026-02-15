@@ -1,6 +1,7 @@
 {
   "name": "isp-system",
   "private": true,
+  "homepage": "https://fernandodiazm5.github.io/Sistema_ISP/",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
