@@ -35,46 +35,58 @@ jobs:
         run: cd isp-system && npm run build
 
       - name: Inyectar variables de entorno en index.html
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+          GOOGLE_SHEET_ID: ${{ secrets.VITE_GOOGLE_SHEET_ID }}
+          GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
           cd isp-system/dist
 
           # Crear script de Python para inyectar las variables
           cat > inject.py << 'PYTHONSCRIPT'
-          import sys
+          import os
+
+          # Leer variables de entorno
+          google_client_id = os.environ.get('GOOGLE_CLIENT_ID', '')
+          google_api_key = os.environ.get('GOOGLE_API_KEY', '')
+          google_sheet_id = os.environ.get('GOOGLE_SHEET_ID', '')
+          gemini_api_key = os.environ.get('GEMINI_API_KEY', '')
+          firebase_api_key = os.environ.get('FIREBASE_API_KEY', '')
+          firebase_auth_domain = os.environ.get('FIREBASE_AUTH_DOMAIN', '')
+          firebase_project_id = os.environ.get('FIREBASE_PROJECT_ID', '')
+          firebase_storage_bucket = os.environ.get('FIREBASE_STORAGE_BUCKET', '')
+          firebase_messaging_sender_id = os.environ.get('FIREBASE_MESSAGING_SENDER_ID', '')
+          firebase_app_id = os.environ.get('FIREBASE_APP_ID', '')
 
           # Leer el index.html
           with open('index.html', 'r', encoding='utf-8') as f:
               html = f.read()
 
-          # Script a inyectar
-          env_script = """<script>
-          window.ENV_CONFIG = {
-            GOOGLE_CLIENT_ID: "REPLACE_GOOGLE_CLIENT_ID",
-            GOOGLE_API_KEY: "REPLACE_GOOGLE_API_KEY",
-            GOOGLE_SHEET_ID: "REPLACE_GOOGLE_SHEET_ID",
-            GEMINI_API_KEY: "REPLACE_GEMINI_API_KEY",
-            FIREBASE_API_KEY: "REPLACE_FIREBASE_API_KEY",
-            FIREBASE_AUTH_DOMAIN: "REPLACE_FIREBASE_AUTH_DOMAIN",
-            FIREBASE_PROJECT_ID: "REPLACE_FIREBASE_PROJECT_ID",
-            FIREBASE_STORAGE_BUCKET: "REPLACE_FIREBASE_STORAGE_BUCKET",
-            FIREBASE_MESSAGING_SENDER_ID: "REPLACE_FIREBASE_MESSAGING_SENDER_ID",
-            FIREBASE_APP_ID: "REPLACE_FIREBASE_APP_ID"
-          };
-          console.log('✅ ENV_CONFIG cargado:', Object.keys(window.ENV_CONFIG));
+          # Script a inyectar (escapar comillas en los valores)
+          env_script = f"""<script>
+          window.ENV_CONFIG = {{
+            GOOGLE_CLIENT_ID: "{google_client_id}",
+            GOOGLE_API_KEY: "{google_api_key}",
+            GOOGLE_SHEET_ID: "{google_sheet_id}",
+            GEMINI_API_KEY: "{gemini_api_key}",
+            FIREBASE_API_KEY: "{firebase_api_key}",
+            FIREBASE_AUTH_DOMAIN: "{firebase_auth_domain}",
+            FIREBASE_PROJECT_ID: "{firebase_project_id}",
+            FIREBASE_STORAGE_BUCKET: "{firebase_storage_bucket}",
+            FIREBASE_MESSAGING_SENDER_ID: "{firebase_messaging_sender_id}",
+            FIREBASE_APP_ID: "{firebase_app_id}"
+          }};
+          console.log('✅ ENV_CONFIG cargado desde GitHub Secrets');
+          console.log('Keys disponibles:', Object.keys(window.ENV_CONFIG));
           </script>
           """
-
-          # Reemplazar placeholders con valores de argumentos
-          env_script = env_script.replace("REPLACE_GOOGLE_CLIENT_ID", sys.argv[1])
-          env_script = env_script.replace("REPLACE_GOOGLE_API_KEY", sys.argv[2])
-          env_script = env_script.replace("REPLACE_GOOGLE_SHEET_ID", sys.argv[3])
-          env_script = env_script.replace("REPLACE_GEMINI_API_KEY", sys.argv[4])
-          env_script = env_script.replace("REPLACE_FIREBASE_API_KEY", sys.argv[5])
-          env_script = env_script.replace("REPLACE_FIREBASE_AUTH_DOMAIN", sys.argv[6])
-          env_script = env_script.replace("REPLACE_FIREBASE_PROJECT_ID", sys.argv[7])
-          env_script = env_script.replace("REPLACE_FIREBASE_STORAGE_BUCKET", sys.argv[8])
-          env_script = env_script.replace("REPLACE_FIREBASE_MESSAGING_SENDER_ID", sys.argv[9])
-          env_script = env_script.replace("REPLACE_FIREBASE_APP_ID", sys.argv[10])
 
           # Inyectar antes de </head>
           html = html.replace('</head>', env_script + '\n  </head>')
@@ -83,21 +95,11 @@ jobs:
           with open('index.html', 'w', encoding='utf-8') as f:
               f.write(html)
 
-          print('✅ ENV_CONFIG inyectado correctamente')
+          print('✅ ENV_CONFIG inyectado correctamente en index.html')
           PYTHONSCRIPT
 
-          # Ejecutar el script de Python pasando los secretos como argumentos
-          python3 inject.py \
-            "${{ secrets.VITE_GOOGLE_CLIENT_ID }}" \
-            "${{ secrets.VITE_GOOGLE_API_KEY }}" \
-            "${{ secrets.VITE_GOOGLE_SHEET_ID }}" \
-            "${{ secrets.VITE_GEMINI_API_KEY }}" \
-            "${{ secrets.VITE_FIREBASE_API_KEY }}" \
-            "${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}" \
-            "${{ secrets.VITE_FIREBASE_PROJECT_ID }}" \
-            "${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}" \
-            "${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}" \
-            "${{ secrets.VITE_FIREBASE_APP_ID }}"
+          # Ejecutar el script de Python
+          python3 inject.py
 
           # Limpiar
           rm inject.py
