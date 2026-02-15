@@ -3,6 +3,7 @@ import { Wifi } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
+import DiagnosticoEnv from '../components/DiagnosticoEnv';
 
 // Función para obtener el Client ID desde variable de entorno (PRIORIDAD) o localStorage (fallback)
 function getGoogleClientId() {
@@ -165,6 +166,9 @@ export default function LoginPage() {
           Solo usuarios autorizados pueden acceder
         </p>
       </div>
+
+      {/* Componente de diagnóstico */}
+      <DiagnosticoEnv />
     </div>
   );
 }
