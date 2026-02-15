@@ -1,0 +1,55 @@
+name: Deploy with API Key Injection
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Verify Secret is configured
+        run: |
+          if [ -z "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "❌ ERROR: GEMINI_API_KEY secret is not configured!"
+            echo "Go to: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          else
+            echo "✅ GEMINI_API_KEY secret found"
+          fi
+
+      - name: Create config.js with API Key
+        run: |
+          cat > config.js << 'EOF'
+          window.GEMINI_API_KEY = "${{ secrets.GEMINI_API_KEY }}";
+          EOF
+          echo "✅ config.js created successfully"
+          cat config.js
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
