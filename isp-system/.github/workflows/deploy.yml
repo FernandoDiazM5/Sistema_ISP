@@ -31,9 +31,12 @@ jobs:
       - name: Install dependencies
         run: cd isp-system && npm ci
 
-      - name: Create config.js with API Keys (PlanesFiwis approach)
+      - name: Build
+        run: cd isp-system && npm run build
+
+      - name: Create config.js in dist (PlanesFiwis approach)
         run: |
-          cd isp-system/public
+          cd isp-system/dist
           cat > config.js << 'EOF'
           // Configuración de API Keys inyectada dinámicamente desde GitHub Secrets
           window.ENV_CONFIG = {
@@ -50,10 +53,8 @@ jobs:
           };
           console.log('✅ Variables de entorno cargadas desde GitHub Secrets');
           EOF
-          echo "✅ config.js created with secrets"
-
-      - name: Build
-        run: cd isp-system && npm run build
+          echo "✅ config.js created in dist/"
+          ls -la config.js
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
