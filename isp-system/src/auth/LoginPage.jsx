@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wifi } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
@@ -12,6 +12,51 @@ function getGoogleClientId() {
 export default function LoginPage() {
   const { login } = useAuth();
   const [error, setError] = useState('');
+  const googleInitialized = useRef(false);
+
+  useEffect(() => {
+    const clientId = getGoogleClientId();
+
+    if (!clientId || googleInitialized.current || !window.google) {
+      return;
+    }
+
+    try {
+      // Inicializar Google Identity Services solo una vez
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => {
+          try {
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            const userEmail = payload.email;
+
+            // Verificar si el correo está autorizado
+            const isAuthorized = useStore.getState().isEmailAuthorized(userEmail);
+
+            if (!isAuthorized) {
+              setError('No tienes autorización para acceder a este sistema. Contacta al administrador.');
+              return;
+            }
+
+            // Si está autorizado, continuar con el login
+            login({
+              email: userEmail,
+              nombre: payload.name,
+              foto: payload.picture,
+              rol: 'ADMIN',
+            });
+          } catch (err) {
+            setError('Error al procesar el inicio de sesión. Intenta nuevamente.');
+            console.error('Error en login:', err);
+          }
+        },
+      });
+
+      googleInitialized.current = true;
+    } catch (err) {
+      console.error('Error al inicializar Google:', err);
+    }
+  }, [login]);
 
   const handleDemoLogin = () => {
     login({
@@ -30,36 +75,22 @@ export default function LoginPage() {
       return;
     }
 
-    // Google Identity Services flow
-    window.google?.accounts.id.initialize({
-      client_id: clientId,
-      callback: (response) => {
-        try {
-          const payload = JSON.parse(atob(response.credential.split('.')[1]));
-          const userEmail = payload.email;
+    if (!window.google || !googleInitialized.current) {
+      setError('Cargando Google Sign-In... Intenta de nuevo en un momento.');
+      return;
+    }
 
-          // Verificar si el correo está autorizado
-          const isAuthorized = useStore.getState().isEmailAuthorized(userEmail);
-
-          if (!isAuthorized) {
-            setError('No tienes autorización para acceder a este sistema. Contacta al administrador.');
-            return;
-          }
-
-          // Si está autorizado, continuar con el login
-          login({
-            email: userEmail,
-            nombre: payload.name,
-            foto: payload.picture,
-            rol: 'ADMIN', // En producción se lee desde tb_Usuarios_Auth
-          });
-        } catch (err) {
-          setError('Error al procesar el inicio de sesión. Intenta nuevamente.');
-          console.error('Error en login:', err);
+    try {
+      // Solo mostrar el prompt, no reinicializar
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          console.log('Prompt not displayed:', notification.getNotDisplayedReason());
         }
-      },
-    });
-    window.google?.accounts.id.prompt();
+      });
+    } catch (err) {
+      console.error('Error al mostrar prompt:', err);
+      setError('Error al iniciar sesión. Intenta de nuevo.');
+    }
   };
 
   return (

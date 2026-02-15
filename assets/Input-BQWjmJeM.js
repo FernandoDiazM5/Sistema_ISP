@@ -1,0 +1,11 @@
+import{r as a,l as S,j as n}from"./index-me4rMZUI.js";import{S as v}from"./search-K4IrGess.js";function $(i=[],o={}){const{searchFields:t=[],initialFilters:l={},pageSize:m=20}=o,[c,x]=a.useState(""),[u,h]=a.useState(""),[d,g]=a.useState(l),[j,p]=a.useState({pageIndex:0,pageSize:m});a.useEffect(()=>{const e=setTimeout(()=>{h(c),p(r=>({...r,pageIndex:0}))},300);return()=>clearTimeout(e)},[c]),a.useEffect(()=>{p(e=>({...e,pageIndex:0}))},[d]);const b=a.useMemo(()=>{let e=i;if(u&&t.length>0){const r=u.toLowerCase();e=e.filter(s=>t.some(f=>{const N=s[f];return String(N||"").toLowerCase().includes(r)}))}return Object.keys(d).forEach(r=>{const s=d[r];s&&s!=="all"&&(e=e.filter(f=>typeof s=="function"?s(f):String(f[r])===String(s)))}),e},[i,u,d,t]),y=()=>{x(""),h(""),g(l),p(e=>({...e,pageIndex:0}))},I=(e,r)=>{g(s=>({...s,[e]:r}))};return{filteredData:b,totalItems:i.length,filteredCount:b.length,searchInput:c,setSearchInput:x,hasActiveSearch:!!c,filters:d,updateFilter:I,setFilters:g,resetFilters:y,pagination:j,setPagination:p}}const w=S.memo(function({label:o,error:t,icon:l,className:m="",containerClassName:c="",type:x="text",...u}){return n.jsxs("div",{className:`flex flex-col gap-1.5 ${c}`,children:[o&&n.jsx("label",{className:"text-xs font-semibold text-text-secondary uppercase tracking-wide",children:o}),n.jsxs("div",{className:"relative group",children:[l&&n.jsx("div",{className:"absolute left-3 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-accent-blue transition-colors",children:n.jsx(l,{size:16})}),n.jsx("input",{type:x,className:`
+            w-full rounded-xl bg-bg-secondary border border-border 
+            text-sm text-text-primary placeholder:text-text-muted 
+            outline-none transition-all duration-200
+            focus:border-accent-blue focus:bg-bg-card
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${l?"pl-9":"pl-3"} 
+            ${t?"border-red-500 focus:border-red-500":""}
+            ${m}
+            py-2.5
+          `,...u})]}),t&&n.jsx("span",{className:"text-xs text-red-500",children:t})]})});S.memo(function({className:o="",...t}){return n.jsx(w,{icon:v,placeholder:"Buscar...",className:`rounded-full ${o}`,...t})});export{w as I,$ as u};
