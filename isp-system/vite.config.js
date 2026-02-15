@@ -8,7 +8,25 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // VitePWA disabled for debugging
+    VitePWA({
+      registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+      },
+      manifest: {
+        name: 'ISP Sistema de Gestión',
+        short_name: 'ISP Sistema',
+        description: 'Sistema de gestión para proveedores de Internet',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: 'vite.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          }
+        ]
+      }
+    })
   ],
 
   build: {
