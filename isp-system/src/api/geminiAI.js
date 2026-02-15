@@ -1,6 +1,6 @@
-// Función para obtener la API key desde localStorage o variable de entorno
+// Función para obtener la API key desde variable de entorno (PRIORIDAD) o localStorage (fallback)
 function getGeminiApiKey() {
-  return localStorage.getItem('isp_gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
+  return import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('isp_gemini_api_key') || '';
 }
 
 const MODELS = [

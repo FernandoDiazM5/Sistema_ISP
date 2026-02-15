@@ -1,14 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
 
-// Helper para obtener config desde localStorage o variables de entorno
+// Helper para obtener config desde variables de entorno (PRIORIDAD) o localStorage (fallback)
 const getConfig = () => ({
-    apiKey: localStorage.getItem('isp_firebase_api_key') || import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: localStorage.getItem('isp_firebase_auth_domain') || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: localStorage.getItem('isp_firebase_project_id') || import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: localStorage.getItem('isp_firebase_storage_bucket') || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: localStorage.getItem('isp_firebase_messaging_sender_id') || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: localStorage.getItem('isp_firebase_app_id') || import.meta.env.VITE_FIREBASE_APP_ID,
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || localStorage.getItem('isp_firebase_api_key') || '',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || localStorage.getItem('isp_firebase_auth_domain') || '',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || localStorage.getItem('isp_firebase_project_id') || '',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || localStorage.getItem('isp_firebase_storage_bucket') || '',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || localStorage.getItem('isp_firebase_messaging_sender_id') || '',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || localStorage.getItem('isp_firebase_app_id') || '',
 });
 
 let db = null;

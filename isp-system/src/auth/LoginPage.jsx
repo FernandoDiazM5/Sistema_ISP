@@ -4,9 +4,9 @@ import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
 
-// Función para obtener el Client ID desde localStorage o variable de entorno
+// Función para obtener el Client ID desde variable de entorno (PRIORIDAD) o localStorage (fallback)
 function getGoogleClientId() {
-  return localStorage.getItem('isp_google_client_id') || CONFIG.GOOGLE_CLIENT_ID || '';
+  return CONFIG.GOOGLE_CLIENT_ID || localStorage.getItem('isp_google_client_id') || '';
 }
 
 export default function LoginPage() {

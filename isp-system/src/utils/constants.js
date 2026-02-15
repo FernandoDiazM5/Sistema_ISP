@@ -1,9 +1,23 @@
 export const CONFIG = {
+  // Google Sheets API
   GOOGLE_API_KEY: import.meta.env.VITE_GOOGLE_API_KEY || '',
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
   GOOGLE_SHEET_ID: import.meta.env.VITE_GOOGLE_SHEET_ID || '',
   SHEET_NAME: 'Sheet1',
   AUTH_SHEET: 'tb_Usuarios_Auth',
+
+  // Gemini AI
+  GEMINI_API_KEY: import.meta.env.VITE_GEMINI_API_KEY || '',
+
+  // Firebase
+  FIREBASE: {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  },
 };
 
 export const DEMO_RAW_DATA = [
