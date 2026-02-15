@@ -1,4 +1,6 @@
-# React + Vite
+# ISP Sistema de Gestión
+
+Sistema de gestión para proveedores de internet (ISP) con React + Vite.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
