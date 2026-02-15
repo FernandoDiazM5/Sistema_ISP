@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   Plus, AlertCircle, Loader2, CheckCircle2, ArrowUpRight,
-  LayoutList, Kanban, Clock, X, Search, Trash2, AlertTriangle
+  LayoutList, Kanban, Clock, X, Search, Trash2, AlertTriangle, Calendar
 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
@@ -13,6 +13,8 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
+import MultiSelect from '../ui/MultiSelect';
+import DateRangePicker from '../ui/DateRangePicker';
 
 // Modals
 import TicketCreateModal from './modals/TicketCreateModal';
@@ -23,16 +25,18 @@ import HistoryItemModal from './modals/HistoryItemModal';
 import EscalationModal from './modals/EscalationModal';
 
 const ESTADOS_COLOR = {
-  'Abierto': 'danger',
+  'Abierto': 'info',
   'En Proceso': 'warning',
   'Escalado': 'orange',
   'Resuelto': 'success',
   'Cerrado': 'default',
   'Cancelado': 'default',
+  'Derivado a Visita': 'purple',
+  'Derivado a Planta Externa': 'orange',
 };
 
 const ESTADOS_KANBAN_MAP = {
-  'Abierto': { bg: 'bg-red-500/10', text: 'text-red-500', dot: 'bg-red-500' },
+  'Abierto': { bg: 'bg-blue-500/10', text: 'text-blue-500', dot: 'bg-blue-500' },
   'En Proceso': { bg: 'bg-yellow-500/10', text: 'text-yellow-500', dot: 'bg-yellow-500' },
   'Escalado': { bg: 'bg-orange-500/10', text: 'text-orange-500', dot: 'bg-orange-500' },
   'Resuelto': { bg: 'bg-green-500/10', text: 'text-green-500', dot: 'bg-green-500' },
@@ -62,6 +66,17 @@ export default function TicketsPage() {
   const [viewMode, setViewMode] = useState('list');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
+  // Search Columns State
+  const [searchColumns, setSearchColumns] = useState(['clienteNombre', 'id', 'clienteId', 'descripcion']);
+
+  const SEARCH_OPTIONS = [
+    { label: 'ID Ticket', value: 'id' },
+    { label: 'Cliente', value: 'clienteNombre' },
+    { label: 'ID Cliente', value: 'clienteId' },
+    { label: 'Descripción', value: 'descripcion' },
+    { label: 'Asignado a', value: 'asignado' },
+  ];
+
   // Custom Hook for Filters
   const {
     filteredData,
@@ -71,38 +86,55 @@ export default function TicketsPage() {
     updateFilter,
     resetFilters
   } = useFilters(tickets, {
-    searchFields: ['clienteNombre', 'id', 'clienteId', 'descripcion', 'asignado'],
-    initialFilters: { estado: 'all', prioridad: 'all' }
+    searchFields: searchColumns, // Dynamic search columns
+    initialFilters: {} // Don't pass filters here, we handle them manually for MultiSelect
   });
 
-  // Additional Date Filtering
+  // Manually manage filter state since we aren't passing it to the hook
+  const [localFilters, setLocalFilters] = useState({ estado: [], prioridad: [] });
+
+  const updateLocalFilter = (key, value) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Additional Date Filtering & MultiSelect Logic
   const finalFiltered = useMemo(() => {
     return filteredData.filter(t => {
       const matchStart = !dateRange.start || t.fecha >= dateRange.start;
       const matchEnd = !dateRange.end || t.fecha <= dateRange.end;
-      const matchKanban = viewMode === 'list' || filters.estado === 'all' || t.estado === filters.estado;
-      return matchStart && matchEnd && matchKanban;
-    });
-  }, [filteredData, dateRange, viewMode, filters.estado]);
 
-  // Kanban grouped tickets
+      // MultiSelect Logic: empty array = all
+      const matchStatus = localFilters.estado.length === 0 || localFilters.estado.includes(t.estado);
+      const matchPrioridad = localFilters.prioridad.length === 0 || localFilters.prioridad.includes(t.prioridad);
+
+      // Kanban view overrides status filter
+      const matchKanban = viewMode === 'list' || matchStatus;
+
+      return matchStart && matchEnd && matchKanban && matchPrioridad;
+    });
+  }, [filteredData, dateRange, viewMode, localFilters]);
+
+  // Kanban grouped tickets (updated for multiselect)
   const kanbanData = useMemo(() => {
     const grouped = {};
     KANBAN_COLUMNS.forEach(col => {
-      // Filter by date range and search, but ignore status filter for Kanban columns
       grouped[col] = tickets.filter(t => {
-        const matchesSearch = !searchInput ||
-          t.clienteNombre.toLowerCase().includes(searchInput.toLowerCase()) ||
-          t.id.toLowerCase().includes(searchInput.toLowerCase());
+        // Search logic manually applied here since useFilters handles the main list
+        const matchesSearch = searchColumns.some(field =>
+          String(t[field] || '').toLowerCase().includes(searchInput.toLowerCase())
+        );
+
         const matchStart = !dateRange.start || t.fecha >= dateRange.start;
         const matchEnd = !dateRange.end || t.fecha <= dateRange.end;
-        const matchPrioridad = filters.prioridad === 'all' || t.prioridad === filters.prioridad;
+
+        // MultiSelect Priority Logic
+        const matchPrioridad = localFilters.prioridad.length === 0 || localFilters.prioridad.includes(t.prioridad);
 
         return t.estado === col && matchesSearch && matchStart && matchEnd && matchPrioridad;
       });
     });
     return grouped;
-  }, [tickets, searchInput, dateRange, filters.prioridad]);
+  }, [tickets, searchInput, dateRange, localFilters.prioridad, searchColumns]);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -272,7 +304,7 @@ export default function TicketsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Abiertos', value: stats.abiertos, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-500/10' },
+          { label: 'Abiertos', value: stats.abiertos, icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
           { label: 'En Proceso', value: stats.enProceso, icon: Loader2, color: 'text-amber-500', bg: 'bg-amber-500/10' },
           { label: 'Escalados', value: stats.escalados, icon: ArrowUpRight, color: 'text-orange-500', bg: 'bg-orange-500/10' },
           { label: 'Resueltos', value: stats.resueltos, icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-500/10' },
@@ -289,62 +321,45 @@ export default function TicketsPage() {
         ))}
       </div>
 
-      {/* Filters */}
+      {/* Filters Toolbar */}
       <div className="flex gap-3 mb-5 flex-wrap items-center">
-        <div className="flex-[1_1_280px]">
-          <Input
-            icon={Search}
-            placeholder="Buscar por cliente, ID, descripción..."
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            containerClassName="w-full"
-          />
-        </div>
-
-        {viewMode === 'list' && (
-          <div className="min-w-[150px]">
-            <select
-              value={filters.estado}
-              onChange={e => updateFilter('estado', e.target.value)}
-              className="w-full h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary focus:border-accent-blue outline-none"
-            >
-              <option value="all">Todos los estados</option>
-              {Object.keys(ESTADOS_COLOR).map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
+        {/* Search & Columns */}
+        <div className="flex-[1_1_300px] flex gap-2">
+          <div className="flex-[2]">
+            <Input
+              icon={Search}
+              placeholder="Buscar..."
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              containerClassName="w-full"
+            />
           </div>
-        )}
-
-        <div className="min-w-[140px]">
-          <select
-            value={filters.prioridad}
-            onChange={e => updateFilter('prioridad', e.target.value)}
-            className="w-full h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary focus:border-accent-blue outline-none"
-          >
-            <option value="all">Toda prioridad</option>
-            {Object.keys(PRIORIDAD_COLOR).map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <div className="flex-1 min-w-[140px]">
+            <MultiSelect
+              placeholder="Columnas..."
+              options={SEARCH_OPTIONS}
+              value={searchColumns}
+              onChange={setSearchColumns}
+              maxDisplay={1}
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-bg-secondary rounded-xl border border-border px-3 h-[42px]">
-          <span className="text-[10px] text-text-muted uppercase font-semibold">Fecha:</span>
-          <input
-            type="date"
-            value={dateRange.start}
-            onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-            className="bg-transparent border-none text-xs text-text-primary outline-none w-24"
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Date Range Filter */}
+          <DateRangePicker
+            dateRange={{
+              from: dateRange.start ? new Date(dateRange.start + 'T00:00:00') : undefined,
+              to: dateRange.end ? new Date(dateRange.end + 'T00:00:00') : undefined
+            }}
+            onChange={(range) => {
+              setDateRange({
+                start: range?.from ? range.from.toISOString().split('T')[0] : '',
+                end: range?.to ? range.to.toISOString().split('T')[0] : ''
+              });
+            }}
+            placeholder="Filtrar por fecha..."
           />
-          <span className="text-text-muted">-</span>
-          <input
-            type="date"
-            value={dateRange.end}
-            onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-            className="bg-transparent border-none text-xs text-text-primary outline-none w-24"
-          />
-          {(dateRange.start || dateRange.end) && (
-            <button onClick={() => setDateRange({ start: '', end: '' })} className="text-text-muted hover:text-text-primary border-none bg-transparent cursor-pointer ml-1">
-              <X size={12} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -356,30 +371,38 @@ export default function TicketsPage() {
               <p className="text-text-muted text-sm">No se encontraron tickets con los filtros aplicados.</p>
             </div>
           )}
-          {finalFiltered.map(t => (
-            <Card key={t.id} padding="p-4" onClick={() => setSelectedTicket(t)} className="cursor-pointer hover:border-accent-blue/50 hover:bg-bg-card-hover">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="font-mono text-xs text-text-muted">{t.id}</span>
-                  <Badge variant={ESTADOS_COLOR[t.estado]}>{t.estado}</Badge>
-                  <Badge variant={PRIORIDAD_COLOR[t.prioridad]}>{t.prioridad}</Badge>
-                  {(t.tipoAtencion || t.tipo) && <Badge variant="default" size="sm">{t.tipoAtencion || t.tipo}</Badge>}
+          {finalFiltered.map(t => {
+            const client = getClientInfo(t.clienteId);
+            return (
+              <Card key={t.id} padding="p-4" onClick={() => setSelectedTicket(t)} className="cursor-pointer hover:border-accent-blue/50 hover:bg-bg-card-hover">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="font-mono text-xs text-text-muted">{t.id}</span>
+                    <Badge variant={ESTADOS_COLOR[t.estado]}>{t.estado}</Badge>
+                    <Badge variant={PRIORIDAD_COLOR[t.prioridad]}>{t.prioridad}</Badge>
+                    {(t.tipoAtencion || t.tipo) && <Badge variant="default" size="sm">{t.tipoAtencion || t.tipo}</Badge>}
+                    {client?.tecnologia && (
+                      <Badge variant="default" size="sm" className="bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20">
+                        {client.tecnologia}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-text-muted">
+                    {t.slaTiempoLimite && <span className="flex items-center gap-1 text-accent-yellow"><Clock size={12} /> SLA: {t.slaTiempoLimite}</span>}
+                    <span>{t.fecha}</span>
+                    <AdjuntosCount count={t.adjuntos?.length} />
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-[11px] text-text-muted">
-                  {t.slaTiempoLimite && <span className="flex items-center gap-1 text-accent-yellow"><Clock size={12} /> SLA: {t.slaTiempoLimite}</span>}
-                  <span>{t.fecha}</span>
-                  <AdjuntosCount count={t.adjuntos?.length} />
+                <p className="text-sm font-medium mb-1">{t.clienteNombre}</p>
+                <p className="text-xs text-text-secondary line-clamp-1">{t.descripcion}</p>
+                <div className="mt-2 flex items-center gap-4 text-[11px] text-text-muted">
+                  <span>Asignado: <span className="text-text-secondary">{t.asignado || 'Sin asignar'}</span></span>
+                  {t.categoriaNombre && <span>Cat: <span className="text-text-secondary">{t.categoriaNombre}</span></span>}
+                  <span>Actualizado: {t.fechaUpdate}</span>
                 </div>
-              </div>
-              <p className="text-sm font-medium mb-1">{t.clienteNombre}</p>
-              <p className="text-xs text-text-secondary line-clamp-1">{t.descripcion}</p>
-              <div className="mt-2 flex items-center gap-4 text-[11px] text-text-muted">
-                <span>Asignado: <span className="text-text-secondary">{t.asignado || 'Sin asignar'}</span></span>
-                {t.categoriaNombre && <span>Cat: <span className="text-text-secondary">{t.categoriaNombre}</span></span>}
-                <span>Actualizado: {t.fechaUpdate}</span>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
