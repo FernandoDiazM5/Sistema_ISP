@@ -71,7 +71,7 @@ export default function LoginPage() {
     const clientId = getGoogleClientId();
 
     if (!clientId) {
-      setError('Para activar Google OAuth, configura tu Client ID en Configuración → Conexión API. Por ahora usa el acceso demo.');
+      setError('Google OAuth no está configurado. Las variables de entorno aún no están disponibles. Por ahora usa el acceso demo.');
       return;
     }
 
