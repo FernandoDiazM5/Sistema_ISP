@@ -6,7 +6,9 @@ import useStore from '../store/useStore';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const loadCurrentUserByEmail = useStore(s => s.loadCurrentUserByEmail);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const googleInitialized = useRef(false);
 
   useEffect(() => {
@@ -20,29 +22,38 @@ export default function LoginPage() {
       // Inicializar Google Identity Services solo una vez
       window.google.accounts.id.initialize({
         client_id: clientId,
-        callback: (response) => {
+        callback: async (response) => {
           try {
+            setLoading(true);
+            setError('');
+
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
             const userEmail = payload.email;
 
-            // Verificar si el correo está autorizado
-            const isAuthorized = useStore.getState().isEmailAuthorized(userEmail);
+            // Verificar si el usuario existe en Firebase
+            const firebaseUser = await loadCurrentUserByEmail(userEmail);
 
-            if (!isAuthorized) {
+            if (!firebaseUser) {
               setError('No tienes autorización para acceder a este sistema. Contacta al administrador.');
+              setLoading(false);
               return;
             }
 
-            // Si está autorizado, continuar con el login
+            // Usuario autenticado y autorizado, completar login
             login({
-              email: userEmail,
-              nombre: payload.name,
-              foto: payload.picture,
-              rol: 'ADMIN',
+              email: firebaseUser.email,
+              nombre: firebaseUser.nombre,
+              foto: firebaseUser.foto || payload.picture,
+              rol: firebaseUser.rol,
+              uid: firebaseUser.uid,
+              permisos: firebaseUser.permisos,
             });
+
+            setLoading(false);
           } catch (err) {
             setError('Error al procesar el inicio de sesión. Intenta nuevamente.');
             console.error('Error en login:', err);
+            setLoading(false);
           }
         },
       });
@@ -51,7 +62,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error('Error al inicializar Google:', err);
     }
-  }, [login]);
+  }, [login, loadCurrentUserByEmail]);
 
   const handleDemoLogin = () => {
     login({
@@ -132,10 +143,11 @@ export default function LoginPage() {
 
         {/* Google Login */}
         <button onClick={handleGoogleLogin}
-          className="w-full py-3 px-5 rounded-xl bg-white text-gray-700 border-none text-sm font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5"
+          disabled={loading}
+          className="w-full py-3 px-5 rounded-xl bg-white text-gray-700 border-none text-sm font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
           <GoogleIcon />
-          Iniciar sesión con Google
+          {loading ? 'Verificando...' : 'Iniciar sesión con Google'}
         </button>
 
         {/* Divider */}

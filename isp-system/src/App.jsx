@@ -7,6 +7,11 @@ import ReloadPrompt from './components/common/ReloadPrompt';
 import ToastContainer from './components/ui/Toast';
 import useStore from './store/useStore';
 
+// Cargar utilidad de inicialización en desarrollo
+if (import.meta.env.DEV) {
+  import('./utils/initSuperAdmin');
+}
+
 // Lazy Load Pages
 const LoginPage = lazy(() => import('./auth/LoginPage'));
 const DashboardPage = lazy(() => import('./components/dashboard/DashboardPage'));
@@ -26,6 +31,7 @@ const InstalacionesPage = lazy(() => import('./components/instalaciones/Instalac
 const PlantaExternaPage = lazy(() => import('./components/planta-externa/PlantaExternaPage'));
 const PostVentaPage = lazy(() => import('./components/post-venta/PostVentaPage'));
 const RequerimientosPage = lazy(() => import('./components/requerimientos/RequerimientosPage'));
+const UsuariosPage = lazy(() => import('./components/usuarios/UsuariosPage'));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -78,6 +84,7 @@ function AppContent() {
           <Route path="/requerimientos" element={<RequerimientosPage />} />
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/equipos" element={<EquiposPage />} />
+          <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/config" element={<ConfiguracionPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

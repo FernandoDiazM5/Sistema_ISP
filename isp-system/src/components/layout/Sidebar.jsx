@@ -1,7 +1,8 @@
-import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText } from 'lucide-react';
+import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
+import { ROLES as USER_ROLES } from '../../types/user';
 
 const navSections = [
   {
@@ -32,6 +33,7 @@ const navSections = [
     label: 'Sistema', items: [
       { to: '/equipos', label: 'Equipos', icon: Box },
       { to: '/reportes', label: 'Reportes', icon: BarChart3 },
+      { to: '/usuarios', label: 'Usuarios', icon: UserCog },
       { to: '/importar', label: 'Importar Datos', icon: CloudUpload },
       { to: '/config', label: 'Configuración', icon: Settings },
     ]
@@ -41,6 +43,18 @@ const navSections = [
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const role = ROLES[user?.rol] || ROLES.TECNICO;
+
+  // Filtrar items de navegación basado en permisos
+  const getFilteredItems = (items) => {
+    return items.filter(item => {
+      // Solo mostrar "Usuarios" si es SUPER_ADMIN
+      if (item.to === '/usuarios') {
+        return user?.rol === USER_ROLES.SUPER_ADMIN;
+      }
+      // Otros items son visibles para todos (se pueden agregar más filtros aquí)
+      return true;
+    });
+  };
 
   return (
     <div className="w-60 h-screen bg-bg-sidebar border-r border-border flex flex-col py-5 px-3">
@@ -58,28 +72,35 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
-        {navSections.map((section, idx) => (
-          <div key={idx}>
-            <p className="text-[9px] uppercase tracking-widest text-text-muted px-3 pt-3 pb-1 font-semibold">{section.label}</p>
-            {section.items.map(item => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => `flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
-                    ${isActive
-                      ? 'bg-accent-blue/12 text-accent-blue font-semibold'
-                      : 'bg-transparent text-text-secondary font-normal hover:bg-white/[0.04]'
-                    }`}
-                >
-                  <Icon size={16} />
-                  {item.label}
-                </NavLink>
-              );
-            })}
-          </div>
-        ))}
+        {navSections.map((section, idx) => {
+          const filteredItems = getFilteredItems(section.items);
+
+          // No mostrar sección si no tiene items visibles
+          if (filteredItems.length === 0) return null;
+
+          return (
+            <div key={idx}>
+              <p className="text-[9px] uppercase tracking-widest text-text-muted px-3 pt-3 pb-1 font-semibold">{section.label}</p>
+              {filteredItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
+                      ${isActive
+                        ? 'bg-accent-blue/12 text-accent-blue font-semibold'
+                        : 'bg-transparent text-text-secondary font-normal hover:bg-white/[0.04]'
+                      }`}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </NavLink>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* User info */}
