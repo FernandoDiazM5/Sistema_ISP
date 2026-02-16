@@ -136,11 +136,58 @@ export async function initSuperAdmin(email, nombre) {
   }
 }
 
+/**
+ * Función para verificar usuarios existentes en Firebase
+ */
+export async function checkUsers() {
+  try {
+    const db = initFirebase();
+    if (!db) {
+      console.error('❌ Firebase no está configurado');
+      return;
+    }
+
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+
+    if (usersSnapshot.empty) {
+      console.log('📋 No hay usuarios en Firebase');
+      return [];
+    }
+
+    const users = [];
+    usersSnapshot.forEach(doc => {
+      users.push({ uid: doc.id, ...doc.data() });
+    });
+
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log(`📋 USUARIOS EN FIREBASE (${users.length} total)`);
+    console.log('═══════════════════════════════════════════════════════');
+    users.forEach((user, idx) => {
+      console.log(`\n${idx + 1}. ${user.nombre}`);
+      console.log(`   📧 Email: ${user.email}`);
+      console.log(`   🔑 UID: ${user.uid}`);
+      console.log(`   🎭 Rol: ${user.rol}`);
+      console.log(`   ${user.activo ? '✅' : '🚫'} Activo: ${user.activo}`);
+      console.log(`   📅 Creado: ${user.createdAt}`);
+    });
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('');
+
+    return users;
+  } catch (error) {
+    console.error('❌ Error al verificar usuarios:', error);
+    return null;
+  }
+}
+
 // ==================== AUTO-INICIALIZACIÓN ====================
 // Ejecutar automáticamente en desarrollo
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  // Exponer función globalmente para uso manual si es necesario
+  // Exponer funciones globalmente para uso manual
   window.initSuperAdmin = initSuperAdmin;
+  window.checkUsers = checkUsers;
 
   // Esperar a que Firebase esté listo y ejecutar auto-creación
   setTimeout(() => {
@@ -150,5 +197,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   }, 2000); // Esperar 2 segundos para que Firebase se inicialice
 
   console.log('🔧 Modo desarrollo: Auto-inicialización activa');
-  console.log('💡 Si necesitas crear usuarios manualmente: initSuperAdmin("email@gmail.com", "Nombre")');
+  console.log('💡 Comandos disponibles:');
+  console.log('   • checkUsers() - Ver todos los usuarios en Firebase');
+  console.log('   • initSuperAdmin("email@gmail.com", "Nombre") - Crear usuario manualmente');
 }

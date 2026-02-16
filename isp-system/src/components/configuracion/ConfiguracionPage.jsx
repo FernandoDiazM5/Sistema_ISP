@@ -462,11 +462,16 @@ export default function ConfiguracionPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {role.permissions.map(p => (
-                      <span key={p} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.05] text-text-secondary border border-border">
+                    {role.permissions.slice(0, 6).map((p, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.05] text-text-secondary border border-border">
                         {p}
                       </span>
                     ))}
+                    {role.permissions.length > 6 && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-medium text-text-muted">
+                        +{role.permissions.length - 6} más
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -474,7 +479,28 @@ export default function ConfiguracionPage() {
           </div>
 
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
-            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuarios Autorizados (Demo)</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-text-secondary">Gestión de Usuarios</h3>
+              <div className="flex items-center gap-2 text-accent-blue text-xs">
+                <Users size={14} />
+                <span>Sistema basado en Firebase</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-accent-blue/5 border border-accent-blue/20">
+              <p className="text-sm text-text-primary mb-2 font-medium">
+                📋 Para gestionar usuarios del sistema:
+              </p>
+              <ol className="text-xs text-text-secondary space-y-1.5 ml-4">
+                <li>1. Ve al módulo <strong className="text-accent-blue">Sistema → Usuarios</strong> en el menú lateral</li>
+                <li>2. Solo usuarios con rol <strong className="text-accent-purple">SUPER_ADMIN</strong> pueden acceder</li>
+                <li>3. Allí podrás crear, editar, activar/desactivar usuarios</li>
+                <li>4. También podrás personalizar permisos por módulo</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuario Demo</h3>
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-left text-[11px] text-text-muted uppercase">
@@ -485,7 +511,7 @@ export default function ConfiguracionPage() {
               </thead>
               <tbody>
                 {DEMO_USERS.map(u => {
-                  const r = ROLES[u.rol] || ROLES.TECNICO;
+                  const r = ROLES[u.rol] || ROLES.VIEWER;
                   return (
                     <tr key={u.email} className="border-t border-border">
                       <td className="py-2.5 px-3 font-mono text-xs">{u.email}</td>
@@ -495,14 +521,16 @@ export default function ConfiguracionPage() {
                           {r.label}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-text-muted text-[11px]">{r.permissions.length} permisos</td>
+                      <td className="py-2.5 px-3 text-text-muted text-[11px]">
+                        {r.permissions.includes('*') ? 'Acceso Total' : `${r.permissions.length} módulos`}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
             <p className="text-[11px] text-text-muted mt-3">
-              * Los usuarios se gestionan desde Google Cloud Console y la hoja <code className="text-accent-blue">tb_Usuarios_Auth</code>
+              * Para acceso con Google OAuth, los usuarios deben estar registrados en Firebase
             </p>
           </div>
 

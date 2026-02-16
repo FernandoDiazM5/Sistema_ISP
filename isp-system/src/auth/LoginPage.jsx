@@ -69,7 +69,9 @@ export default function LoginPage() {
       email: 'admin@isp-system.com',
       nombre: 'Fernando Díaz',
       foto: null,
-      rol: 'ADMIN',
+      rol: 'SUPER_ADMIN',
+      uid: 'demo_user',
+      permisos: null, // El demo tiene permisos totales
     });
   };
 
