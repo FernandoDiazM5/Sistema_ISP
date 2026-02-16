@@ -176,6 +176,9 @@ export const createUsersSlice = (set, get) => ({
     const currentUser = get().currentUser;
     if (!currentUser) return false;
 
+    // 0. SUPER_ADMIN siempre tiene acceso total
+    if (currentUser.rol === 'SUPER_ADMIN') return true;
+
     // 1. Obtener permisos explícitos o predeterminados del rol
     let userPermission = currentUser.permisos?.[module];
 
