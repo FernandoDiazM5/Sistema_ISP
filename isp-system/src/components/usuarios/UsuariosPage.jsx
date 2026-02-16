@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, User, Mail, Shield, Edit3, Trash2, X, Eye, EyeOff, CheckCircle2, XCircle, Calendar, Clock, Crown, Settings, Lock, KeyRound } from 'lucide-react';
+import { Plus, Search, User, Mail, Shield, Edit3, Trash2, X, Eye, EyeOff, CheckCircle2, XCircle, Calendar, Clock, Crown, Settings, Lock, KeyRound, Loader2, AlertCircle } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { ROLES, ROLE_LABELS, MODULES, MODULE_LABELS, PERMISSION_LEVELS, DEFAULT_PERMISSIONS } from '../../types/user';
 import { createUserWithPassword } from '../../api/authAPI';
@@ -43,6 +43,7 @@ export default function UsuariosPage() {
   const toggleUserStatus = useStore(s => s.toggleUserStatus);
   const usersLoading = useStore(s => s.usersLoading);
   const canManageUsers = useStore(s => s.canManageUsers);
+  const addToast = useStore(s => s.addToast);
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -53,6 +54,10 @@ export default function UsuariosPage() {
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [customPermissions, setCustomPermissions] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingPermissions, setIsSavingPermissions] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   // Verificar si puede gestionar usuarios
   useEffect(() => {
@@ -110,6 +115,8 @@ export default function UsuariosPage() {
     setShowModal(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFormErrors({});
+    setIsSubmitting(false);
   };
 
   const handleRoleChange = (rol) => {
@@ -120,21 +127,47 @@ export default function UsuariosPage() {
     }));
   };
 
+  const validateForm = () => {
+    const errors = {};
+
+    if (!form.email) {
+      errors.email = 'El email es obligatorio';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      errors.email = 'El email no es válido';
+    }
+
+    if (!form.nombre || form.nombre.trim().length < 3) {
+      errors.nombre = 'El nombre debe tener al menos 3 caracteres';
+    }
+
+    if (!form.rol) {
+      errors.rol = 'Debes seleccionar un rol';
+    }
+
+    if (!editingId && form.authType === 'email_password') {
+      if (!form.password) {
+        errors.password = 'La contraseña es obligatoria';
+      } else if (form.password.length < 6) {
+        errors.password = 'La contraseña debe tener al menos 6 caracteres';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.email || !form.nombre || !form.rol) {
-      alert('Por favor completa todos los campos obligatorios');
+    if (!validateForm()) {
+      addToast({
+        type: 'error',
+        message: 'Por favor corrige los errores en el formulario',
+      });
       return;
     }
 
-    // Validar contraseña para usuarios con email/password
-    if (!editingId && form.authType === 'email_password') {
-      if (!form.password || form.password.length < 6) {
-        alert('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-    }
+    setIsSubmitting(true);
 
     try {
       if (editingId) {
@@ -145,6 +178,10 @@ export default function UsuariosPage() {
           rol: form.rol,
           permisos: form.permisos,
         });
+        addToast({
+          type: 'success',
+          message: `Usuario ${form.nombre} actualizado exitosamente`,
+        });
       } else {
         // Crear nuevo usuario
         let authUid = null;
@@ -154,7 +191,11 @@ export default function UsuariosPage() {
           const authResult = await createUserWithPassword(form.email, form.password);
 
           if (!authResult.success) {
-            alert(authResult.error);
+            addToast({
+              type: 'error',
+              message: authResult.error || 'Error al crear usuario en Firebase Auth',
+            });
+            setIsSubmitting(false);
             return;
           }
 
@@ -170,27 +211,56 @@ export default function UsuariosPage() {
           permisos: form.permisos,
           authType: form.authType,
         }, currentUser?.uid || 'system', authUid);
+
+        addToast({
+          type: 'success',
+          message: `Usuario ${form.nombre} creado exitosamente`,
+        });
       }
       closeModal();
     } catch (error) {
-      alert(error.message);
+      addToast({
+        type: 'error',
+        message: error.message || 'Error al guardar el usuario',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (uid) => {
+    setIsDeleting(true);
     try {
+      const userToDelete = allUsers.find(u => u.uid === uid);
       await deleteUser(uid);
+      addToast({
+        type: 'success',
+        message: `Usuario ${userToDelete?.nombre || ''} eliminado exitosamente`,
+      });
       setShowDeleteConfirm(null);
     } catch (error) {
-      alert(error.message);
+      addToast({
+        type: 'error',
+        message: error.message || 'Error al eliminar el usuario',
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleToggleStatus = async (uid) => {
     try {
+      const user = allUsers.find(u => u.uid === uid);
       await toggleUserStatus(uid);
+      addToast({
+        type: 'success',
+        message: `Usuario ${user?.nombre || ''} ${user?.activo ? 'desactivado' : 'activado'} exitosamente`,
+      });
     } catch (error) {
-      alert(error.message);
+      addToast({
+        type: 'error',
+        message: error.message || 'Error al cambiar el estado del usuario',
+      });
     }
   };
 
@@ -202,12 +272,22 @@ export default function UsuariosPage() {
 
   const handleSavePermissions = async () => {
     if (!selectedUser) return;
+    setIsSavingPermissions(true);
     try {
       await updateUser(selectedUser.uid, { permisos: customPermissions });
+      addToast({
+        type: 'success',
+        message: `Permisos de ${selectedUser.nombre} actualizados exitosamente`,
+      });
       setShowPermissionsModal(false);
       setSelectedUser(null);
     } catch (error) {
-      alert(error.message);
+      addToast({
+        type: 'error',
+        message: error.message || 'Error al actualizar los permisos',
+      });
+    } finally {
+      setIsSavingPermissions(false);
     }
   };
 
@@ -425,8 +505,8 @@ export default function UsuariosPage() {
 
       {/* MODAL CREATE/EDIT */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">
                 {editingId ? 'Editar Usuario' : 'Crear Usuario'}
@@ -496,12 +576,21 @@ export default function UsuariosPage() {
                 <input
                   type="email"
                   value={form.email}
-                  onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="input w-full"
+                  onChange={(e) => {
+                    setForm(prev => ({ ...prev, email: e.target.value }));
+                    if (formErrors.email) setFormErrors(prev => ({ ...prev, email: '' }));
+                  }}
+                  className={`input w-full ${formErrors.email ? 'border-accent-red focus:border-accent-red' : ''}`}
                   required
                   disabled={!!editingId}
                 />
-                {!editingId && (
+                {formErrors.email && (
+                  <p className="text-xs text-accent-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {formErrors.email}
+                  </p>
+                )}
+                {!editingId && !formErrors.email && (
                   <p className="text-xs text-gray-400 mt-1">
                     {form.authType === 'google_oauth'
                       ? 'El usuario se autenticará con su cuenta de Google'
@@ -518,8 +607,11 @@ export default function UsuariosPage() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={form.password}
-                      onChange={(e) => setForm(prev => ({ ...prev, password: e.target.value }))}
-                      className="input w-full pr-10"
+                      onChange={(e) => {
+                        setForm(prev => ({ ...prev, password: e.target.value }));
+                        if (formErrors.password) setFormErrors(prev => ({ ...prev, password: '' }));
+                      }}
+                      className={`input w-full pr-10 ${formErrors.password ? 'border-accent-red focus:border-accent-red' : ''}`}
                       placeholder="Mínimo 6 caracteres"
                       required
                       minLength={6}
@@ -532,9 +624,17 @@ export default function UsuariosPage() {
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    El usuario podrá cambiar su contraseña después
-                  </p>
+                  {formErrors.password && (
+                    <p className="text-xs text-accent-red mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {formErrors.password}
+                    </p>
+                  )}
+                  {!formErrors.password && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      El usuario podrá cambiar su contraseña después
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -543,10 +643,19 @@ export default function UsuariosPage() {
                 <input
                   type="text"
                   value={form.nombre}
-                  onChange={(e) => setForm(prev => ({ ...prev, nombre: e.target.value }))}
-                  className="input w-full"
+                  onChange={(e) => {
+                    setForm(prev => ({ ...prev, nombre: e.target.value }));
+                    if (formErrors.nombre) setFormErrors(prev => ({ ...prev, nombre: '' }));
+                  }}
+                  className={`input w-full ${formErrors.nombre ? 'border-accent-red focus:border-accent-red' : ''}`}
                   required
                 />
+                {formErrors.nombre && (
+                  <p className="text-xs text-accent-red mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {formErrors.nombre}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -596,11 +705,24 @@ export default function UsuariosPage() {
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button type="button" onClick={closeModal} className="btn-secondary flex-1">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="btn-secondary flex-1"
+                  disabled={isSubmitting}
+                >
                   Cancelar
                 </button>
-                <button type="submit" className="btn-primary flex-1" disabled={usersLoading}>
-                  {editingId ? 'Guardar Cambios' : 'Crear Usuario'}
+                <button
+                  type="submit"
+                  className="btn-primary flex-1 flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+                  {isSubmitting
+                    ? (editingId ? 'Guardando...' : 'Creando...')
+                    : (editingId ? 'Guardar Cambios' : 'Crear Usuario')
+                  }
                 </button>
               </div>
             </form>
@@ -610,8 +732,8 @@ export default function UsuariosPage() {
 
       {/* MODAL PERMISOS */}
       {showPermissionsModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="card w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-slideUp">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold">Permisos de {selectedUser.nombre}</h2>
@@ -662,15 +784,17 @@ export default function UsuariosPage() {
               <button
                 onClick={() => setShowPermissionsModal(false)}
                 className="btn-secondary flex-1"
+                disabled={isSavingPermissions}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSavePermissions}
-                className="btn-primary flex-1"
-                disabled={usersLoading}
+                className="btn-primary flex-1 flex items-center justify-center gap-2"
+                disabled={isSavingPermissions}
               >
-                Guardar Permisos
+                {isSavingPermissions && <Loader2 className="w-5 h-5 animate-spin" />}
+                {isSavingPermissions ? 'Guardando...' : 'Guardar Permisos'}
               </button>
             </div>
           </div>
@@ -679,8 +803,8 @@ export default function UsuariosPage() {
 
       {/* DELETE CONFIRM */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="card w-full max-w-md animate-slideUp">
             <h3 className="text-xl font-bold mb-4">¿Eliminar Usuario?</h3>
             <p className="text-gray-400 mb-6">
               Esta acción no se puede deshacer. El usuario perderá acceso inmediatamente.
@@ -689,14 +813,17 @@ export default function UsuariosPage() {
               <button
                 onClick={() => setShowDeleteConfirm(null)}
                 className="btn-secondary flex-1"
+                disabled={isDeleting}
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
-                className="btn-danger flex-1"
+                className="btn-danger flex-1 flex items-center justify-center gap-2"
+                disabled={isDeleting}
               >
-                Eliminar
+                {isDeleting && <Loader2 className="w-5 h-5 animate-spin" />}
+                {isDeleting ? 'Eliminando...' : 'Eliminar'}
               </button>
             </div>
           </div>
