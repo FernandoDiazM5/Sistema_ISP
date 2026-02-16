@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, User, Mail, Shield, Edit3, Trash2, X, Eye, EyeOff, CheckCircle2, XCircle, Calendar, Clock, Crown, Settings } from 'lucide-react';
+import { Plus, Search, User, Mail, Shield, Edit3, Trash2, X, Eye, EyeOff, CheckCircle2, XCircle, Calendar, Clock, Crown, Settings, Lock, KeyRound } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { ROLES, ROLE_LABELS, MODULES, MODULE_LABELS, PERMISSION_LEVELS, DEFAULT_PERMISSIONS } from '../../types/user';
+import { createUserWithPassword } from '../../api/authAPI';
 
 const ESTADO_COLORS = {
   true: { bg: 'bg-accent-green/15', text: 'text-accent-green', icon: CheckCircle2 },
@@ -28,6 +29,8 @@ const EMPTY_FORM = {
   foto: '',
   rol: ROLES.VIEWER,
   permisos: { ...DEFAULT_PERMISSIONS[ROLES.VIEWER] },
+  authType: 'google_oauth', // 'google_oauth' o 'email_password'
+  password: '', // Solo para authType='email_password'
 };
 
 export default function UsuariosPage() {
@@ -49,6 +52,7 @@ export default function UsuariosPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [customPermissions, setCustomPermissions] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   // Verificar si puede gestionar usuarios
   useEffect(() => {
@@ -124,8 +128,17 @@ export default function UsuariosPage() {
       return;
     }
 
+    // Validar contraseña para usuarios con email/password
+    if (!editingId && form.authType === 'email_password') {
+      if (!form.password || form.password.length < 6) {
+        alert('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+    }
+
     try {
       if (editingId) {
+        // Editar usuario existente
         await updateUser(editingId, {
           nombre: form.nombre,
           foto: form.foto,
@@ -133,13 +146,30 @@ export default function UsuariosPage() {
           permisos: form.permisos,
         });
       } else {
+        // Crear nuevo usuario
+        let authUid = null;
+
+        // Si es con email/password, primero crear en Firebase Auth
+        if (form.authType === 'email_password') {
+          const authResult = await createUserWithPassword(form.email, form.password);
+
+          if (!authResult.success) {
+            alert(authResult.error);
+            return;
+          }
+
+          authUid = authResult.uid;
+        }
+
+        // Crear usuario en Firestore
         await createUser({
           email: form.email,
           nombre: form.nombre,
           foto: form.foto,
           rol: form.rol,
           permisos: form.permisos,
-        });
+          authType: form.authType,
+        }, currentUser?.uid || 'system', authUid);
       }
       closeModal();
     } catch (error) {
@@ -407,6 +437,60 @@ export default function UsuariosPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Tipo de Autenticación (solo al crear) */}
+              {!editingId && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Tipo de Autenticación *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        form.authType === 'google_oauth'
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-dark-border hover:border-gray-500'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="authType"
+                        value="google_oauth"
+                        checked={form.authType === 'google_oauth'}
+                        onChange={(e) => setForm(prev => ({ ...prev, authType: e.target.value, password: '' }))}
+                        className="hidden"
+                      />
+                      <Mail className="w-5 h-5 text-blue-500" />
+                      <div className="flex-1">
+                        <div className="font-medium text-blue-500">Google OAuth</div>
+                        <div className="text-xs text-gray-400">Inicia sesión con Google</div>
+                      </div>
+                      {form.authType === 'google_oauth' && <CheckCircle2 className="w-5 h-5 text-blue-500" />}
+                    </label>
+
+                    <label
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        form.authType === 'email_password'
+                          ? 'border-purple-500 bg-purple-500/10'
+                          : 'border-dark-border hover:border-gray-500'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="authType"
+                        value="email_password"
+                        checked={form.authType === 'email_password'}
+                        onChange={(e) => setForm(prev => ({ ...prev, authType: e.target.value }))}
+                        className="hidden"
+                      />
+                      <KeyRound className="w-5 h-5 text-purple-500" />
+                      <div className="flex-1">
+                        <div className="font-medium text-purple-500">Email y Contraseña</div>
+                        <div className="text-xs text-gray-400">Usuario y clave</div>
+                      </div>
+                      {form.authType === 'email_password' && <CheckCircle2 className="w-5 h-5 text-purple-500" />}
+                    </label>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium mb-2">Email *</label>
                 <input
@@ -417,10 +501,42 @@ export default function UsuariosPage() {
                   required
                   disabled={!!editingId}
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  El usuario se autenticará con su cuenta de Google
-                </p>
+                {!editingId && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {form.authType === 'google_oauth'
+                      ? 'El usuario se autenticará con su cuenta de Google'
+                      : 'Se usará este email para iniciar sesión'}
+                  </p>
+                )}
               </div>
+
+              {/* Campo de contraseña (solo para email_password y al crear) */}
+              {!editingId && form.authType === 'email_password' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Contraseña *</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => setForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="input w-full pr-10"
+                      placeholder="Mínimo 6 caracteres"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    El usuario podrá cambiar su contraseña después
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-2">Nombre Completo *</label>

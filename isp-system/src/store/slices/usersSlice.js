@@ -53,6 +53,29 @@ export const createUsersSlice = (set, get) => ({
     }
   },
 
+  // Cargar usuario desde Firebase por UID (después del login con email/password)
+  getUserByUid: async (uid) => {
+    try {
+      const user = await usersAPI.getUserByUid(uid);
+
+      if (!user) {
+        return null;
+      }
+
+      if (!user.activo) {
+        return null;
+      }
+
+      // Actualizar último acceso
+      await usersAPI.updateLastAccess(user.uid);
+
+      return user;
+    } catch (error) {
+      console.error('Error loading user by UID:', error);
+      return null;
+    }
+  },
+
   // ===================== GESTIÓN DE USUARIOS (CRUD) =====================
   loadAllUsers: async () => {
     try {

@@ -56,7 +56,7 @@ export const getUserByUid = async (uid) => {
 /**
  * Crear nuevo usuario
  */
-export const createUser = async (userData, createdBy) => {
+export const createUser = async (userData, createdBy, authUid = null) => {
   const db = initFirebase();
   if (!db) throw new Error('Firebase no configurado');
 
@@ -66,8 +66,8 @@ export const createUser = async (userData, createdBy) => {
     throw new Error('Ya existe un usuario con este email');
   }
 
-  // Generar UID único
-  const uid = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Si se proporciona authUid (de Firebase Auth), usarlo; si no, generar uno custom
+  const uid = authUid || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
   const now = new Date().toISOString();
 
@@ -77,6 +77,7 @@ export const createUser = async (userData, createdBy) => {
     foto: userData.foto || null,
     rol: userData.rol || ROLES.VIEWER,
     permisos: userData.permisos || DEFAULT_PERMISSIONS[userData.rol || ROLES.VIEWER],
+    authType: userData.authType || 'google_oauth', // 'google_oauth' o 'email_password'
     activo: true,
     createdAt: now,
     updatedAt: now,

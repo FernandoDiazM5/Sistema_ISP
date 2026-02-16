@@ -1,12 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wifi } from 'lucide-react';
+import { Wifi, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
+import { loginWithPassword } from '../api/authAPI';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const loadCurrentUserByEmail = useStore(s => s.loadCurrentUserByEmail);
+  const getUserByUid = useStore(s => s.getUserByUid);
+
+  const [loginMethod, setLoginMethod] = useState('email'); // 'email' o 'google'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const googleInitialized = useRef(false);
@@ -64,22 +71,65 @@ export default function LoginPage() {
     }
   }, [login, loadCurrentUserByEmail]);
 
-  const handleDemoLogin = () => {
-    login({
-      email: 'admin@isp-system.com',
-      nombre: 'Fernando Díaz',
-      foto: null,
-      rol: 'SUPER_ADMIN',
-      uid: 'demo_user',
-      permisos: null, // El demo tiene permisos totales
-    });
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+
+    if (!email || !password) {
+      setError('Por favor completa todos los campos');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Autenticar con Firebase Auth
+      const authResult = await loginWithPassword(email, password);
+
+      if (!authResult.success) {
+        setError(authResult.error);
+        setLoading(false);
+        return;
+      }
+
+      // Cargar datos del usuario desde Firestore usando el UID de Firebase Auth
+      const firebaseUser = await getUserByUid(authResult.uid);
+
+      if (!firebaseUser) {
+        setError('Usuario no encontrado en el sistema. Contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+
+      if (!firebaseUser.activo) {
+        setError('Tu cuenta ha sido desactivada. Contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+
+      // Login exitoso
+      login({
+        email: firebaseUser.email,
+        nombre: firebaseUser.nombre,
+        foto: firebaseUser.foto,
+        rol: firebaseUser.rol,
+        uid: firebaseUser.uid,
+        permisos: firebaseUser.permisos,
+      });
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error en login:', err);
+      setError('Error al iniciar sesión. Intenta nuevamente.');
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
     const clientId = CONFIG.GOOGLE_CLIENT_ID;
 
     if (!clientId) {
-      setError('⚠️ Google OAuth no configurado. Usa el acceso demo.');
+      setError('⚠️ Google OAuth no está configurado.');
       return;
     }
 
@@ -89,6 +139,7 @@ export default function LoginPage() {
     }
 
     try {
+      setError('');
       // Solo mostrar el prompt, no reinicializar
       window.google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
@@ -131,7 +182,7 @@ export default function LoginPage() {
         }}>
 
         {/* Logo */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-white"
             style={{
               background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
@@ -143,31 +194,103 @@ export default function LoginPage() {
           <p className="text-text-secondary text-sm">Radio Enlace · Fibra Óptica · IPTV</p>
         </div>
 
-        {/* Google Login */}
-        <button onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full py-3 px-5 rounded-xl bg-white text-gray-700 border-none text-sm font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-          <GoogleIcon />
-          {loading ? 'Verificando...' : 'Iniciar sesión con Google'}
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center my-5 gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-text-muted">o acceso demo</span>
-          <div className="flex-1 h-px bg-border" />
+        {/* Method Tabs */}
+        <div className="flex gap-2 mb-6 p-1 bg-bg-secondary rounded-xl">
+          <button
+            onClick={() => setLoginMethod('email')}
+            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${
+              loginMethod === 'email'
+                ? 'bg-accent-blue text-white shadow-sm'
+                : 'bg-transparent text-text-secondary hover:text-text-primary'
+            }`}>
+            Email y Contraseña
+          </button>
+          <button
+            onClick={() => setLoginMethod('google')}
+            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${
+              loginMethod === 'google'
+                ? 'bg-accent-blue text-white shadow-sm'
+                : 'bg-transparent text-text-secondary hover:text-text-primary'
+            }`}>
+            Google OAuth
+          </button>
         </div>
 
-        {/* Demo Login */}
-        <button onClick={handleDemoLogin}
-          className="w-full py-3 px-5 rounded-xl text-white border-none text-sm font-semibold cursor-pointer transition-opacity hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
-          Entrar como Administrador (Demo)
-        </button>
+        {/* Email/Password Login Form */}
+        {loginMethod === 'email' && (
+          <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-text-secondary mb-1.5">
+                Correo Electrónico
+              </label>
+              <div className="relative">
+                <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu-email@ejemplo.com"
+                  className="w-full py-2.5 pl-10 pr-4 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted transition-colors"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-text-secondary mb-1.5">
+                Contraseña
+              </label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full py-2.5 pl-10 pr-10 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted transition-colors"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors bg-transparent border-none cursor-pointer p-0"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-5 rounded-xl text-white border-none text-sm font-semibold cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}>
+              {loading ? 'Verificando...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+        )}
+
+        {/* Google Login */}
+        {loginMethod === 'google' && (
+          <div className="flex flex-col gap-4">
+            <p className="text-xs text-text-secondary text-center mb-2">
+              Inicia sesión con tu cuenta de Google autorizada
+            </p>
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full py-3 px-5 rounded-xl bg-white text-gray-700 border-none text-sm font-semibold cursor-pointer flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+              <GoogleIcon />
+              {loading ? 'Verificando...' : 'Continuar con Google'}
+            </button>
+          </div>
+        )}
 
         {error && (
-          <p className="mt-4 text-xs text-accent-yellow text-center leading-relaxed">{error}</p>
+          <div className="mt-4 p-3 rounded-lg bg-accent-red/10 border border-accent-red/20">
+            <p className="text-xs text-accent-red text-center leading-relaxed">{error}</p>
+          </div>
         )}
 
         <p className="mt-6 text-[11px] text-text-muted text-center">
