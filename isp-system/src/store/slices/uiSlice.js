@@ -25,7 +25,8 @@ export const createUISlice = (set, get) => ({
     loading: true,
 
     setUser: (user) => {
-        set({ user });
+        // BUGFIX: Sincronizar AMBOS estados (user y currentUser) para que canManageUsers() funcione
+        set({ user, currentUser: user });
         if (user) localStorage.setItem('isp_user', JSON.stringify(user));
         else localStorage.removeItem('isp_user');
     },
@@ -33,7 +34,11 @@ export const createUISlice = (set, get) => ({
     initAuth: () => {
         const saved = localStorage.getItem('isp_user');
         if (saved) {
-            try { set({ user: JSON.parse(saved), loading: false }); }
+            try {
+                const userData = JSON.parse(saved);
+                // BUGFIX: Sincronizar ambos estados al inicializar
+                set({ user: userData, currentUser: userData, loading: false });
+            }
             catch { localStorage.removeItem('isp_user'); set({ loading: false }); }
         } else {
             set({ loading: false });
@@ -43,7 +48,8 @@ export const createUISlice = (set, get) => ({
     },
 
     logout: () => {
-        set({ user: null });
+        // BUGFIX: Limpiar AMBOS estados al cerrar sesión
+        set({ user: null, currentUser: null });
         localStorage.removeItem('isp_user');
     },
 
