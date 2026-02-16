@@ -130,7 +130,7 @@ const useStore = create((set, get) => ({
       const dbKeys = await db.keys();
 
       if (dbKeys.length === 0) {
-        console.log('IndexedDB vacía. Iniciando migración desde localStorage...');
+        // Migración silenciosa desde localStorage si IndexedDB está vacía
         const lsMigrationKeys = [
           'isp_clients', 'isp_dataSource', 'isp_col_prefs', 'isp_lastImport',
           'isp_importHistory', 'isp_cleaningOptions', 'isp_templates',
@@ -147,14 +147,13 @@ const useStore = create((set, get) => ({
             try {
               entries.push([key, JSON.parse(val)]);
             } catch (e) {
-              console.warn(`Error parseando ${key} de LS para migración`, e);
+              // Ignorar errores de parseo en migración
             }
           }
         });
 
         if (entries.length > 0) {
           await db.setMany(entries);
-          console.log(`Migrados ${entries.length} items a IndexedDB.`);
         }
       }
 

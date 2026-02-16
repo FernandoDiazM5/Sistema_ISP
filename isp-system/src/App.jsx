@@ -6,6 +6,8 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import ReloadPrompt from './components/common/ReloadPrompt';
 import ToastContainer from './components/ui/Toast';
 import useStore from './store/useStore';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import { ROLES } from './types/user';
 
 // Cargar utilidad de inicialización en desarrollo
 if (import.meta.env.DEV) {
@@ -69,23 +71,48 @@ function AppContent() {
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
+
+          {/* Módulos Operativos Generales */}
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/clientes/:id" element={<ClienteDetalle />} />
-          <Route path="/importar" element={<ImportacionPage />} />
           <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/averias" element={<AveriasPage />} />
-          <Route path="/soporte" element={<SoporteRemotoPage />} />
-          <Route path="/whatsapp" element={<WhatsAppPage />} />
-          <Route path="/tecnicos" element={<TecnicosPage />} />
-          <Route path="/visitas" element={<VisitasTecnicasPage />} />
           <Route path="/instalaciones" element={<InstalacionesPage />} />
+
+          {/* Módulos de Soporte y Operaciones (Restringidos a Técnicos+) */}
+          <Route path="/tecnicos" element={
+            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.TECNICO]}>
+              <TecnicosPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/visitas" element={
+            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.TECNICO]}>
+              <VisitasTecnicasPage />
+            </ProtectedRoute>
+          } />
           <Route path="/planta-externa" element={<PlantaExternaPage />} />
           <Route path="/post-venta" element={<PostVentaPage />} />
           <Route path="/requerimientos" element={<RequerimientosPage />} />
-          <Route path="/reportes" element={<ReportesPage />} />
+          <Route path="/soporte" element={<SoporteRemotoPage />} />
+          <Route path="/whatsapp" element={<WhatsAppPage />} />
           <Route path="/equipos" element={<EquiposPage />} />
-          <Route path="/usuarios" element={<UsuariosPage />} />
-          <Route path="/config" element={<ConfiguracionPage />} />
+
+          {/* Módulos Administrativos */}
+          <Route path="/reportes" element={<ReportesPage />} />
+          <Route path="/importar" element={<ImportacionPage />} />
+
+          {/* Módulos Críticos (Solo SUPER_ADMIN) */}
+          <Route path="/usuarios" element={
+            <ProtectedRoute requiredRole={ROLES.SUPER_ADMIN}>
+              <UsuariosPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/config" element={
+            <ProtectedRoute requiredRole={ROLES.SUPER_ADMIN}>
+              <ConfiguracionPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

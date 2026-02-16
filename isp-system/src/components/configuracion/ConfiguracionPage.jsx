@@ -264,6 +264,18 @@ function Stat({ label, value }) {
 // ===================== MAIN PAGE =====================
 export default function ConfiguracionPage() {
   const { user } = useAuth();
+
+  // Verificación de seguridad adicional
+  if (!user || user.rol !== ROLES.SUPER_ADMIN) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center p-8">
+        <Shield size={48} className="text-accent-red mb-4" />
+        <h1 className="text-2xl font-bold text-accent-red mb-2">Acceso Restringido</h1>
+        <p className="text-text-secondary">Esta sección es exclusiva para Super Administradores.</p>
+      </div>
+    );
+  }
+
   const clients = useStore(s => s.clients);
   const dataSource = useStore(s => s.dataSource);
   const tickets = useStore(s => s.tickets);

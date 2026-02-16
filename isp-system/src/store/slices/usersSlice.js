@@ -176,7 +176,17 @@ export const createUsersSlice = (set, get) => ({
     const currentUser = get().currentUser;
     if (!currentUser) return false;
 
-    const userPermission = currentUser.permisos?.[module];
+    // 1. Obtener permisos explícitos o predeterminados del rol
+    let userPermission = currentUser.permisos?.[module];
+
+    // Si no tiene permisos explícitos, usar los del rol
+    if (!userPermission) {
+      const rolePermissions = DEFAULT_PERMISSIONS[currentUser.rol];
+      if (rolePermissions) {
+        userPermission = rolePermissions[module];
+      }
+    }
+
     if (!userPermission) return false;
 
     const levels = [
