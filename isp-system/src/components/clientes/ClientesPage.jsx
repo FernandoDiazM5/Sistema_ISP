@@ -139,9 +139,9 @@ export default function ClientesPage() {
   return (
     <div className="p-6 px-8 h-full flex flex-col animate-fade">
       {/* Header */}
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight text-text-primary">Clientes</h1>
+          <h1 className="text-2xl md:text-[26px] font-bold tracking-tight text-text-primary">Clientes</h1>
           <p className="text-text-secondary text-sm mt-1">
             {filteredData.length} de {clients.length} clientes
             {hasActiveSearch && (
@@ -155,15 +155,16 @@ export default function ClientesPage() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* SEARCH & SCOPE */}
-          <div className="flex gap-2">
-            <div className="w-[320px]">
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:w-[320px]">
               <Input
                 placeholder="Buscar..."
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 icon={Search}
+                className="w-full"
               />
             </div>
 
@@ -171,11 +172,11 @@ export default function ClientesPage() {
               <Button
                 variant={showSearchScope ? 'primary' : 'outline'}
                 onClick={() => setShowSearchScope(!showSearchScope)}
-                className="h-full"
+                className="h-full px-3"
                 title="Seleccionar campos de búsqueda"
                 icon={Filter}
               >
-                Buscar en
+                <span className="sr-only sm:not-sr-only">Filtros</span>
               </Button>
 
               {showSearchScope && (
@@ -223,7 +224,7 @@ export default function ClientesPage() {
           </div>
 
           {/* COLUMN SELECTOR */}
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <Button
               variant={showColumnSelector ? 'primary' : 'outline'}
               onClick={() => setShowColumnSelector(!showColumnSelector)}
