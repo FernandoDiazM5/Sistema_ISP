@@ -70,7 +70,7 @@ export default function DashboardPage() {
 
 
       {/* Row 2: Tech + Connections + TV */}
-      <div className="grid grid-cols-3 gap-4 mb-7">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-7">
         {/* Tech distribution */}
         <div className="animate-fade stagger-3 bg-bg-card rounded-2xl p-6 border border-border">
           <h3 className="text-sm font-semibold mb-5 text-text-secondary">Distribución por Tecnología</h3>
@@ -143,7 +143,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Row 3: Top nodos + Top planes */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="animate-fade stagger-5 bg-bg-card rounded-2xl p-6 border border-border">
           <h3 className="text-sm font-semibold mb-4 text-text-secondary">Top Nodos / Torres</h3>
           <div className="flex flex-col gap-2">
