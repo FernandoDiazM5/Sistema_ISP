@@ -359,10 +359,10 @@ export default function ConfiguracionPage() {
   ];
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Configuración</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Configuración</h1>
           <p className="text-text-secondary text-sm mt-1">Parámetros del sistema, roles y conexiones</p>
         </div>
       </div>
@@ -620,8 +620,8 @@ export default function ConfiguracionPage() {
         <div className="flex flex-col gap-6">
           {/* ====== PROGRESS OVERLAY ====== */}
           {syncProgress && (
-            <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-fade">
-              <div className="bg-bg-card border border-border rounded-2xl p-8 w-[420px] shadow-2xl">
+            <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-fade p-4">
+              <div className="bg-bg-card border border-border rounded-2xl p-8 w-full max-w-[420px] shadow-2xl">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-11 h-11 rounded-xl bg-accent-blue/10 flex items-center justify-center">
                     <UploadCloud size={20} className="text-accent-blue animate-pulse" />

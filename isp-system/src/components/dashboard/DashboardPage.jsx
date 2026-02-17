@@ -34,9 +34,9 @@ export default function DashboardPage() {
   const pct = (v) => stats.total ? (v / stats.total * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="p-6 px-8 overflow-y-auto h-full">
+    <div className="p-4 sm:p-6 sm:px-8 overflow-y-auto h-full">
       <div className="mb-7">
-        <h1 className="text-[26px] font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Dashboard</h1>
         <p className="text-text-secondary text-sm mt-1">Resumen operativo del ISP — {stats.total} clientes registrados</p>
       </div>
 
@@ -44,7 +44,7 @@ export default function DashboardPage() {
       <AlertsPanel />
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-4 mb-7">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-7">
         <div className="animate-fade stagger-1">
           <KPICard title="Total Clientes" value={stats.total}
             subtitle={`${stats.activos} activos · ${stats.suspendidos} suspendidos`}

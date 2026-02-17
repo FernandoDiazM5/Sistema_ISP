@@ -527,16 +527,16 @@ export default function VisitasTecnicasPage() {
   const todayStr = formatDateStr(new Date());
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Visitas Técnicas</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Visitas Técnicas</h1>
           <p className="text-text-secondary text-sm mt-1">
             {stats.totalMes} visitas este mes &mdash; {stats.programadas} programadas, {stats.enRuta} en ruta
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="flex bg-bg-secondary rounded-lg border border-border overflow-hidden">
             <button
               onClick={() => setViewMode('calendar')}
@@ -559,7 +559,7 @@ export default function VisitasTecnicasPage() {
           </div>
           <button
             onClick={() => { resetForm(); setShowNewModal(true); }}
-            className="py-2.5 px-4 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+            className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
           >
             <Plus size={16} /> Nueva Visita
           </button>
@@ -567,7 +567,7 @@ export default function VisitasTecnicasPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Programadas', value: stats.programadas, color: '#3b82f6', icon: <Calendar size={16} /> },
           { label: 'En Ruta', value: stats.enRuta, color: '#8b5cf6', icon: <MapPin size={16} /> },
@@ -859,11 +859,11 @@ export default function VisitasTecnicasPage() {
       {/* ==================== NEW VISIT MODAL ==================== */}
       {showNewModal && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4"
           onClick={() => { setShowNewModal(false); resetForm(); }}
         >
           <div
-            className="bg-bg-card rounded-2xl p-6 w-[560px] border border-border max-h-[90vh] overflow-y-auto"
+            className="bg-bg-card rounded-2xl p-6 w-full max-w-[560px] border border-border max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
@@ -1134,11 +1134,11 @@ export default function VisitasTecnicasPage() {
       {/* ==================== DETAIL MODAL ==================== */}
       {selectedVisita && (
         <div
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4"
           onClick={() => setSelectedVisita(null)}
         >
           <div
-            className="bg-bg-card rounded-2xl p-6 w-[580px] border border-border max-h-[85vh] overflow-y-auto"
+            className="bg-bg-card rounded-2xl p-6 w-full max-w-[580px] border border-border max-h-[85vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -1537,7 +1537,7 @@ export default function VisitasTecnicasPage() {
       {
         showRescheduleModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => setShowRescheduleModal(false)}>
-            <div className="bg-bg-card rounded-2xl p-6 w-[450px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[450px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <h3 className="text-lg font-bold mb-4">Reprogramar Visita</h3>
 
               <div className="flex flex-col gap-4">

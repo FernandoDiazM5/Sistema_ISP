@@ -267,25 +267,25 @@ export default function PostVentaPage() {
   // ===================== RENDER =====================
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Post-Venta</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Post-Venta</h1>
           <p className="text-text-secondary text-sm mt-1">
             Servicios adicionales para clientes existentes
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowCatalog(true)}
-            className="py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-text-secondary text-sm font-semibold cursor-pointer flex items-center gap-2 hover:border-accent-purple/50 transition-colors"
+            className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-text-secondary text-sm font-semibold cursor-pointer flex items-center gap-2 hover:border-accent-purple/50 transition-colors"
           >
             <Settings size={16} /> Catálogo
           </button>
           <button
             onClick={openNewModal}
-            className="py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+            className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
           >
             <Plus size={16} /> Nueva Solicitud
           </button>
@@ -293,7 +293,7 @@ export default function PostVentaPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-bg-card rounded-xl p-4 border border-border flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-accent-blue/15 text-accent-blue">
             <ShoppingBag size={16} />

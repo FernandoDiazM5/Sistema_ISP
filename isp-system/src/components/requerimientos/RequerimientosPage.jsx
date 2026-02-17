@@ -118,25 +118,25 @@ export default function RequerimientosPage() {
     // ===================== RENDER =====================
 
     return (
-        <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+        <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div>
-                    <h1 className="text-[26px] font-bold tracking-tight">Requerimientos Administrativos</h1>
+                    <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Requerimientos Administrativos</h1>
                     <p className="text-text-secondary text-sm mt-1">
                         Gestión de compras, trámites y solicitudes internas
                     </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                     <button
                         onClick={() => setShowTiposModal(true)}
-                        className="py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-text-secondary text-sm font-semibold cursor-pointer flex items-center gap-2 hover:border-accent-blue/50 transition-colors"
+                        className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-text-secondary text-sm font-semibold cursor-pointer flex items-center gap-2 hover:border-accent-blue/50 transition-colors"
                     >
                         <Settings size={16} /> Tipos
                     </button>
                     <button
                         onClick={() => setShowForm(true)}
-                        className="py-2.5 px-4 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
+                        className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity"
                     >
                         <Plus size={16} /> Nuevo Requerimiento
                     </button>
@@ -253,7 +253,7 @@ export default function RequerimientosPage() {
             {showForm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
                     <div
-                        className="bg-bg-card rounded-2xl p-6 w-[520px] border border-border max-h-[90vh] overflow-y-auto"
+                        className="bg-bg-card rounded-2xl p-6 w-full max-w-[520px] border border-border max-h-[90vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-5">
@@ -368,7 +368,7 @@ export default function RequerimientosPage() {
             {selectedReq && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedReq(null)}>
                     <div
-                        className="bg-bg-card rounded-2xl p-6 w-[580px] border border-border max-h-[90vh] overflow-y-auto"
+                        className="bg-bg-card rounded-2xl p-6 w-full max-w-[580px] border border-border max-h-[90vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Header */}
@@ -485,7 +485,7 @@ export default function RequerimientosPage() {
             {showTiposModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowTiposModal(false)}>
                     <div
-                        className="bg-bg-card rounded-2xl p-6 w-[550px] border border-border max-h-[90vh] overflow-y-auto"
+                        className="bg-bg-card rounded-2xl p-6 w-full max-w-[550px] border border-border max-h-[90vh] overflow-y-auto"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-5">

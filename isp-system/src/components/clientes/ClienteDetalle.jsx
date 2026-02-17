@@ -100,7 +100,7 @@ function DetailBlock({ label, value, color }) {
 function AttachmentSection({ label, items }) {
   if (!items || items.length === 0) return null;
   return (
-    <div className="col-span-2 mt-1">
+    <div className="col-span-2 sm:col-span-3 mt-1">
       <p className="text-[10px] text-text-muted mb-1.5 flex items-center gap-1">
         <Paperclip size={10} /> {label} ({items.length})
       </p>
@@ -175,7 +175,7 @@ function TicketExpandedContent({ t }) {
   return (
     <>
       {/* Detalles principales */}
-      <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={t.id} />
         <DetailField label="Estado" value={t.estado} />
         <DetailField label="Prioridad" value={t.prioridad} />
@@ -302,7 +302,7 @@ function SoporteExpandedContent({ s, ticket }) {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={s.id} />
         <DetailField label="Estado" value={s.estado} />
         <DetailField label="Ticket Asociado" value={s.ticketId} />
@@ -341,7 +341,7 @@ function SoporteExpandedContent({ s, ticket }) {
           {(d.ping || d.download || d.upload || d.packetLoss || d.jitter) && (
             <div className="mb-3">
               <p className="text-[9px] text-text-muted uppercase tracking-wide font-semibold mb-1.5">Parámetros generales</p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Ping" value={d.ping} unit="ms" warn={warns.ping} />
                 <DiagValue label="Download" value={d.download} unit="Mbps" warn={warns.download} />
                 <DiagValue label="Upload" value={d.upload} unit="Mbps" warn={warns.upload} />
@@ -353,7 +353,7 @@ function SoporteExpandedContent({ s, ticket }) {
           {showRadio && (d.senalRecibida || d.noiseFloor || d.ccq || d.frecuencia) && (
             <div className="mb-3">
               <p className="text-[9px] text-accent-purple uppercase tracking-wide font-semibold mb-1.5 flex items-center gap-1"><Radio size={10} /> Radio Enlace</p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Señal" value={d.senalRecibida} unit="dBm" warn={warns.senalRecibida} />
                 <DiagValue label="Noise Floor" value={d.noiseFloor} unit="dBm" />
                 <DiagValue label="CCQ" value={d.ccq} unit="%" warn={warns.ccq} />
@@ -366,7 +366,7 @@ function SoporteExpandedContent({ s, ticket }) {
           {showFibra && (d.potenciaRx || d.potenciaTx || d.atenuacion) && (
             <div className="mb-3">
               <p className="text-[9px] text-green-400 uppercase tracking-wide font-semibold mb-1.5 flex items-center gap-1"><Zap size={10} /> Fibra Óptica</p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Pot. Rx" value={d.potenciaRx} unit="dBm" warn={warns.potenciaRx} />
                 <DiagValue label="Pot. Tx" value={d.potenciaTx} unit="dBm" />
                 <DiagValue label="Atenuación" value={d.atenuacion} unit="dB" warn={warns.atenuacion} />
@@ -410,7 +410,7 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={v.id} />
         <DetailField label="Estado" value={v.estado} />
         <DetailField label="Ticket Asociado" value={v.ticketId} />
@@ -452,7 +452,7 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
           </div>
           {(d.ping || d.download || d.upload) && (
             <div className="mb-3">
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Ping" value={d.ping} unit="ms" warn={warns.ping} />
                 <DiagValue label="Download" value={d.download} unit="Mbps" warn={warns.download} />
                 <DiagValue label="Upload" value={d.upload} unit="Mbps" warn={warns.upload} />
@@ -464,7 +464,7 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
           {showRadio && (d.senalRecibida || d.ccq) && (
             <div className="mb-3">
               <p className="text-[9px] text-accent-purple uppercase font-semibold mb-1.5 flex items-center gap-1"><Radio size={10} /> Radio</p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Señal" value={d.senalRecibida} unit="dBm" warn={warns.senalRecibida} />
                 <DiagValue label="CCQ" value={d.ccq} unit="%" warn={warns.ccq} />
                 <DiagValue label="Frecuencia" value={d.frecuencia} unit="GHz" />
@@ -474,7 +474,7 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
           {showFibra && (d.potenciaRx || d.atenuacion) && (
             <div className="mb-3">
               <p className="text-[9px] text-green-400 uppercase font-semibold mb-1.5 flex items-center gap-1"><Zap size={10} /> Fibra</p>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 <DiagValue label="Pot. Rx" value={d.potenciaRx} unit="dBm" warn={warns.potenciaRx} />
                 <DiagValue label="Atenuación" value={d.atenuacion} unit="dB" warn={warns.atenuacion} />
                 <DiagValue label="Estado ONU" value={d.estadoONU} warn={warns.estadoONU} />
@@ -493,7 +493,7 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
 function PostVentaExpandedContent({ p }) {
   return (
     <>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={p.id} />
         <DetailField label="Estado" value={p.estado} />
         <DetailField label="Tipo Servicio" value={p.tipoServicio} />
@@ -516,7 +516,7 @@ function PostVentaExpandedContent({ p }) {
 function AveriaExpandedContent({ a }) {
   return (
     <>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={a.id} />
         <DetailField label="Estado" value={a.estado} />
         <DetailField label="Ticket Asociado" value={a.ticketId} />
@@ -601,8 +601,7 @@ export default function ClienteDetalle() {
   const totalHistorial = clientTickets.length + clientSesiones.length + clientVisitas.length + clientPostVenta.length + clientAverias.length;
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      {/* Header */}
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <button onClick={() => navigate('/clientes')}

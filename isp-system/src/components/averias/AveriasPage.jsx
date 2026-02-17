@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Clock, Kanban, ArrowUpRight, ShieldAlert, Activity } from 'lucide-react';
+import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Kanban, ArrowUpRight, ShieldAlert } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
@@ -93,14 +93,14 @@ export default function AveriasPage() {
   };
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Averias e Incidencias</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Averias e Incidencias</h1>
           <p className="text-text-secondary text-sm mt-1">Gestión de fallas de red e infraestructura</p>
         </div>
         <button onClick={() => setShowForm(true)}
-          className="py-2.5 px-4 rounded-xl bg-accent-red border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90 transition-opacity">
+          className="py-2.5 px-4 rounded-xl bg-accent-red border-none text-white text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity w-full sm:w-auto">
           <Plus size={16} /> Reportar Avería
         </button>
       </div>
@@ -126,10 +126,10 @@ export default function AveriasPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-5">
+      <div className="flex gap-2 sm:gap-3 mb-5 flex-wrap">
         {['all', 'Activa', 'En reparación', 'Coordinando', 'Resuelta'].map(e => (
           <button key={e} onClick={() => setFilterEstado(e)}
-            className={`py-1.5 px-4 rounded-lg text-xs font-semibold border cursor-pointer transition-colors
+            className={`py-1.5 px-3 sm:px-4 rounded-lg text-[11px] sm:text-xs font-semibold border cursor-pointer transition-colors
               ${filterEstado === e ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border text-text-secondary hover:border-accent-blue/50'}`}>
             {e === 'all' ? 'Todas' : e}
           </button>
@@ -165,7 +165,7 @@ export default function AveriasPage() {
 
               <p className="text-xs text-text-secondary mb-3">{a.descripcion}</p>
 
-              <div className="flex items-center gap-6 text-[11px] text-text-muted">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-muted">
                 <span>Zona: <span className="text-text-secondary font-medium">{a.zona}</span></span>
                 <span>Nodo: <span className="text-text-secondary font-medium font-mono">{a.nodo}</span></span>
                 <span>Afectados: <span className="text-accent-red font-bold">{a.clientesAfectados}</span></span>
@@ -179,8 +179,8 @@ export default function AveriasPage() {
 
       {/* Modal: Nueva Avería */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowForm(false)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[500px] border border-border" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
+          <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[500px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">Reportar Avería</h3>
             <form onSubmit={handleNewAveria} className="flex flex-col gap-3">
               <select name="tipo" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
@@ -219,8 +219,8 @@ export default function AveriasPage() {
 
       {/* DETAIL MODAL with History Visualization */}
       {selectedAveria && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setSelectedAveria(null)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[600px] border border-border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4" onClick={() => setSelectedAveria(null)}>
+          <div className="bg-bg-card rounded-2xl p-4 sm:p-6 w-full max-w-[600px] border border-border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
 
             {/* Header */}
             <div className="flex items-start justify-between mb-5">
@@ -244,7 +244,7 @@ export default function AveriasPage() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-5">
               <div className="bg-bg-secondary rounded-lg p-3">
                 <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1 flex items-center gap-1">
                   <MapPin size={10} /> Zona / Nodo

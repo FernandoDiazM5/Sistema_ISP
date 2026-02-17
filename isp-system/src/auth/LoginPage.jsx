@@ -174,7 +174,7 @@ export default function LoginPage() {
       />
 
       {/* Login card */}
-      <div className="animate-fade w-[420px] p-10 rounded-[20px] relative z-10"
+      <div className="animate-fade w-full max-w-[420px] mx-4 p-6 sm:p-10 rounded-[20px] relative z-10"
         style={{
           background: 'linear-gradient(145deg, rgba(26,32,53,0.9) 0%, rgba(17,24,39,0.95) 100%)',
           border: '1px solid rgba(59,130,246,0.15)',

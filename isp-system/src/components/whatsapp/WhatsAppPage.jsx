@@ -8,7 +8,7 @@ import KPICard from '../common/KPICard';
 function smartFormat(text, client) {
   const d = new Date();
   const h = d.getHours();
-  const months = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const saludo = h >= 19 || h < 5 ? 'Buenas noches' : h >= 12 ? 'Buenas tardes' : 'Buenos días';
 
   let result = text
@@ -262,16 +262,16 @@ export default function WhatsAppPage() {
   ];
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">WhatsApp & Plantillas</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">WhatsApp & Plantillas</h1>
           <p className="text-text-secondary text-sm mt-1">Mensajería masiva, plantillas y campañas</p>
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICard title="Plantillas" value={kpis.totalTemplates} icon={<MessageSquare size={20} />} color="#3b82f6" />
         <KPICard title="Mensajes Enviados" value={kpis.totalSent} icon={<Send size={20} />} color="#10b981" />
         <KPICard title="Enviados Hoy" value={kpis.todaySent} icon={<Phone size={20} />} color="#8b5cf6" />
@@ -313,7 +313,7 @@ export default function WhatsAppPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTemplates.map(tpl => (
               <div key={tpl.id} className="bg-bg-card rounded-2xl border border-border p-4 flex flex-col">
                 <div className="flex items-start justify-between mb-2">
@@ -627,8 +627,8 @@ export default function WhatsAppPage() {
 
       {/* ==================== MODAL: TEMPLATE ==================== */}
       {showTplModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setShowTplModal(false)}>
-          <div className="bg-bg-card rounded-2xl border border-border w-[550px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTplModal(false)}>
+          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-[550px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h3 className="text-sm font-bold">{editingTpl ? 'Editar Plantilla' : 'Nueva Plantilla'}</h3>
               <button onClick={() => setShowTplModal(false)} className="p-1 rounded-lg bg-bg-secondary border-none cursor-pointer text-text-muted hover:text-text-primary">

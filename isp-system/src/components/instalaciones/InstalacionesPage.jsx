@@ -191,11 +191,11 @@ export default function InstalacionesPage() {
   };
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Instalaciones</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Instalaciones</h1>
           <p className="text-text-secondary text-sm mt-1">
             Pipeline de instalaciones - {stats.total} total, {stats.enCurso} en curso
           </p>
@@ -219,13 +219,13 @@ export default function InstalacionesPage() {
             onClick={() => setShowNewModal(true)}
             className="py-2.5 px-4 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90"
           >
-            <Plus size={16} /> Nueva Instalación
+            <Plus size={16} /> <span className="hidden sm:inline">Nueva</span> Instalación
           </button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total', value: stats.total, icon: <FileText size={16} />, color: '#3b82f6' },
           { label: 'Pendientes', value: stats.pendientes, icon: <Clock size={16} />, color: '#f59e0b' },
@@ -245,7 +245,7 @@ export default function InstalacionesPage() {
       </div>
 
       {/* Search + Filters */}
-      <div className="flex gap-3 mb-5">
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
@@ -255,24 +255,26 @@ export default function InstalacionesPage() {
             className="w-full pl-9"
           />
         </div>
-        <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="min-w-[150px]">
-          <option value="all">Todos los estados</option>
-          {ESTADOS.map(e => (
-            <option key={e} value={e}>{e}</option>
-          ))}
-        </select>
-        <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="min-w-[140px]">
-          <option value="all">Todas las zonas</option>
-          {zonas.map(z => (
-            <option key={z} value={z}>{z}</option>
-          ))}
-        </select>
-        <select value={filterTecnologia} onChange={e => setFilterTecnologia(e.target.value)} className="min-w-[150px]">
-          <option value="all">Toda tecnología</option>
-          {TECNOLOGIAS.map(t => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
+          <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="flex-1 sm:flex-none sm:min-w-[150px]">
+            <option value="all">Todos los estados</option>
+            {ESTADOS.map(e => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
+          <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="flex-1 sm:flex-none sm:min-w-[140px]">
+            <option value="all">Todas las zonas</option>
+            {zonas.map(z => (
+              <option key={z} value={z}>{z}</option>
+            ))}
+          </select>
+          <select value={filterTecnologia} onChange={e => setFilterTecnologia(e.target.value)} className="flex-1 sm:flex-none sm:min-w-[150px]">
+            <option value="all">Toda tecnología</option>
+            {TECNOLOGIAS.map(t => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Pipeline View */}
@@ -413,8 +415,8 @@ export default function InstalacionesPage() {
 
       {/* Modal: Nueva Instalación */}
       {showNewModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setShowNewModal(false)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[560px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNewModal(false)}>
+          <div className="bg-bg-card rounded-2xl p-4 sm:p-6 w-full max-w-[560px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold">Nueva Instalación</h3>
               <button onClick={() => setShowNewModal(false)} className="w-8 h-8 rounded-lg bg-bg-secondary border border-border flex items-center justify-center cursor-pointer text-text-muted hover:text-text-primary">
@@ -577,8 +579,8 @@ export default function InstalacionesPage() {
 
       {/* Modal: Detalle Instalación */}
       {selectedInstalacion && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setSelectedInstalacion(null)}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[600px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedInstalacion(null)}>
+          <div className="bg-bg-card rounded-2xl p-4 sm:p-6 w-full max-w-[600px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex justify-between items-start mb-5">
               <div>
@@ -597,7 +599,7 @@ export default function InstalacionesPage() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-5">
               <div className="bg-bg-secondary rounded-lg p-3">
                 <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Prospecto</p>
                 <p className="text-sm font-semibold">{selectedInstalacion.prospectoNombre || selectedInstalacion.clienteNombre}</p>

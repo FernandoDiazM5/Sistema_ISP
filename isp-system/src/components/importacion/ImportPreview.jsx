@@ -5,7 +5,7 @@ export default function ImportPreview({ stats, changes, onConfirm, onCancel }) {
   return (
     <div>
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICard title="Registros Leídos" value={stats.total} icon={<Box size={20} />} color="#6b7280" />
         <KPICard title="Nuevos Clientes" value={stats.new} icon={<Users size={20} />} color="#10b981" />
         <KPICard title="Modificados" value={stats.modified} icon={<Settings size={20} />} color="#f59e0b" />

@@ -74,16 +74,16 @@ export default function ReportesPage() {
   };
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Reportes & Cobranza</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Reportes & Cobranza</h1>
           <p className="text-text-secondary text-sm mt-1">Análisis financiero y operativo</p>
         </div>
       </div>
 
       {/* KPIs Financieros */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICard title="Ingreso Mensual" value={`S/. ${cobranza.ingresoMensual.toLocaleString()}`}
           subtitle="Facturación estimada" icon={<DollarSign size={20} />} color="#10b981" />
         <KPICard title="Deuda Total" value={`S/. ${cobranza.totalDeuda.toLocaleString()}`}

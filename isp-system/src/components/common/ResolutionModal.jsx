@@ -58,8 +58,8 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={handleClose}>
-      <div className="bg-bg-card rounded-2xl p-6 w-[560px] border border-border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={handleClose}>
+      <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[560px] border border-border max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className={`w-10 h-10 rounded-lg bg-${accentColor}/20 flex items-center justify-center`}>

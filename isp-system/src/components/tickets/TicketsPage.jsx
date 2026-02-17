@@ -269,7 +269,7 @@ export default function TicketsPage() {
   const getClientInfo = (clienteId) => clients.find(c => c.id === clienteId) || null;
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
       <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-6">
         <div>

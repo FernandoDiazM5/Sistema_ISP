@@ -137,7 +137,7 @@ export default function ClientesPage() {
   const activeTecnicos = useMemo(() => tecnicos.filter(t => t.estado === 'Activo'), [tecnicos]);
 
   return (
-    <div className="p-6 px-8 h-full flex flex-col animate-fade">
+    <div className="p-4 sm:p-6 sm:px-8 h-full flex flex-col animate-fade">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-5 mb-6">
         <div>

@@ -147,25 +147,25 @@ export default function TecnicosPage() {
 
   // ==================== RENDER ====================
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Técnicos</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Técnicos</h1>
           <p className="text-text-secondary text-sm mt-1">
             {stats.total} técnicos registrados — {stats.activos} activos
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 py-2.5 px-4 bg-accent-blue text-white rounded-xl font-semibold text-sm border-none cursor-pointer hover:opacity-90 transition-opacity"
+          className="flex items-center justify-center gap-2 py-2.5 px-4 bg-accent-blue text-white rounded-xl font-semibold text-sm border-none cursor-pointer hover:opacity-90 transition-opacity w-full sm:w-auto"
         >
           <Plus size={16} /> Nuevo Técnico
         </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total Técnicos', value: stats.total, icon: <User size={16} />, color: '#3b82f6' },
           { label: 'Activos', value: stats.activos, icon: <CheckCircle2 size={16} />, color: '#10b981' },

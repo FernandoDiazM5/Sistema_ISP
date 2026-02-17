@@ -95,20 +95,20 @@ export default function EquiposPage() {
   };
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Inventario de Equipos</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Inventario de Equipos</h1>
           <p className="text-text-secondary text-sm mt-1">Gestión de ONTs, CPEs, routers y equipos de red</p>
         </div>
-        <Button onClick={openCreate} icon={Plus}>
+        <Button onClick={openCreate} icon={Plus} className="w-full sm:w-auto justify-center">
           Registrar Equipo
         </Button>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <KPICard title="Total Equipos" value={stats.total} subtitle="Inventario completo" icon={<Box size={20} />} color="#3b82f6" />
         <KPICard title="En Uso" value={stats.enUso} subtitle="Asignados a clientes" icon={<Monitor size={20} />} color="#10b981" />
         <KPICard title="Disponibles" value={stats.disponibles} subtitle="En almacén" icon={<Package size={20} />} color="#8b5cf6" />
@@ -117,7 +117,7 @@ export default function EquiposPage() {
 
       {/* Filtros */}
       <div className="flex gap-3 mb-5 flex-wrap">
-        <div className="flex-1 min-w-[300px]">
+        <div className="flex-1 min-w-0 sm:min-w-[300px]">
           <Input
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
@@ -125,7 +125,7 @@ export default function EquiposPage() {
             icon={Search}
           />
         </div>
-        <div className="w-[180px]">
+        <div className="w-full sm:w-[180px]">
           <select
             value={filters.tipo}
             onChange={e => updateFilter('tipo', e.target.value)}
@@ -135,7 +135,7 @@ export default function EquiposPage() {
             {TIPOS_EQUIPO.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
-        <div className="w-[180px]">
+        <div className="w-full sm:w-[180px]">
           <select
             value={filters.estado}
             onChange={e => updateFilter('estado', e.target.value)}
@@ -225,7 +225,7 @@ export default function EquiposPage() {
       </Card>
 
       {/* Resumen por tipo */}
-      <div className="grid grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
         {['ONU', 'Router', 'Antena CPE'].map(tipo => {
           const count = equipos.filter(e => e.tipo === tipo).length;
           const inUse = equipos.filter(e => e.tipo === tipo && e.estado === 'En uso').length;

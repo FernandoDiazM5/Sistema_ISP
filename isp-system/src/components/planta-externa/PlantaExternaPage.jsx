@@ -210,23 +210,23 @@ export default function PlantaExternaPage() {
   };
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Planta Externa</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Planta Externa</h1>
           <p className="text-text-secondary text-sm mt-1">Derivaciones de infraestructura y trabajos de campo</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90"
+          className="w-full sm:w-auto justify-center py-2.5 px-4 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90"
         >
           <Plus size={16} /> Nueva Derivación
         </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="bg-bg-card rounded-xl p-4 border border-border flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-accent-purple/15 text-accent-purple">
             <Cable size={16} />
@@ -339,10 +339,10 @@ export default function PlantaExternaPage() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${cat === 'radio'
-                      ? 'bg-accent-blue/15 text-accent-blue'
-                      : cat === 'fibra'
-                        ? 'bg-accent-purple/15 text-accent-purple'
-                        : 'bg-accent-yellow/15 text-accent-yellow'
+                    ? 'bg-accent-blue/15 text-accent-blue'
+                    : cat === 'fibra'
+                      ? 'bg-accent-purple/15 text-accent-purple'
+                      : 'bg-accent-yellow/15 text-accent-yellow'
                     }`}>
                     {getTipoIcon(d.tipo)}
                   </div>
@@ -408,7 +408,7 @@ export default function PlantaExternaPage() {
       {/* Modal: Nueva Derivación */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setShowForm(false); setFormInstSearch(''); setShowFormInstDropdown(false); setFormInstalacionId(''); setFormAdjuntos([]); }}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[540px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[540px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold">Nueva Derivación</h3>
               <button onClick={() => { setShowForm(false); setFormInstSearch(''); setShowFormInstDropdown(false); setFormInstalacionId(''); setFormAdjuntos([]); }} className="text-text-muted hover:text-text-primary cursor-pointer bg-transparent border-none">
@@ -558,7 +558,7 @@ export default function PlantaExternaPage() {
       {/* Modal: Detalle Derivación */}
       {selectedDerivacion && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setSelectedDerivacion(null); setShowCompletionForm(false); }}>
-          <div className="bg-bg-card rounded-2xl p-6 w-[600px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[600px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="flex justify-between items-start mb-5">
               <div>

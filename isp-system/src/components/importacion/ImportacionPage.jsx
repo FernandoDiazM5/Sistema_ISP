@@ -273,13 +273,13 @@ export default function ImportacionPage() {
   }
 
   return (
-    <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-[26px] font-bold">Importar Datos</h1>
+          <h1 className="text-xl sm:text-[26px] font-bold">Importar Datos</h1>
           <p className="text-text-secondary text-sm">Sincronización desde Excel fuente (ISP Externo)</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           {clients.length > 0 && (
             <button onClick={handleExport}
               className="py-2 px-4 rounded-lg bg-bg-card border border-border text-text-secondary text-xs font-semibold cursor-pointer flex items-center gap-1.5 hover:border-accent-blue transition-colors">
