@@ -603,14 +603,15 @@ export default function ClienteDetalle() {
   return (
     <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
         <button onClick={() => navigate('/clientes')}
-          className="bg-bg-card border border-border rounded-[10px] py-2 px-4 text-text-primary cursor-pointer text-[13px] font-medium hover:border-accent-blue transition-colors flex items-center gap-2">
+          className="bg-bg-card border border-border rounded-[10px] py-2 px-4 text-text-primary cursor-pointer text-[13px] font-medium hover:border-accent-blue transition-colors flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto">
           <ArrowLeft size={14} /> Volver
         </button>
-        <div className="flex-1">
-          <h1 className="text-[22px] font-bold">{c.nombre}</h1>
-          <div className="flex gap-2 mt-1.5">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl sm:text-[22px] font-bold truncate">{c.nombre}</h1>
+          <div className="flex flex-wrap gap-2 mt-1.5">
             <StatusBadge status={c.estado_cuenta} size="md" />
             <StatusBadge status={c.status} size="md" />
             <StatusBadge status={c.tecnologia} size="md" />
