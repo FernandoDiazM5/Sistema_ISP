@@ -2,7 +2,8 @@ import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOu
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
-import { ROLES as USER_ROLES } from '../../types/user';
+import { ROLES as USER_ROLES, MODULES } from '../../types/user';
+import useStore from '../../store/useStore';
 
 const navSections = [
   {
@@ -40,18 +41,49 @@ const navSections = [
   },
 ];
 
+const ROUTE_TO_MODULE = {
+  '/': MODULES.DASHBOARD,
+  '/clientes': MODULES.CLIENTES,
+  '/tickets': MODULES.TICKETS,
+  '/averias': MODULES.AVERIAS,
+  '/soporte': MODULES.SOPORTE_REMOTO,
+  '/whatsapp': MODULES.WHATSAPP,
+  '/tecnicos': MODULES.TECNICOS,
+  '/visitas': MODULES.VISITAS,
+  '/instalaciones': MODULES.INSTALACIONES,
+  '/planta-externa': MODULES.PLANTA_EXTERNA,
+  '/post-venta': MODULES.POST_VENTA,
+  '/requerimientos': MODULES.REQUERIMIENTOS,
+  '/equipos': MODULES.EQUIPOS,
+  '/reportes': MODULES.REPORTES,
+  '/usuarios': MODULES.USUARIOS,
+  '/config': MODULES.CONFIGURACION,
+  '/importar': MODULES.CLIENTES, // Asumimos permiso de clientes o config
+};
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const role = ROLES[user?.rol] || ROLES.TECNICO;
+  const hasPermission = useStore(s => s.hasPermission);
 
   // Filtrar items de navegación basado en permisos
   const getFilteredItems = (items) => {
     return items.filter(item => {
-      // Solo mostrar "Usuarios" si es SUPER_ADMIN
+      // 1. Caso especial: Usuarios solo para SUPER_ADMIN
       if (item.to === '/usuarios') {
         return user?.rol === USER_ROLES.SUPER_ADMIN;
       }
-      // Otros items son visibles para todos (se pueden agregar más filtros aquí)
+
+      // 2. Verificar permiso del módulo correspondiente
+      const module = ROUTE_TO_MODULE[item.to];
+      if (module) {
+        // Si el usuario es SUPER_ADMIN, siempre mostrar (seguridad extra)
+        if (user?.rol === USER_ROLES.SUPER_ADMIN) return true;
+
+        // Verificar nivel de lectura mínimo
+        return hasPermission(module, 'read');
+      }
+
       return true;
     });
   };

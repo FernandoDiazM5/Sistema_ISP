@@ -40,7 +40,11 @@ export const createUsersSlice = (set, get) => ({
       // Actualizar último acceso
       await usersAPI.updateLastAccess(user.uid);
 
-      set({ currentUser: user, usersLoading: false });
+      // BUGFIX: Sincronizar currentUser y user para evitar inconsistencias
+      set({ currentUser: user, user: user, usersLoading: false });
+      // También persistir en localstorage para la próxima sesión
+      localStorage.setItem('isp_user', JSON.stringify(user));
+
       return user;
     } catch (error) {
       console.error('Error loading current user:', error);
@@ -117,9 +121,21 @@ export const createUsersSlice = (set, get) => ({
       const allUsers = get().allUsers.map(u => u.uid === uid ? updatedUser : u);
       set({ allUsers, usersLoading: false });
 
-      // Si es el usuario actual, actualizar también
-      if (get().currentUser?.uid === uid) {
-        set({ currentUser: updatedUser });
+      // Si es el usuario actual, actualizar también IMMEDIATAMENTE
+      const currentUser = get().currentUser;
+      if (currentUser?.uid === uid) {
+        set({ currentUser: { ...currentUser, ...updatedUser } });
+
+        // También actualizar en localStorage si existe referencia allí (para persistencia básica)
+        const storedUser = localStorage.getItem('isp_user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            if (parsed.uid === uid) {
+              localStorage.setItem('isp_user', JSON.stringify({ ...parsed, ...updatedUser }));
+            }
+          } catch (e) { /* ignore */ }
+        }
       }
 
       return updatedUser;
@@ -164,6 +180,7 @@ export const createUsersSlice = (set, get) => ({
 
   updateUserPermissions: async (uid, permisos) => {
     try {
+      // Usar la función updateUser optimizada de arriba
       return await get().updateUser(uid, { permisos });
     } catch (error) {
       console.error('Error updating permissions:', error);
