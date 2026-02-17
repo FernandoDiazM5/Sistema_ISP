@@ -1,5 +1,6 @@
 # Workflow para deployment de GitHub Pages con inyección de variables de entorno
 name: Deploy to GitHub Pages
+# Trigger rebuild for env injection verify
 
 on:
   push:
