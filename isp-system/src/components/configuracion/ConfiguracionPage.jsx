@@ -293,13 +293,13 @@ export default function ConfiguracionPage() {
     googleApiKey: localStorage.getItem('isp_google_api_key') || CONFIG.GOOGLE_API_KEY || '',
     googleClientId: localStorage.getItem('isp_google_client_id') || CONFIG.GOOGLE_CLIENT_ID || '',
     googleSheetId: localStorage.getItem('isp_google_sheet_id') || CONFIG.GOOGLE_SHEET_ID || '',
-    geminiApiKey: localStorage.getItem('isp_gemini_api_key') || '',
-    firebaseApiKey: localStorage.getItem('isp_firebase_api_key') || '',
-    firebaseAuthDomain: localStorage.getItem('isp_firebase_auth_domain') || '',
-    firebaseProjectId: localStorage.getItem('isp_firebase_project_id') || '',
-    firebaseStorageBucket: localStorage.getItem('isp_firebase_storage_bucket') || '',
-    firebaseMessagingSenderId: localStorage.getItem('isp_firebase_messaging_sender_id') || '',
-    firebaseAppId: localStorage.getItem('isp_firebase_app_id') || '',
+    geminiApiKey: localStorage.getItem('isp_gemini_api_key') || CONFIG.GEMINI_API_KEY || '',
+    firebaseApiKey: localStorage.getItem('isp_firebase_api_key') || CONFIG.FIREBASE.apiKey || '',
+    firebaseAuthDomain: localStorage.getItem('isp_firebase_auth_domain') || CONFIG.FIREBASE.authDomain || '',
+    firebaseProjectId: localStorage.getItem('isp_firebase_project_id') || CONFIG.FIREBASE.projectId || '',
+    firebaseStorageBucket: localStorage.getItem('isp_firebase_storage_bucket') || CONFIG.FIREBASE.storageBucket || '',
+    firebaseMessagingSenderId: localStorage.getItem('isp_firebase_messaging_sender_id') || CONFIG.FIREBASE.messagingSenderId || '',
+    firebaseAppId: localStorage.getItem('isp_firebase_app_id') || CONFIG.FIREBASE.appId || '',
   }));
   const [apiSaved, setApiSaved] = useState(false);
 
@@ -595,7 +595,8 @@ export default function ConfiguracionPage() {
               <ServiceRow name="Google Sheets API v4" status={!!CONFIG.GOOGLE_SHEET_ID} />
               <ServiceRow name="Google Identity Services (OAuth 2.0)" status={!!CONFIG.GOOGLE_CLIENT_ID} />
               <ServiceRow name="Google Drive API" status={!!CONFIG.GOOGLE_API_KEY} />
-              <ServiceRow name="Firebase Firestore" status={!!apiValues.firebaseApiKey} />
+              <ServiceRow name="Gemini AI" status={!!(apiValues.geminiApiKey || CONFIG.GEMINI_API_KEY)} />
+              <ServiceRow name="Firebase Firestore" status={!!(apiValues.firebaseApiKey || CONFIG.FIREBASE.apiKey)} />
               <ServiceRow name="SheetJS (Lectura Excel local)" status={true} />
             </div>
           </div>
@@ -680,7 +681,7 @@ export default function ConfiguracionPage() {
               <div className="flex gap-3">
                 <button
                   onClick={handleSyncPush}
-                  disabled={isSyncing || !apiValues.firebaseApiKey}
+                  disabled={isSyncing || !(apiValues.firebaseApiKey || CONFIG.FIREBASE.apiKey)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-blue/10 text-accent-blue text-xs font-bold hover:bg-accent-blue/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
                 >
                   <UploadCloud size={16} />
@@ -688,7 +689,7 @@ export default function ConfiguracionPage() {
                 </button>
                 <button
                   onClick={handleSyncPull}
-                  disabled={isSyncing || !apiValues.firebaseApiKey}
+                  disabled={isSyncing || !(apiValues.firebaseApiKey || CONFIG.FIREBASE.apiKey)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-purple/10 text-accent-purple text-xs font-bold hover:bg-accent-purple/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer border-none"
                 >
                   <DownloadCloud size={16} />

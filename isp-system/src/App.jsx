@@ -64,7 +64,12 @@ function AppContent() {
   }, [storeReady, user, clients.length, loadDemoData]);
 
   if (loading || !storeReady) return <LoadingSpinner />;
-  if (!user) return <LoginPage />;
+  if (!user) return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <Navigate to="/" replace />
+      <LoginPage />
+    </Suspense>
+  );
 
   return (
     <MainLayout>
