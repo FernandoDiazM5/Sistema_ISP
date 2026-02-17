@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Settings, Shield, Database, Globe, Key, Users, Save, RefreshCw, CheckCircle, AlertTriangle, Wifi, UploadCloud, DownloadCloud, Moon, Sun, Monitor, Sparkles, Smartphone, Flower, Leaf, Wind, Clock, Trash2, FileJson, FileSpreadsheet, FileText, History, Loader2 } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
-import { ROLES, DEMO_USERS } from '../../auth/roles';
+import { ROLES as UI_ROLES, DEMO_USERS } from '../../auth/roles';
+import { ROLES } from '../../types/user';
 import { CONFIG } from '../../utils/constants';
 import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
@@ -436,14 +437,14 @@ export default function ConfiguracionPage() {
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Sesión Activa</h3>
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold"
-                style={{ background: (ROLES[user?.rol] || ROLES.TECNICO).color + '20', color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
+                style={{ background: (UI_ROLES[user?.rol] || UI_ROLES.TECNICO).color + '20', color: (UI_ROLES[user?.rol] || UI_ROLES.TECNICO).color }}>
                 {user?.nombre?.[0] || '?'}
               </div>
               <div className="flex-1">
                 <p className="text-base font-bold">{user?.nombre}</p>
                 <p className="text-sm text-text-secondary">{user?.email}</p>
-                <p className="text-xs mt-1 font-medium" style={{ color: (ROLES[user?.rol] || ROLES.TECNICO).color }}>
-                  {(ROLES[user?.rol] || ROLES.TECNICO).label}
+                <p className="text-xs mt-1 font-medium" style={{ color: (UI_ROLES[user?.rol] || UI_ROLES.TECNICO).color }}>
+                  {(UI_ROLES[user?.rol] || UI_ROLES.TECNICO).label}
                 </p>
               </div>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 rounded-lg">
@@ -461,7 +462,7 @@ export default function ConfiguracionPage() {
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Roles del Sistema</h3>
             <div className="grid grid-cols-2 gap-4">
-              {Object.entries(ROLES).map(([key, role]) => (
+              {Object.entries(UI_ROLES).map(([key, role]) => (
                 <div key={key} className="p-4 rounded-xl bg-bg-secondary border border-border">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center"
@@ -523,7 +524,7 @@ export default function ConfiguracionPage() {
               </thead>
               <tbody>
                 {DEMO_USERS.map(u => {
-                  const r = ROLES[u.rol] || ROLES.VIEWER;
+                  const r = UI_ROLES[u.rol] || UI_ROLES.VIEWER;
                   return (
                     <tr key={u.email} className="border-t border-border">
                       <td className="py-2.5 px-3 font-mono text-xs">{u.email}</td>
@@ -773,7 +774,7 @@ export default function ConfiguracionPage() {
               ].map(tech => (
                 <div key={tech.name} className="p-3 rounded-xl bg-bg-secondary border border-border text-center">
                   <p className="text-xs font-bold">{tech.name}</p>
-                  <p className="text-[10px] text-text-muted">{tech.desc}</p>
+                  <p className="text-xs text-text-muted">{tech.desc}</p>
                 </div>
               ))}
             </div>
