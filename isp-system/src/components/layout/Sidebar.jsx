@@ -61,7 +61,7 @@ const ROUTE_TO_MODULE = {
   '/importar': MODULES.CLIENTES, // Asumimos permiso de clientes o config
 };
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const role = ROLES[user?.rol] || ROLES.TECNICO;
   const hasPermission = useStore(s => s.hasPermission);
@@ -88,26 +88,28 @@ export default function Sidebar() {
     });
   };
 
-  return (
-    <div className="w-60 h-screen bg-bg-sidebar border-r border-border flex flex-col py-5 px-3">
+  const SidebarContent = () => (
+    <div className="w-64 h-full bg-bg-sidebar border-r border-border flex flex-col py-5 px-3 shadow-2xl lg:shadow-none">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-2 mb-8">
-        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white"
+        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white shrink-0"
           style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
           <Wifi size={18} />
         </div>
         <div>
-          <p className="font-bold text-sm tracking-tight">ISP System</p>
-          <p className="text-[10px] text-text-muted">v1.0</p>
+          <p className="font-bold text-sm tracking-tight text-white">ISP System</p>
+          <p className="text-[10px] text-text-muted">v2.0 Mobile</p>
         </div>
+        <button onClick={onClose} className="lg:hidden ml-auto text-text-muted p-1">
+          <LogOut size={18} className="rotate-180" />
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
+      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
         {navSections.map((section, idx) => {
           const filteredItems = getFilteredItems(section.items);
 
-          // No mostrar sección si no tiene items visibles
           if (filteredItems.length === 0) return null;
 
           return (
@@ -119,6 +121,7 @@ export default function Sidebar() {
                   <NavLink
                     key={item.to}
                     to={item.to}
+                    onClick={() => { if (onClose) onClose(); }} // Cerrar drawer al navegar
                     className={({ isActive }) => `flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
                       ${isActive
                         ? 'bg-accent-blue/12 text-accent-blue font-semibold'
@@ -136,14 +139,14 @@ export default function Sidebar() {
       </nav>
 
       {/* User info */}
-      <div className="p-3 rounded-xl bg-bg-secondary border border-border">
+      <div className="p-3 rounded-xl bg-bg-secondary border border-border mt-2">
         <div className="flex items-center gap-2.5 mb-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
             style={{ background: role.color + '30', color: role.color }}>
             {user?.nombre?.[0] || '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate">{user?.nombre}</p>
+            <p className="text-xs font-semibold truncate text-text-primary">{user?.nombre}</p>
             <p className="text-[10px] font-medium" style={{ color: role.color }}>{role.label}</p>
           </div>
         </div>
@@ -154,5 +157,25 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Mobile Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-0
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <SidebarContent />
+      </div>
+    </>
   );
 }
