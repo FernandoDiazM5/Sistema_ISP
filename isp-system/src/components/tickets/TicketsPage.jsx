@@ -271,18 +271,19 @@ export default function TicketsPage() {
   return (
     <div className="animate-fade p-6 px-8 h-full overflow-y-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight">Tickets & Soporte</h1>
           <p className="text-text-secondary text-sm mt-1">{tickets.length} tickets en total — {stats.abiertos} abiertos, {stats.enProceso} en proceso</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="flex bg-bg-secondary rounded-lg border border-border p-0.5 shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex bg-bg-secondary rounded-lg border border-border p-0.5 shrink-0 justify-center">
             <Button
               variant={viewMode === 'list' ? 'primary' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('list')}
               icon={LayoutList}
+              className="flex-1 sm:flex-none justify-center"
             >
               Lista
             </Button>
@@ -291,18 +292,19 @@ export default function TicketsPage() {
               size="sm"
               onClick={() => setViewMode('kanban')}
               icon={Kanban}
+              className="flex-1 sm:flex-none justify-center"
             >
               Kanban
             </Button>
           </div>
-          <Button onClick={() => { setEditingTicket(null); setShowCreateModal(true); }} icon={Plus} className="flex-1 sm:flex-none justify-center">
+          <Button onClick={() => { setEditingTicket(null); setShowCreateModal(true); }} icon={Plus} className="justify-center sm:w-auto">
             Nuevo Ticket
           </Button>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Abiertos', value: stats.abiertos, icon: AlertCircle, color: 'text-blue-500', bg: 'bg-blue-500/10' },
           { label: 'En Proceso', value: stats.enProceso, icon: Loader2, color: 'text-amber-500', bg: 'bg-amber-500/10' },
