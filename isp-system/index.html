@@ -18,6 +18,12 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Parche para extensiones mal comportadas
+      if (typeof window.browser === 'undefined') {
+        window.browser = { runtime: { id: 'dummy' } };
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

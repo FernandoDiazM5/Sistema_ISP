@@ -29,9 +29,62 @@ export default function ClientesTable({ data, columns, pagination, setPagination
         getPaginationRowModel: getPaginationRowModel(),
     });
 
+    // Helper to get cell value securely
+    const getCellValue = (row, accessorKey) => {
+        const cell = row.getVisibleCells().find(c => c.column.id === accessorKey);
+        return cell ? flexRender(cell.column.columnDef.cell, cell.getContext()) : null;
+    };
+
     return (
         <div className="flex flex-col flex-1 min-h-0 w-full">
-            <div className="flex-1 overflow-auto rounded-xl border border-border bg-bg-card">
+            {/* --- MOBILE CARD VIEW (Visible < md) --- */}
+            <div className="block md:hidden overflow-y-auto flex-1 space-y-3 pb-20">
+                {table.getRowModel().rows.length === 0 ? (
+                    <div className="text-center py-10 text-text-muted text-sm">No se encontraron clientes.</div>
+                ) : (
+                    table.getRowModel().rows.map(row => (
+                        <div key={row.id} className="bg-bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-bold text-text-primary text-sm">{row.original.nombre}</p>
+                                    <p className="text-xs text-text-muted font-mono">{row.original.id} • {row.original.dni}</p>
+                                </div>
+                                <div className="shrink-0">
+                                    {getCellValue(row, 'status')}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-bg-secondary p-2 rounded-lg">
+                                    <span className="text-text-muted block text-[10px] uppercase">Plan</span>
+                                    <span className="font-medium text-text-secondary">{row.original.plan || 'N/A'}</span>
+                                </div>
+                                <div className="bg-bg-secondary p-2 rounded-lg">
+                                    <span className="text-text-muted block text-[10px] uppercase">Zona</span>
+                                    <span className="font-medium text-text-secondary">{row.original.zona || 'N/A'}</span>
+                                </div>
+                                <div className="bg-bg-secondary p-2 rounded-lg">
+                                    <span className="text-text-muted block text-[10px] uppercase">IP</span>
+                                    <span className="font-mono text-text-secondary">{row.original.ip_address || 'N/A'}</span>
+                                </div>
+                                <div className="bg-bg-secondary p-2 rounded-lg">
+                                    <span className="text-text-muted block text-[10px] uppercase">Deuda</span>
+                                    <span className="font-bold text-text-primary">S/. {row.original.deuda_monto?.toFixed(2) || '0.00'}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 mt-1">
+                                <div className="flex-1">
+                                    {getCellValue(row, 'actions')}
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* --- DESKTOP TABLE VIEW (Visible >= md) --- */}
+            <div className="hidden md:block flex-1 overflow-auto rounded-xl border border-border bg-bg-card">
                 <table className="w-full border-collapse text-[13px]">
                     <thead className="bg-bg-secondary sticky top-0 z-10">
                         {table.getHeaderGroups().map(headerGroup => (
@@ -84,12 +137,16 @@ export default function ClientesTable({ data, columns, pagination, setPagination
                 </table>
             </div>
 
-            {/* Paginación */}
-            <div className="flex items-center justify-between mt-4 px-2">
-                <span className="text-xs text-text-muted">
+            {/* Paginación (Shared) */}
+            <div className="flex items-center justify-between mt-4 px-2 pb-6 md:pb-0">
+                <span className="text-xs text-text-muted hidden sm:inline">
                     Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount().toLocaleString()}
                     <span className="mx-2">•</span>
                     Total: {table.getFilteredRowModel().rows.length} registros
+                </span>
+                {/* Mobile pagination text */}
+                <span className="text-xs text-text-muted sm:hidden">
+                    {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
                 </span>
 
                 <div className="flex items-center gap-1.5">
