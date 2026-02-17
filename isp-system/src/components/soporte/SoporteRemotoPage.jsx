@@ -663,7 +663,7 @@ export default function SoporteRemotoPage() {
               )}
 
               {/* Tipo + IP + Tecnico row */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-text-secondary font-medium mb-1.5 block">Tipo de sesión</label>
                   <select value={tipoSesion} onChange={(e) => setTipoSesion(e.target.value)}
@@ -820,7 +820,7 @@ export default function SoporteRemotoPage() {
                   {/* Session details */}
                   <div className="mb-4">
                     <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Detalles de sesión</p>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="bg-bg-secondary rounded-lg p-2.5 border border-border/50">
                         <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">Tipo</p>
                         <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>

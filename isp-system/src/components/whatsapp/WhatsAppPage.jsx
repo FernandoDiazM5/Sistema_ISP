@@ -359,7 +359,7 @@ export default function WhatsAppPage() {
 
       {/* ==================== TAB: ENVIAR ==================== */}
       {activeTab === 'enviar' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Client & Template */}
           <div>
             {/* Client search */}
@@ -482,7 +482,7 @@ export default function WhatsAppPage() {
             <div className="bg-bg-card rounded-2xl border border-border p-6">
               <h3 className="text-sm font-semibold mb-4">Configurar Campaña Masiva</h3>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <label className="text-xs text-text-muted mb-2 block">Filtro de Clientes</label>
                   <div className="flex flex-col gap-2">

@@ -369,7 +369,7 @@ export default function ConfiguracionPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-bg-secondary rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-bg-secondary rounded-xl p-1 mb-6 w-full sm:w-fit overflow-x-auto">
         {tabs.map(tab => {
           const Icon = tab.icon;
           return (
@@ -387,7 +387,7 @@ export default function ConfiguracionPage() {
 
       {/* Tab: General */}
       {activeTab === 'general' && (
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
@@ -411,7 +411,7 @@ export default function ConfiguracionPage() {
             <h3 className="text-sm font-semibold mb-4 text-text-secondary flex items-center gap-2">
               <Sparkles size={16} className="text-accent-yellow" /> Personalización
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <ThemeOption id="default" label="Azul Noche" color="#0a0e1a" accent="#3b82f6" icon={Moon} active={theme === 'default'} onClick={() => useStore.getState().setTheme('default')} />
               <ThemeOption id="light" label="Modo Claro" color="#ffffff" accent="#2563eb" icon={Sun} active={theme === 'light'} onClick={() => useStore.getState().setTheme('light')} />
               <ThemeOption id="black" label="Negro OLED" color="#000000" accent="#e5e5e5" icon={Smartphone} active={theme === 'black'} onClick={() => useStore.getState().setTheme('black')} />
@@ -461,7 +461,7 @@ export default function ConfiguracionPage() {
         <div className="flex flex-col gap-6">
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Roles del Sistema</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {Object.entries(UI_ROLES).map(([key, role]) => (
                 <div key={key} className="p-4 rounded-xl bg-bg-secondary border border-border">
                   <div className="flex items-center gap-3 mb-3">
@@ -567,7 +567,7 @@ export default function ConfiguracionPage() {
                 <h4 className="text-xs font-bold mb-3 text-accent-cyan flex items-center gap-2">
                   <Database size={14} /> Firebase Sync (Respaldo en la Nube)
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <EditableApiRow label="API Key" envVar="VITE_FIREBASE_API_KEY" value={apiValues.firebaseApiKey} onChange={v => setApiValues(p => ({ ...p, firebaseApiKey: v }))} placeholder="AIza..." />
                   <EditableApiRow label="Project ID" envVar="VITE_FIREBASE_PROJECT_ID" value={apiValues.firebaseProjectId} onChange={v => setApiValues(p => ({ ...p, firebaseProjectId: v }))} placeholder="isp-sistema-xxx" />
                   <EditableApiRow label="Auth Domain" envVar="VITE_FIREBASE_AUTH_DOMAIN" value={apiValues.firebaseAuthDomain} onChange={v => setApiValues(p => ({ ...p, firebaseAuthDomain: v }))} placeholder="isp-sistema.firebaseapp.com" />
@@ -725,7 +725,7 @@ export default function ConfiguracionPage() {
                 <label className="text-xs font-semibold mb-1 block">Dirección</label>
                 <input type="text" value={sysValues.empresaDireccion} onChange={e => setSysValues(p => ({ ...p, empresaDireccion: e.target.value }))} placeholder="Carabayllo, Lima" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-bg-secondary border border-border">
                   <label className="text-xs font-semibold mb-1 block">Moneda</label>
                   <input type="text" value={sysValues.moneda} onChange={e => setSysValues(p => ({ ...p, moneda: e.target.value }))} placeholder="PEN" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
@@ -760,7 +760,7 @@ export default function ConfiguracionPage() {
 
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Stack Tecnológico</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {[
                 { name: 'React 18', desc: 'UI Framework' },
                 { name: 'Vite 5', desc: 'Build tool' },

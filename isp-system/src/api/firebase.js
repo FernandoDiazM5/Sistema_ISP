@@ -27,6 +27,14 @@ export const initFirebase = () => {
     return db;
 };
 
+// Exportar la instancia de app para que otros módulos (Auth, etc.) la reutilicen
+export const getFirebaseApp = () => {
+    if (!app) {
+        initFirebase();
+    }
+    return app;
+};
+
 // ===================== HELPERS =====================
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

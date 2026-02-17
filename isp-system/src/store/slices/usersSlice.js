@@ -1,5 +1,5 @@
 import * as usersAPI from '../../api/usersAPI';
-import { PERMISSION_LEVELS, MODULES } from '../../types/user';
+import { ROLES, DEFAULT_PERMISSIONS, PERMISSION_LEVELS, MODULES } from '../../types/user';
 
 export const createUsersSlice = (set, get) => ({
   // ===================== ESTADO =====================

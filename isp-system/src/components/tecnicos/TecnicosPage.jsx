@@ -330,7 +330,7 @@ export default function TecnicosPage() {
               </div>
 
               {/* Cargo + Especialidad */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Cargo</label>
                   <select
@@ -354,7 +354,7 @@ export default function TecnicosPage() {
               </div>
 
               {/* Telefono + Email */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Teléfono *</label>
                   <input
@@ -376,7 +376,7 @@ export default function TecnicosPage() {
               </div>
 
               {/* Zona + Estado */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Zona</label>
                   <input
@@ -495,7 +495,7 @@ export default function TecnicosPage() {
               {/* INFO TAB */}
               {detailTab === 'info' && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <Briefcase size={13} className="text-text-muted" />
@@ -679,7 +679,7 @@ export default function TecnicosPage() {
                 return (
                   <div className="space-y-5">
                     {/* Overview Stats */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
                       <div className="bg-bg-secondary rounded-xl p-4 text-center">
                         <div className="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center bg-accent-blue/10">
                           <Activity size={18} className="text-accent-blue" />

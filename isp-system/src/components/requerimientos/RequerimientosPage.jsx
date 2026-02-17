@@ -144,7 +144,7 @@ export default function RequerimientosPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-5 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
                 {[
                     { label: 'Total', value: stats.total, icon: FileText, color: 'accent-blue' },
                     { label: 'Pendientes', value: stats.pendientes, icon: Clock, color: 'accent-yellow' },
@@ -277,7 +277,7 @@ export default function RequerimientosPage() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs text-text-muted mb-1.5 block font-medium">Tipo</label>
                                     <select
@@ -303,7 +303,7 @@ export default function RequerimientosPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-xs text-text-muted mb-1.5 block font-medium">Solicitante</label>
                                     <input
@@ -391,7 +391,7 @@ export default function RequerimientosPage() {
                         </div>
 
                         {/* Info */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                             <div className="bg-bg-secondary rounded-lg p-3">
                                 <p className="text-[11px] text-text-muted mb-0.5">Tipo</p>
                                 <p className="text-sm font-medium">{selectedReq.tipo}</p>
@@ -537,7 +537,7 @@ export default function RequerimientosPage() {
                             <p className="text-xs font-semibold text-text-secondary mb-3">
                                 {editingTipoId ? 'Editar Tipo' : 'Agregar Tipo'}
                             </p>
-                            <div className="grid grid-cols-2 gap-3 mb-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <div>
                                     <label className="text-[10px] text-text-muted block mb-1">Nombre</label>
                                     <input

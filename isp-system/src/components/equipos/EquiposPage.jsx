@@ -269,7 +269,7 @@ export default function EquiposPage() {
               </button>
             </div>
             <div className="p-6 flex flex-col gap-5">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Tipo *</label>
                   <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
@@ -285,7 +285,7 @@ export default function EquiposPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Modelo</label>
                   <Input
@@ -303,7 +303,7 @@ export default function EquiposPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Estado</label>
                   <select value={form.estado} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}

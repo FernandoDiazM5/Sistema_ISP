@@ -284,7 +284,7 @@ export default function InstalacionesPage() {
             const items = pipelineData[stage] || [];
             const stageColor = ESTADO_COLOR[stage];
             return (
-              <div key={stage} className="min-w-[240px] flex-1">
+              <div key={stage} className="min-w-[180px] sm:min-w-[240px] flex-1">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <span className="w-2 h-2 rounded-full" style={{ background: stageColor.text }} />
                   <span className="text-xs font-semibold text-text-primary uppercase tracking-wide">{stage}</span>

@@ -1,4 +1,3 @@
-import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -7,30 +6,21 @@ import {
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword
 } from 'firebase/auth';
-import { CONFIG } from '../utils/constants';
+import { getFirebaseApp } from './firebase';
 
-// Inicializar Firebase Auth
+// Inicializar Firebase Auth reutilizando la misma instancia de app
 let auth = null;
 
 function initAuth() {
   if (auth) return auth;
 
   try {
-    const firebaseConfig = {
-      apiKey: CONFIG.FIREBASE.apiKey,
-      authDomain: CONFIG.FIREBASE.authDomain,
-      projectId: CONFIG.FIREBASE.projectId,
-      storageBucket: CONFIG.FIREBASE.storageBucket,
-      messagingSenderId: CONFIG.FIREBASE.messagingSenderId,
-      appId: CONFIG.FIREBASE.appId,
-    };
-
-    if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    const app = getFirebaseApp();
+    if (!app) {
       console.warn('⚠️ Firebase no configurado para autenticación');
       return null;
     }
 
-    const app = initializeApp(firebaseConfig, 'auth-app');
     auth = getAuth(app);
     console.log('✅ Firebase Auth inicializado');
     return auth;

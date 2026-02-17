@@ -94,7 +94,7 @@ export default function ReportesPage() {
           subtitle={`${averias.filter(a => a.estado !== 'Resuelta').length} averías activas`} icon={<TrendingUp size={20} />} color="#8b5cf6" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Ingreso por tecnología */}
         <Card title="Ingreso por Tecnología" subtitle="Distribución por tipo de conexión">
           <div className="flex flex-col gap-5">
@@ -169,7 +169,7 @@ export default function ReportesPage() {
 
       {/* Exportar */}
       <Card title="Exportar Reportes" subtitle="Descarga de datos en formato Excel">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {[
             { type: 'cobranza', label: 'Reporte de Cobranza', desc: 'Clientes con deuda pendiente', bgColor: 'bg-red-500/10', textColor: 'text-red-500' },
             { type: 'clientes', label: 'Reporte Completo', desc: 'Base de datos completa', bgColor: 'bg-blue-500/10', textColor: 'text-blue-500' },

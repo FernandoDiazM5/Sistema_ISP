@@ -425,7 +425,7 @@ export default function PlantaExternaPage() {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-text-muted block mb-1">Zona</label>
                   <input name="zona" placeholder="Ej: PLANICIE 1" required className="w-full" />
@@ -506,7 +506,7 @@ export default function PlantaExternaPage() {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-text-muted block mb-1">Metraje estimado (m)</label>
                   <input name="metraje" type="number" placeholder="0" min="0" className="w-full" />
@@ -579,7 +579,7 @@ export default function PlantaExternaPage() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
               <div className="text-xs">
                 <span className="text-text-muted block mb-0.5">Zona</span>
                 <span className="font-medium flex items-center gap-1"><MapPin size={12} /> {selectedDerivacion.zona}</span>
@@ -641,7 +641,7 @@ export default function PlantaExternaPage() {
                   <p className="text-xs text-text-muted mb-2 flex items-center gap-1.5">
                     <Cable size={12} /> Instalación relacionada
                   </p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-text-muted">ID:</span>{' '}
                       <span className="font-mono text-accent-cyan">{inst.id}</span>
@@ -687,7 +687,7 @@ export default function PlantaExternaPage() {
                 <p className="text-xs text-accent-green font-semibold mb-2 flex items-center gap-1.5">
                   <CheckCircle2 size={12} /> Métricas de cierre
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-text-muted">Métrica antes:</span>{' '}
                     <span className="font-medium">{selectedDerivacion.metricaAntes}</span>
@@ -711,7 +711,7 @@ export default function PlantaExternaPage() {
               <div className="bg-bg-secondary rounded-lg p-4 mb-4 border border-accent-green/30">
                 <p className="text-xs text-accent-green font-semibold mb-3">Formulario de cierre</p>
                 <div className="flex flex-col gap-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs text-text-muted block mb-1">Métrica antes</label>
                       <input

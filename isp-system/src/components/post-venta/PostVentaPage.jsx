@@ -349,7 +349,7 @@ export default function PostVentaPage() {
             </button>
           ))}
         </div>
-        <div className="relative w-[260px]">
+        <div className="relative w-full sm:w-[260px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input
             placeholder="Buscar por cliente..."
@@ -420,7 +420,7 @@ export default function PostVentaPage() {
       {showNewModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={closeNewModal}>
           <div
-            className="bg-bg-card rounded-2xl p-6 w-[540px] border border-border max-h-[90vh] overflow-y-auto"
+            className="bg-bg-card rounded-2xl p-4 sm:p-6 w-full max-w-[540px] mx-4 border border-border max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-5">
@@ -629,7 +629,7 @@ export default function PostVentaPage() {
             </div>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div className="bg-bg-secondary rounded-lg p-3">
                 <p className="text-[11px] text-text-muted mb-0.5">Tipo de Servicio</p>
                 <p className="text-sm font-medium">{selectedPV.tipoServicio}</p>
@@ -771,7 +771,7 @@ export default function PostVentaPage() {
       {showCatalog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCatalog(false)}>
           <div
-            className="bg-bg-card rounded-2xl p-6 w-[700px] border border-border max-h-[90vh] overflow-y-auto"
+            className="bg-bg-card rounded-2xl p-4 sm:p-6 w-full max-w-[700px] mx-4 border border-border max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-5">
@@ -834,7 +834,7 @@ export default function PostVentaPage() {
               <p className="text-xs font-semibold text-text-secondary mb-3">
                 {editingCatalogId ? 'Editar Servicio' : 'Agregar Servicio'}
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="text-[10px] text-text-muted block mb-1">Nombre</label>
                   <input
