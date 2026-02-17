@@ -43,8 +43,5 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true, // Fail if port is busy instead of switching
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
-    },
   },
 })
