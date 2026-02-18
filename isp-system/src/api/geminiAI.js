@@ -65,3 +65,39 @@ Reglas:
 
   throw new Error('No se pudo conectar con la IA. Verifica tu API Key y conexión.');
 }
+
+// Genera contenido libre con un prompt directo (sin envolver en tono de reescritura)
+export async function generateWithAI(prompt) {
+  if (!prompt) throw new Error('No hay prompt para generar');
+
+  const GEMINI_API_KEY = getGeminiApiKey();
+  if (!GEMINI_API_KEY) throw new Error('API Key de Gemini no configurada. Por favor configúrala en Configuración.');
+
+  for (const model of MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      });
+
+      if (response.status === 404) continue;
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Error ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.candidates?.[0]?.content) {
+        return data.candidates[0].content.parts[0].text;
+      }
+    } catch (err) {
+      console.warn(`Modelo ${model} falló:`, err);
+    }
+  }
+
+  throw new Error('No se pudo conectar con la IA. Verifica tu API Key y conexión.');
+}

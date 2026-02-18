@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone } from 'lucide-react';
+import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image } from 'lucide-react';
 import useStore from '../../store/useStore';
-import { rewriteWithAI, TONES } from '../../api/geminiAI';
+import { rewriteWithAI, generateWithAI, TONES } from '../../api/geminiAI';
 import KPICard from '../common/KPICard';
+import CopyButton from '../common/CopyButton';
 
 // Smart Format: reemplaza variables de plantilla con datos del cliente
 function smartFormat(text, client) {
@@ -79,7 +80,9 @@ export default function WhatsAppPage() {
   const [editingTpl, setEditingTpl] = useState(null);
 
   // Template form
-  const [tplForm, setTplForm] = useState({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false });
+  const [tplForm, setTplForm] = useState({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false, imagenes: [], audios: [] });
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratingGuion, setAiGeneratingGuion] = useState(false);
 
   // Send state
   const [selectedClient, setSelectedClient] = useState(null);
@@ -130,13 +133,13 @@ export default function WhatsAppPage() {
   // Template CRUD
   const openCreateTpl = () => {
     setEditingTpl(null);
-    setTplForm({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false });
+    setTplForm({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false, imagenes: [], audios: [] });
     setShowTplModal(true);
   };
 
   const openEditTpl = (tpl) => {
     setEditingTpl(tpl);
-    setTplForm({ titulo: tpl.titulo, categoria: tpl.categoria, mensaje: tpl.mensaje, favorito: tpl.favorito });
+    setTplForm({ titulo: tpl.titulo, categoria: tpl.categoria, mensaje: tpl.mensaje, favorito: tpl.favorito, imagenes: tpl.imagenes || [], audios: tpl.audios || [] });
     setShowTplModal(true);
   };
 
@@ -254,6 +257,94 @@ export default function WhatsAppPage() {
     setTplForm(f => ({ ...f, mensaje: f.mensaje + varKey }));
   };
 
+  // === Media handlers ===
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const remaining = 5 - (tplForm.imagenes?.length || 0);
+    if (remaining <= 0) return;
+    files.slice(0, remaining).forEach(file => {
+      if (file.size > 2 * 1024 * 1024) { alert(`${file.name} excede 2MB`); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setTplForm(f => ({ ...f, imagenes: [...(f.imagenes || []), { id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, nombre: file.name, base64: ev.target.result, size: file.size }] }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const handleAudioUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const remaining = 2 - (tplForm.audios?.length || 0);
+    if (remaining <= 0) return;
+    files.slice(0, remaining).forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { alert(`${file.name} excede 5MB`); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setTplForm(f => ({ ...f, audios: [...(f.audios || []), { id: `aud-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, nombre: file.name, base64: ev.target.result, size: file.size, guion: '' }] }));
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeImage = (imgId) => setTplForm(f => ({ ...f, imagenes: f.imagenes.filter(i => i.id !== imgId) }));
+  const removeAudio = (audId) => setTplForm(f => ({ ...f, audios: f.audios.filter(a => a.id !== audId) }));
+  const updateAudioGuion = (audId, guion) => setTplForm(f => ({ ...f, audios: f.audios.map(a => a.id === audId ? { ...a, guion } : a) }));
+
+  // === AI generation ===
+  const handleAIGenerateMessage = async () => {
+    if (!tplForm.titulo || !tplForm.categoria) return;
+    setAiGenerating(true);
+    try {
+      const result = await generateWithAI(
+        `Genera un mensaje de WhatsApp profesional para un ISP (proveedor de internet).
+Título de la plantilla: "${tplForm.titulo}"
+Categoría: "${tplForm.categoria}"
+
+Variables disponibles que puedes usar: {Saludo}, {Nombre}, {precio}, {plan}, {deuda_monto}, {deuda_meses}, {direccion}, {proximo_pago}, {zona}, {Mes}, {Anio}
+
+Reglas:
+1. Usa las variables relevantes según la categoría (ej: para Cobranza usa {deuda_monto}, {deuda_meses}).
+2. Empieza con {Saludo} {Nombre}.
+3. Sé conciso, máximo 3-4 líneas.
+4. Solo devuelve el texto del mensaje, sin comillas ni explicaciones.`
+      );
+      setTplForm(f => ({ ...f, mensaje: result }));
+    } catch (err) { alert('Error IA: ' + err.message); }
+    setAiGenerating(false);
+  };
+
+  const handleAIGenerateGuion = async (audId) => {
+    if (!tplForm.mensaje) return;
+    setAiGeneratingGuion(true);
+    try {
+      const result = await generateWithAI(
+        `Convierte el siguiente mensaje de WhatsApp en un guion de voz para que un operador de call center lo lea por teléfono. El guion debe sonar natural al hablarlo, sin emojis, sin formato de texto.
+
+Mensaje original: "${tplForm.mensaje}"
+
+Reglas:
+1. Reemplaza variables como {Nombre} con "el nombre del cliente", {deuda_monto} con "el monto adeudado", etc.
+2. Hazlo conversacional y amable.
+3. Incluye una apertura y cierre apropiados para llamada telefónica.
+4. Solo devuelve el guion, sin comillas ni explicaciones.`
+      );
+      updateAudioGuion(audId, result);
+    } catch (err) { alert('Error IA: ' + err.message); }
+    setAiGeneratingGuion(false);
+  };
+
+  const getSuggestedVariables = (categoria) => {
+    const map = {
+      'Cobranza': ['{Saludo}', '{Nombre}', '{deuda_monto}', '{deuda_meses}', '{proximo_pago}'],
+      'General': ['{Saludo}', '{Nombre}', '{plan}', '{Mes}'],
+      'Soporte': ['{Saludo}', '{Nombre}', '{plan}', '{direccion}', '{zona}'],
+      'Promoción': ['{Saludo}', '{Nombre}', '{precio}', '{plan}', '{Mes}', '{Anio}'],
+    };
+    return map[categoria] || map['General'];
+  };
+
   const tabs = [
     { id: 'plantillas', label: 'Plantillas', icon: <MessageSquare size={16} /> },
     { id: 'enviar', label: 'Enviar Mensaje', icon: <Send size={16} /> },
@@ -327,11 +418,29 @@ export default function WhatsAppPage() {
                   </div>
                 </div>
                 <p className="text-[12px] text-text-secondary flex-1 mb-3 line-clamp-3">{tpl.mensaje}</p>
+                {(tpl.imagenes?.length > 0 || tpl.audios?.length > 0) && (
+                  <div className="flex items-center gap-2 mb-2">
+                    {tpl.imagenes?.length > 0 && (
+                      <span className="text-[10px] text-text-muted flex items-center gap-0.5 bg-bg-secondary py-0.5 px-1.5 rounded">
+                        <Image size={10} /> {tpl.imagenes.length} img
+                      </span>
+                    )}
+                    {tpl.audios?.length > 0 && (
+                      <span className="text-[10px] text-text-muted flex items-center gap-0.5 bg-bg-secondary py-0.5 px-1.5 rounded">
+                        <Mic size={10} /> {tpl.audios.length} audio
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-1 pt-2 border-t border-border">
                   <button onClick={() => { setActiveTab('enviar'); selectTplForSend(tpl); }}
                     className="flex-1 py-1.5 rounded-lg bg-accent-green/10 text-accent-green text-[11px] font-semibold cursor-pointer border-none">
                     <Send size={12} className="inline mr-1" /> Usar
                   </button>
+                  <CopyButton getTextFn={() => tpl.mensaje} title="Copiar mensaje" />
+                  {tpl.audios?.some(a => a.guion) && (
+                    <CopyButton getTextFn={() => tpl.audios.find(a => a.guion)?.guion || ''} title="Copiar guion de voz" />
+                  )}
                   <button onClick={() => openEditTpl(tpl)}
                     className="p-1.5 rounded-lg bg-bg-secondary text-text-muted cursor-pointer border-none hover:text-accent-blue">
                     <Edit3 size={12} />
@@ -628,7 +737,7 @@ export default function WhatsAppPage() {
       {/* ==================== MODAL: TEMPLATE ==================== */}
       {showTplModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTplModal(false)}>
-          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-[550px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-[650px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-border flex items-center justify-between">
               <h3 className="text-sm font-bold">{editingTpl ? 'Editar Plantilla' : 'Nueva Plantilla'}</h3>
               <button onClick={() => setShowTplModal(false)} className="p-1 rounded-lg bg-bg-secondary border-none cursor-pointer text-text-muted hover:text-text-primary">
@@ -658,20 +767,106 @@ export default function WhatsAppPage() {
                 <textarea value={tplForm.mensaje} onChange={e => setTplForm(f => ({ ...f, mensaje: e.target.value }))}
                   rows={5} className="w-full px-4 py-2.5 rounded-xl bg-bg-secondary border border-border text-sm resize-none font-mono"
                   placeholder="Escribe el mensaje con variables..." />
+                <div className="flex items-center gap-2 mt-2">
+                  <button onClick={handleAIGenerateMessage}
+                    disabled={aiGenerating || !tplForm.titulo}
+                    className="py-1.5 px-3 rounded-lg bg-accent-purple/10 text-accent-purple text-[11px] font-semibold border-none cursor-pointer flex items-center gap-1 hover:bg-accent-purple/20 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <Sparkles size={12} /> {aiGenerating ? 'Generando...' : 'Generar con IA'}
+                  </button>
+                  <span className="text-[10px] text-text-muted">Usa título y categoría para generar</span>
+                </div>
               </div>
 
-              {/* Variables */}
+              {/* Variables inteligentes */}
               <div>
-                <label className="text-xs text-text-muted mb-1.5 block">Insertar Variable</label>
+                <label className="text-xs text-text-muted mb-1.5 block">
+                  Insertar Variable
+                  <span className="text-[10px] text-accent-purple ml-2">* Sugeridas para {tplForm.categoria}</span>
+                </label>
                 <div className="flex flex-wrap gap-1">
-                  {VARIABLES.map(v => (
-                    <button key={v.key} onClick={() => insertVariable(v.key)}
-                      title={v.desc}
-                      className="py-1 px-2 rounded-lg bg-accent-blue/10 text-accent-blue text-[10px] font-mono font-semibold cursor-pointer border-none hover:bg-accent-blue/20 transition-colors">
-                      {v.key}
-                    </button>
-                  ))}
+                  {VARIABLES.map(v => {
+                    const isSuggested = getSuggestedVariables(tplForm.categoria).includes(v.key);
+                    return (
+                      <button key={v.key} onClick={() => insertVariable(v.key)}
+                        title={v.desc}
+                        className={`py-1 px-2 rounded-lg text-[10px] font-mono font-semibold cursor-pointer border-none transition-colors
+                          ${isSuggested
+                            ? 'bg-accent-purple/15 text-accent-purple hover:bg-accent-purple/25 ring-1 ring-accent-purple/30'
+                            : 'bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/20'}`}>
+                        {v.key} {isSuggested ? '*' : ''}
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+
+              {/* Imágenes */}
+              <div>
+                <label className="text-xs text-text-muted mb-1.5 block">Imágenes ({tplForm.imagenes?.length || 0}/5)</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(tplForm.imagenes || []).map(img => (
+                    <div key={img.id} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
+                      <img src={img.base64} alt={img.nombre} className="w-full h-full object-cover" />
+                      <button onClick={() => removeImage(img.id)}
+                        className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/60 text-white border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X size={10} />
+                      </button>
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[8px] px-1 py-0.5 truncate">{img.nombre}</span>
+                    </div>
+                  ))}
+                  {(tplForm.imagenes?.length || 0) < 5 && (
+                    <label className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center cursor-pointer hover:border-accent-blue hover:bg-accent-blue/5 transition-colors">
+                      <Upload size={16} className="text-text-muted mb-1" />
+                      <span className="text-[9px] text-text-muted">Agregar</span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Audios / Guiones */}
+              <div>
+                <label className="text-xs text-text-muted mb-1.5 block">Audios / Guiones ({tplForm.audios?.length || 0}/2)</label>
+                {(tplForm.audios || []).map(aud => (
+                  <div key={aud.id} className="bg-bg-secondary rounded-xl p-3 mb-2 border border-border">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Mic size={14} className="text-accent-purple shrink-0" />
+                        <span className="text-xs font-medium truncate">{aud.nombre}</span>
+                        <span className="text-[10px] text-text-muted shrink-0">({(aud.size / 1024).toFixed(0)} KB)</span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleAIGenerateGuion(aud.id)}
+                          disabled={aiGeneratingGuion || !tplForm.mensaje}
+                          title="Generar guion con IA"
+                          className="p-1.5 rounded-lg bg-accent-purple/10 text-accent-purple border-none cursor-pointer hover:bg-accent-purple/20 disabled:opacity-40 disabled:cursor-not-allowed">
+                          <Sparkles size={12} />
+                        </button>
+                        <button onClick={() => removeAudio(aud.id)}
+                          className="p-1.5 rounded-lg bg-accent-red/10 text-accent-red border-none cursor-pointer hover:bg-accent-red/20">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                    <audio controls src={aud.base64} className="w-full h-8 mb-2" />
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] text-text-muted">Guion de voz</label>
+                        {aud.guion && <CopyButton getTextFn={() => aud.guion} title="Copiar guion" />}
+                      </div>
+                      <textarea value={aud.guion || ''} onChange={e => updateAudioGuion(aud.id, e.target.value)}
+                        rows={3} placeholder="Escribe o genera con IA el guion que el operador leerá..."
+                        className="w-full px-3 py-2 rounded-lg bg-bg-card border border-border text-xs resize-none" />
+                    </div>
+                  </div>
+                ))}
+                {(tplForm.audios?.length || 0) < 2 && (
+                  <label className="flex items-center gap-2 p-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-accent-purple hover:bg-accent-purple/5 transition-colors">
+                    <Upload size={14} className="text-text-muted" />
+                    <span className="text-xs text-text-muted">Agregar audio</span>
+                    <input type="file" accept="audio/*" className="hidden" onChange={handleAudioUpload} />
+                  </label>
+                )}
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
