@@ -7,6 +7,8 @@ import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
 import { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
+import CopyButton from '../common/CopyButton';
+import { formatTicket } from '../../utils/whatsappFormats';
 
 // UI Components
 import Button from '../ui/Button';
@@ -395,6 +397,7 @@ export default function TicketsPage() {
                     {t.slaTiempoLimite && <span className="flex items-center gap-1 text-accent-yellow"><Clock size={12} /> SLA: {t.slaTiempoLimite}</span>}
                     <span>{t.fecha}</span>
                     <AdjuntosCount count={t.adjuntos?.length} />
+                    <CopyButton getTextFn={() => formatTicket(t, clients.find(c => c.id === t.clienteId))} />
                   </div>
                 </div>
                 <p className="text-sm font-medium mb-1">{t.clienteNombre}</p>

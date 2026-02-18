@@ -4,6 +4,8 @@ import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
 import DiagnosticFields, { getEmptyDiag } from '../common/DiagnosticFields';
+import CopyButton from '../common/CopyButton';
+import { formatVisitaTecnica } from '../../utils/whatsappFormats';
 
 // Helper for Read-only display
 function DiagValue({ label, value, unit, warn }) {
@@ -103,6 +105,7 @@ export default function VisitasTecnicasPage() {
   const tickets = useStore(s => s.tickets);
   const updateTicket = useStore(s => s.updateTicket);
   const addDerivacion = useStore(s => s.addDerivacion);
+  const deleteVisita = useStore(s => s.deleteVisita);
 
   const [viewMode, setViewMode] = useState('calendar');
   const [search, setSearch] = useState('');
@@ -514,6 +517,12 @@ export default function VisitasTecnicasPage() {
     setSelectedVisita({ ...selectedVisita, estado: 'Derivado a Planta Externa' });
   };
 
+  const handleDeleteVisita = (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta visita técnica? Esta acción no se puede deshacer.')) return;
+    if (deleteVisita) deleteVisita(id);
+    setSelectedVisita(null);
+  };
+
   const weekLabel = useMemo(() => {
     const start = weekDays[0];
     const end = weekDays[5];
@@ -823,11 +832,14 @@ export default function VisitasTecnicasPage() {
                     </span>
                     <AdjuntosCount count={v.adjuntos?.length} />
                   </div>
-                  <div className="text-right">
-                    <span className="text-[11px] text-text-muted block">{v.fecha}</span>
-                    <span className="text-[11px] text-text-secondary font-mono">
-                      {v.horaInicio}{v.horaFin ? ` - ${v.horaFin}` : ''}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <CopyButton getTextFn={() => formatVisitaTecnica(v, clients.find(c => c.id === v.clienteId))} />
+                    <div className="text-right">
+                      <span className="text-[11px] text-text-muted block">{v.fecha}</span>
+                      <span className="text-[11px] text-text-secondary font-mono">
+                        {v.horaInicio}{v.horaFin ? ` - ${v.horaFin}` : ''}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <p className="text-sm font-medium mb-1">{v.clienteNombre}</p>
@@ -1154,6 +1166,11 @@ export default function VisitasTecnicasPage() {
                 >
                   {selectedVisita.estado}
                 </span>
+                <CopyButton
+                  getTextFn={() => formatVisitaTecnica(selectedVisita, clients.find(c => c.id === selectedVisita.clienteId))}
+                  size="md"
+                  title="Copiar para WhatsApp"
+                />
                 <button
                   onClick={() => setSelectedVisita(null)}
                   className="p-1.5 rounded-lg bg-bg-secondary border border-border text-text-muted cursor-pointer hover:text-text-primary transition-colors"
@@ -1203,6 +1220,17 @@ export default function VisitasTecnicasPage() {
                 {selectedVisita.direccion || 'No especificada'}
               </p>
             </div>
+
+            {/* Contact info from linked client */}
+            {(() => {
+              const linkedClient = clients.find(c => c.id === selectedVisita.clienteId);
+              return linkedClient?.movil_1 ? (
+                <div className="bg-bg-secondary rounded-lg p-3 mb-4">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Contacto del Cliente</p>
+                  <p className="text-sm font-mono">{linkedClient.movil_1}</p>
+                </div>
+              ) : null;
+            })()}
 
             {/* Detalle del Reporte (Problema + Fotos Iniciales) */}
             <div className="mb-5">
@@ -1506,6 +1534,12 @@ export default function VisitasTecnicasPage() {
                   Cancelar
                 </button>
               )}
+              <button
+                onClick={() => handleDeleteVisita(selectedVisita.id)}
+                className="py-2.5 px-4 rounded-lg border border-red-500/30 text-xs text-red-400 cursor-pointer bg-transparent hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 size={12} /> Eliminar
+              </button>
               <button
                 onClick={() => setSelectedVisita(null)}
                 className="flex-1 py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-secondary text-xs cursor-pointer hover:text-text-primary transition-colors"

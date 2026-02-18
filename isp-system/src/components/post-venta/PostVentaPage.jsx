@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X, Settings, Pencil, Trash2, DollarSign } from 'lucide-react';
 import useStore from '../../store/useStore';
+import CopyButton from '../common/CopyButton';
+import { formatPostVenta } from '../../utils/whatsappFormats';
 
 const ESTADO_COLORS = {
   'Pendiente': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
@@ -391,7 +393,10 @@ export default function PostVentaPage() {
                     <p className="text-sm font-semibold mt-0.5">{pv.clienteNombre}</p>
                   </div>
                 </div>
-                <span className="text-[11px] text-text-muted">{pv.fecha}</span>
+                <div className="flex items-center gap-2">
+                  <CopyButton getTextFn={() => formatPostVenta(pv, clients.find(c => c.id === pv.clienteId))} />
+                  <span className="text-[11px] text-text-muted">{pv.fecha}</span>
+                </div>
               </div>
 
               <p className="text-xs text-text-secondary mb-2 line-clamp-1">{pv.descripcion}</p>
@@ -616,6 +621,7 @@ export default function PostVentaPage() {
                 <h3 className="text-lg font-bold mt-1">{selectedPV.clienteNombre}</h3>
               </div>
               <div className="flex items-center gap-2">
+                <CopyButton getTextFn={() => formatPostVenta(selectedPV, clients.find(c => c.id === selectedPV.clienteId))} size="md" />
                 <span className={`px-3 py-1 rounded-lg text-xs font-bold ${ESTADO_COLORS[selectedPV.estado]?.bg} ${ESTADO_COLORS[selectedPV.estado]?.text}`}>
                   {selectedPV.estado}
                 </span>

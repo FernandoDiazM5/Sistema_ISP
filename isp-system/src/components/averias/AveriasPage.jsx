@@ -3,6 +3,8 @@ import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calen
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
+import CopyButton from '../common/CopyButton';
+import { formatAveria } from '../../utils/whatsappFormats';
 
 const ESTADO_STYLE = {
   'Activa': { bg: 'bg-accent-red/20', text: 'text-accent-red', dot: 'bg-accent-red' },
@@ -160,7 +162,10 @@ export default function AveriasPage() {
                     <p className="text-sm font-semibold mt-0.5">{a.tipo}</p>
                   </div>
                 </div>
-                <span className="text-[11px] text-text-muted">{a.fecha}</span>
+                <div className="flex items-center gap-2">
+                  <CopyButton getTextFn={() => formatAveria(a, null)} />
+                  <span className="text-[11px] text-text-muted">{a.fecha}</span>
+                </div>
               </div>
 
               <p className="text-xs text-text-secondary mb-3">{a.descripcion}</p>
@@ -234,6 +239,7 @@ export default function AveriasPage() {
                 <span className={`px-3 py-1 rounded-lg text-xs font-bold ${ESTADO_STYLE[selectedAveria.estado]?.bg || ''} ${ESTADO_STYLE[selectedAveria.estado]?.text || ''}`}>
                   {selectedAveria.estado}
                 </span>
+                <CopyButton getTextFn={() => formatAveria(selectedAveria, null)} />
                 <button
                   onClick={() => setSelectedAveria(null)}
                   className="p-1.5 rounded-lg bg-bg-secondary border border-border text-text-muted cursor-pointer hover:text-text-primary transition-colors"

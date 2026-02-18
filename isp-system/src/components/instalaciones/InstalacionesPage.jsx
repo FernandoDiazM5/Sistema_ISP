@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, Wifi, Cable, MapPin, Calendar, User, ChevronRight, X, Clock, CheckCircle2, AlertCircle, Loader2, Wrench, ArrowRight, FileText } from 'lucide-react';
 import useStore from '../../store/useStore';
+import CopyButton from '../common/CopyButton';
+import { formatInstalacion } from '../../utils/whatsappFormats';
 
 const ESTADOS = ['Pendiente', 'Aprobada', 'Programada', 'En Instalación', 'Completada', 'Derivada', 'Cancelada'];
 
@@ -309,7 +311,10 @@ export default function InstalacionesPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-mono text-[10px] text-text-muted">{inst.id}</span>
-                        <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="flex items-center gap-1">
+                          <CopyButton getTextFn={() => formatInstalacion(inst, clients.find(c => c.id === inst.clienteId))} />
+                          <ChevronRight size={12} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                       </div>
                       <p className="text-xs font-semibold mb-1 truncate" title={inst.prospectoNombre || inst.clienteNombre}>
                         {inst.prospectoNombre || inst.clienteNombre}
@@ -363,10 +368,13 @@ export default function InstalacionesPage() {
                   <EstadoBadge estado={inst.estado} />
                   <TecnologiaBadge tecnologia={inst.tecnologia} />
                 </div>
-                <span className="text-[11px] text-text-muted flex items-center gap-1">
-                  <Calendar size={11} />
-                  {inst.fecha}
-                </span>
+                <div className="flex items-center gap-2">
+                  <CopyButton getTextFn={() => formatInstalacion(inst, clients.find(c => c.id === inst.clienteId))} />
+                  <span className="text-[11px] text-text-muted flex items-center gap-1">
+                    <Calendar size={11} />
+                    {inst.fecha}
+                  </span>
+                </div>
               </div>
               <p className="text-sm font-semibold mb-1">{inst.prospectoNombre || inst.clienteNombre}</p>
               {inst.prospectoDNI && (
@@ -590,12 +598,15 @@ export default function InstalacionesPage() {
                 </div>
                 <h3 className="text-lg font-bold">{selectedInstalacion.prospectoNombre || selectedInstalacion.clienteNombre}</h3>
               </div>
-              <button
-                onClick={() => setSelectedInstalacion(null)}
-                className="w-8 h-8 rounded-lg bg-bg-secondary border border-border flex items-center justify-center cursor-pointer text-text-muted hover:text-text-primary"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex items-center gap-2">
+                <CopyButton getTextFn={() => formatInstalacion(selectedInstalacion, clients.find(c => c.id === selectedInstalacion.clienteId))} />
+                <button
+                  onClick={() => setSelectedInstalacion(null)}
+                  className="w-8 h-8 rounded-lg bg-bg-secondary border border-border flex items-center justify-center cursor-pointer text-text-muted hover:text-text-primary"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
 
             {/* Info Grid */}

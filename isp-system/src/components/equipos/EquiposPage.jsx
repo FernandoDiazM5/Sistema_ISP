@@ -3,6 +3,8 @@ import { Box, Plus, Monitor, Wifi, Router, Server, Wrench, Package, X, Edit2, Sa
 import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
 import KPICard from '../common/KPICard';
+import CopyButton from '../common/CopyButton';
+import { formatEquipo } from '../../utils/whatsappFormats';
 
 // UI Components
 import Button from '../ui/Button';
@@ -201,13 +203,16 @@ export default function EquiposPage() {
                     </td>
                     <td className="py-4 px-4 text-xs text-text-secondary">{eq.ubicacion}</td>
                     <td className="py-4 px-4 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(eq)}
-                      >
-                        <Edit2 size={14} />
-                      </Button>
+                      <div className="flex items-center justify-center gap-1">
+                        <CopyButton getTextFn={() => formatEquipo(eq)} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEdit(eq)}
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );

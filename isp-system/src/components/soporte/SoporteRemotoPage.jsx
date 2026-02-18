@@ -8,6 +8,8 @@ import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
 import DiagnosticFields, { getEmptyDiag } from '../common/DiagnosticFields';
+import CopyButton from '../common/CopyButton';
+import { formatSoporteRemoto } from '../../utils/whatsappFormats';
 
 /* ========================= CONSTANTS ========================= */
 const ESTADO_STYLE = {
@@ -119,6 +121,7 @@ export default function SoporteRemotoPage() {
   const addDerivacion = useStore(s => s.addDerivacion);
   const prefillSoporte = useStore(s => s.prefillSoporte);
   const clearPrefillSoporte = useStore(s => s.clearPrefillSoporte);
+  const deleteSesionRemoto = useStore(s => s.deleteSesionRemoto);
 
   const [showForm, setShowForm] = useState(false);
   const [selectedSesion, setSelectedSesion] = useState(null);
@@ -351,7 +354,6 @@ export default function SoporteRemotoPage() {
       descripcion: `Derivado de Soporte Remoto (${sesion.id}). ${sesion.resultado || ''}`,
       ticketId: sesion.ticketId || null,
       sesionOrigenId: sesion.id,
-      sesionOrigenId: sesion.id,
       tecnologia: derivacionTecnologia, // Pass updated technology
       diagnosticoCompleto: derivacionDiag,
       ...derivacionDiag,
@@ -384,7 +386,6 @@ export default function SoporteRemotoPage() {
       estado: 'Pendiente',
       descripcion: `Derivado de Soporte Remoto (${sesion.id}). ${sesion.resultado || ''}`,
       ticketId: sesion.ticketId || null,
-      sesionOrigenId: sesion.id,
       sesionOrigenId: sesion.id,
       tecnologia: derivacionTecnologia, // Pass updated technology
       diagnosticoCompleto: derivacionDiag,
@@ -421,6 +422,12 @@ export default function SoporteRemotoPage() {
     }
     setShowResolutionModal(false);
     setResolutionTarget(null);
+  };
+
+  const handleDeleteSesion = (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta sesión remota? Esta acción no se puede deshacer.')) return;
+    if (deleteSesionRemoto) deleteSesionRemoto(id);
+    setSelectedSesion(null);
   };
 
   /* ---- Diagnostic warning logic ---- */
@@ -545,6 +552,7 @@ export default function SoporteRemotoPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <CopyButton getTextFn={() => formatSoporteRemoto(s, clients.find(c => c.id === s.clienteId))} />
                   <span className="text-[11px] text-text-muted">{s.fecha}</span>
                   <Eye size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -774,6 +782,11 @@ export default function SoporteRemotoPage() {
                         <p className="text-xs text-text-muted mt-0.5">{s.fecha}</p>
                       </div>
                     </div>
+                    <CopyButton
+                      getTextFn={() => formatSoporteRemoto(selectedSesion, clients.find(c => c.id === selectedSesion.clienteId))}
+                      size="md"
+                      title="Copiar para WhatsApp"
+                    />
                     <button onClick={() => setSelectedSesion(null)}
                       className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted hover:text-text-primary cursor-pointer transition-colors">
                       <X size={16} />
@@ -945,10 +958,16 @@ export default function SoporteRemotoPage() {
                     </div>
                   )}
 
-                  {/* Close button */}
-                  <div className="flex justify-end mt-4 pt-3 border-t border-border">
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-4 pt-3 border-t border-border">
+                    <button
+                      onClick={() => handleDeleteSesion(s.id)}
+                      className="py-2.5 px-4 rounded-lg border border-red-500/30 text-xs text-red-400 cursor-pointer bg-transparent hover:bg-red-500/10 transition-colors flex items-center gap-1.5"
+                    >
+                      <X size={12} /> Eliminar
+                    </button>
                     <button onClick={() => setSelectedSesion(null)}
-                      className="py-2.5 px-6 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm font-semibold hover:bg-bg-secondary/80 transition-colors">
+                      className="flex-1 py-2.5 px-6 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm font-semibold hover:bg-bg-secondary/80 transition-colors">
                       Cerrar
                     </button>
                   </div>

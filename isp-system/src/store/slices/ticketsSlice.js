@@ -138,6 +138,12 @@ export const createTicketsSlice = (set, get) => ({
         return { sesionesRemoto: newSesiones };
     }),
 
+    deleteSesionRemoto: (id) => set(s => {
+        const newSesiones = s.sesionesRemoto.filter(sr => sr.id !== id);
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        return { sesionesRemoto: newSesiones };
+    }),
+
     // ===================== VISITAS TÉCNICAS =====================
     visitas: [],
 

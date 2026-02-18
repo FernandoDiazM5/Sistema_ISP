@@ -4,6 +4,8 @@ import {
     Clock, FileText, Kanban, ArrowUpRight
 } from 'lucide-react';
 import Adjuntos from '../../common/Adjuntos';
+import CopyButton from '../../common/CopyButton';
+import { formatTicket } from '../../../utils/whatsappFormats';
 import useStore from '../../../store/useStore';
 
 const ESTADOS_COLOR = {
@@ -55,6 +57,7 @@ export default function TicketDetailModal({
                     </div>
                     <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
+                            <CopyButton getTextFn={() => formatTicket(ticket, clientInfo)} />
                             <button onClick={() => onEdit(ticket)} className="p-1.5 text-text-muted hover:text-accent-blue transition-colors bg-transparent border-none cursor-pointer" title="Editar">
                                 <Edit3 size={16} />
                             </button>
