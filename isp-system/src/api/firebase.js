@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { CONFIG } from '../utils/constants';
 
 // Obtener configuración de Firebase desde CONFIG (usa getters lazy)
@@ -136,11 +136,14 @@ export const pushToCloud = async (data, onProgress = () => { }) => {
 
     await delay(300);
 
-    // 4. Config
+    // 4. Config (includes branding + role permissions)
     await setDoc(doc(database, 'backups_history', versionId, 'data', 'config'), {
         columnPrefs: data.columnPrefs || {},
         cleaningOptions: data.cleaningOptions || {},
         importHistory: data.importHistory || [],
+        branding: data.branding || {},
+        customRolePermissions: data.customRolePermissions || null,
+        whatsappCategories: data.whatsappCategories || [],
     });
     reportProgress('Configuración guardada');
 
@@ -252,7 +255,220 @@ export const pullBackupVersion = async (versionId) => {
         columnPrefs: configData.columnPrefs,
         cleaningOptions: configData.cleaningOptions,
         importHistory: configData.importHistory,
+        branding: configData.branding,
+        customRolePermissions: configData.customRolePermissions,
+        whatsappCategories: configData.whatsappCategories,
     };
+};
+
+// ===================== LIVE DATA SYNC =====================
+// Sincronizacion en tiempo real: todos los datos se guardan en live_data/
+// y se escuchan cambios con onSnapshot para reflejar en todos los clientes
+
+const LIVE_CHUNK_SIZE = 200;
+
+export const pushLiveData = async (data, pusherId) => {
+    const database = initFirebase();
+    if (!database) return false;
+
+    try {
+        const clients = data.clients || [];
+
+        // 1. Guardar clientes en chunks
+        const clientChunks = [];
+        for (let i = 0; i < clients.length; i += LIVE_CHUNK_SIZE) {
+            clientChunks.push(clients.slice(i, i + LIVE_CHUNK_SIZE));
+        }
+
+        for (let i = 0; i < clientChunks.length; i++) {
+            await setDoc(doc(database, 'live_data', `clients_${i}`), { data: clientChunks[i] });
+        }
+
+        // 2. Guardar cada coleccion
+        const COLLECTIONS = [
+            'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+            'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+            'movimientosEquipos', 'whatsappLogs', 'templates',
+        ];
+
+        const MAX_DOC_BYTES = 800000;
+        const collectionChunks = {};
+
+        for (const colName of COLLECTIONS) {
+            const colData = data[colName] || [];
+            const jsonSize = new Blob([JSON.stringify(colData)]).size;
+
+            if (jsonSize > MAX_DOC_BYTES && Array.isArray(colData) && colData.length > 0) {
+                const chunkSize = Math.ceil(colData.length / Math.ceil(jsonSize / MAX_DOC_BYTES));
+                const chunks = [];
+                for (let i = 0; i < colData.length; i += chunkSize) {
+                    chunks.push(colData.slice(i, i + chunkSize));
+                }
+                collectionChunks[colName] = chunks.length;
+                for (let i = 0; i < chunks.length; i++) {
+                    await setDoc(doc(database, 'live_data', `${colName}_${i}`), { data: chunks[i] });
+                }
+            } else {
+                collectionChunks[colName] = 1;
+                await setDoc(doc(database, 'live_data', colName), { data: colData });
+            }
+        }
+
+        // 3. Config
+        await setDoc(doc(database, 'live_data', 'config'), {
+            columnPrefs: data.columnPrefs || {},
+            cleaningOptions: data.cleaningOptions || {},
+            importHistory: data.importHistory || [],
+            branding: data.branding || {},
+            customRolePermissions: data.customRolePermissions || null,
+            whatsappCategories: data.whatsappCategories || [],
+        });
+
+        // 4. Meta (triggers onSnapshot for other clients)
+        await setDoc(doc(database, 'live_data', '_meta'), {
+            clientChunks: clientChunks.length,
+            collectionChunks,
+            updatedAt: new Date().toISOString(),
+            pusherId: pusherId || 'unknown',
+            totalClients: clients.length,
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error pushing live data:', error);
+        return false;
+    }
+};
+
+export const pullLiveData = async () => {
+    const database = initFirebase();
+    if (!database) return null;
+
+    try {
+        // 1. Leer meta
+        const metaSnap = await getDoc(doc(database, 'live_data', '_meta'));
+        if (!metaSnap.exists()) return null;
+        const meta = metaSnap.data();
+
+        // 2. Leer clientes
+        let allClients = [];
+        for (let i = 0; i < (meta.clientChunks || 0); i++) {
+            const snap = await getDoc(doc(database, 'live_data', `clients_${i}`));
+            if (snap.exists()) allClients = [...allClients, ...(snap.data().data || [])];
+        }
+
+        // 3. Leer colecciones
+        const COLLECTIONS = [
+            'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+            'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+            'movimientosEquipos', 'whatsappLogs', 'templates',
+        ];
+
+        const collectionsData = {};
+        const cChunks = meta.collectionChunks || {};
+
+        for (const colName of COLLECTIONS) {
+            const numChunks = cChunks[colName] || 1;
+            let colData = [];
+            if (numChunks > 1) {
+                for (let i = 0; i < numChunks; i++) {
+                    const snap = await getDoc(doc(database, 'live_data', `${colName}_${i}`));
+                    if (snap.exists()) colData = [...colData, ...(snap.data().data || [])];
+                }
+            } else {
+                const snap = await getDoc(doc(database, 'live_data', colName));
+                if (snap.exists()) colData = snap.data().data || [];
+            }
+            collectionsData[colName] = colData;
+        }
+
+        // 4. Config
+        const configSnap = await getDoc(doc(database, 'live_data', 'config'));
+        const configData = configSnap.exists() ? configSnap.data() : {};
+
+        return {
+            clients: allClients,
+            ...collectionsData,
+            columnPrefs: configData.columnPrefs,
+            cleaningOptions: configData.cleaningOptions,
+            importHistory: configData.importHistory,
+            branding: configData.branding,
+            customRolePermissions: configData.customRolePermissions,
+            whatsappCategories: configData.whatsappCategories,
+            _meta: meta,
+        };
+    } catch (error) {
+        console.error('Error pulling live data:', error);
+        return null;
+    }
+};
+
+// Escuchar cambios en tiempo real del documento _meta
+// Cuando otro usuario sube datos, el callback se dispara
+let liveUnsubscribe = null;
+
+export const subscribeLiveUpdates = (callback) => {
+    const database = initFirebase();
+    if (!database) return () => {};
+
+    // Cancelar suscripcion anterior si existe
+    if (liveUnsubscribe) {
+        liveUnsubscribe();
+    }
+
+    liveUnsubscribe = onSnapshot(doc(database, 'live_data', '_meta'), (snap) => {
+        if (snap.exists()) {
+            callback(snap.data());
+        }
+    }, (error) => {
+        console.warn('Live sync listener error:', error);
+    });
+
+    return () => {
+        if (liveUnsubscribe) {
+            liveUnsubscribe();
+            liveUnsubscribe = null;
+        }
+    };
+};
+
+// ===================== SETTINGS REALTIME SYNC =====================
+// Documento dedicado para settings (branding + permisos de roles)
+// Se sincroniza automaticamente al guardar, y se carga al iniciar la app
+
+export const pushSettings = async (settings) => {
+    const database = initFirebase();
+    if (!database) {
+        console.warn('Firebase no configurado, settings solo guardados localmente');
+        return false;
+    }
+
+    try {
+        await setDoc(doc(database, 'settings', 'app'), {
+            ...settings,
+            updatedAt: new Date().toISOString(),
+        });
+        return true;
+    } catch (error) {
+        console.error('Error pushing settings to Firebase:', error);
+        return false;
+    }
+};
+
+export const pullSettings = async () => {
+    const database = initFirebase();
+    if (!database) return null;
+
+    try {
+        const snap = await getDoc(doc(database, 'settings', 'app'));
+        if (snap.exists()) {
+            return snap.data();
+        }
+        return null;
+    } catch (error) {
+        console.error('Error pulling settings from Firebase:', error);
+        return null;
+    }
 };
 
 // ===================== ELIMINAR VERSIÓN =====================

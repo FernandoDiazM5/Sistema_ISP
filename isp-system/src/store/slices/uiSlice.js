@@ -1,10 +1,26 @@
 import * as db from '../../utils/db';
+import { pushSettings, pullSettings } from '../../api/firebase';
 
 async function saveToDB(key, data) {
     try {
         await db.set(key, data);
     } catch (e) {
         console.error(`Error saving to DB (${key}):`, e);
+    }
+}
+
+// Sync settings to Firebase (branding + customRolePermissions)
+async function syncSettingsToCloud(get) {
+    try {
+        const { branding, customRolePermissions, whatsappCategories, theme } = get();
+        await pushSettings({
+            branding: branding || {},
+            customRolePermissions: customRolePermissions || null,
+            whatsappCategories: whatsappCategories || [],
+            theme: theme || 'default',
+        });
+    } catch (e) {
+        console.warn('Error syncing settings to cloud:', e);
     }
 }
 
@@ -63,6 +79,8 @@ export const createUISlice = (set, get) => ({
         } else {
             document.documentElement.setAttribute('data-theme', theme);
         }
+        // Auto-sync to Firebase
+        setTimeout(() => syncSettingsToCloud(get), 100);
     },
 
     // ===================== NAVIGATION =====================
@@ -120,29 +138,38 @@ export const createUISlice = (set, get) => ({
     // ===================== WHATSAPP CATEGORIES =====================
     whatsappCategories: [],
 
-    addCategory: (name) => set(s => {
-        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
-        if (base.includes(name)) return {};
-        const newCats = [...base, name];
-        saveToDB('isp_whatsappCategories', newCats);
-        return { whatsappCategories: newCats };
-    }),
+    addCategory: (name) => {
+        set(s => {
+            const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+            if (base.includes(name)) return {};
+            const newCats = [...base, name];
+            saveToDB('isp_whatsappCategories', newCats);
+            return { whatsappCategories: newCats };
+        });
+        setTimeout(() => syncSettingsToCloud(get), 100);
+    },
 
-    deleteCategory: (name) => set(s => {
-        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
-        const newCats = base.filter(c => c !== name);
-        saveToDB('isp_whatsappCategories', newCats);
-        return { whatsappCategories: newCats };
-    }),
+    deleteCategory: (name) => {
+        set(s => {
+            const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+            const newCats = base.filter(c => c !== name);
+            saveToDB('isp_whatsappCategories', newCats);
+            return { whatsappCategories: newCats };
+        });
+        setTimeout(() => syncSettingsToCloud(get), 100);
+    },
 
-    updateCategory: (oldName, newName) => set(s => {
-        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
-        const newCats = base.map(c => c === oldName ? newName : c);
-        saveToDB('isp_whatsappCategories', newCats);
-        const newTemplates = s.templates.map(t => t.categoria === oldName ? { ...t, categoria: newName } : t);
-        saveToDB('isp_templates', newTemplates);
-        return { whatsappCategories: newCats, templates: newTemplates };
-    }),
+    updateCategory: (oldName, newName) => {
+        set(s => {
+            const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+            const newCats = base.map(c => c === oldName ? newName : c);
+            saveToDB('isp_whatsappCategories', newCats);
+            const newTemplates = s.templates.map(t => t.categoria === oldName ? { ...t, categoria: newName } : t);
+            saveToDB('isp_templates', newTemplates);
+            return { whatsappCategories: newCats, templates: newTemplates };
+        });
+        setTimeout(() => syncSettingsToCloud(get), 100);
+    },
 
     // ===================== BRANDING =====================
     branding: {
@@ -152,18 +179,57 @@ export const createUISlice = (set, get) => ({
         zoneName: 'CARABAYLLO',
         syncLabel: '',
     },
-    setBranding: (updates) => set(s => {
-        const newBranding = { ...(s.branding || {}), ...updates };
-        saveToDB('isp_branding', newBranding);
-        return { branding: newBranding };
-    }),
+    setBranding: (updates) => {
+        set(s => {
+            const newBranding = { ...(s.branding || {}), ...updates };
+            saveToDB('isp_branding', newBranding);
+            return { branding: newBranding };
+        });
+        // Auto-sync to Firebase
+        setTimeout(() => syncSettingsToCloud(get), 100);
+    },
 
     // ===================== CUSTOM ROLE PERMISSIONS =====================
     customRolePermissions: null,
-    setCustomRolePermissions: (permissions) => set(() => {
-        saveToDB('isp_customRolePermissions', permissions);
-        return { customRolePermissions: permissions };
-    }),
+    setCustomRolePermissions: (permissions) => {
+        set(() => {
+            saveToDB('isp_customRolePermissions', permissions);
+            return { customRolePermissions: permissions };
+        });
+        // Auto-sync to Firebase
+        setTimeout(() => syncSettingsToCloud(get), 100);
+    },
+
+    // Load settings from Firebase on app start
+    loadSettingsFromCloud: async () => {
+        try {
+            const cloudSettings = await pullSettings();
+            if (cloudSettings) {
+                const updates = {};
+                if (cloudSettings.branding) updates.branding = cloudSettings.branding;
+                if (cloudSettings.customRolePermissions !== undefined) updates.customRolePermissions = cloudSettings.customRolePermissions;
+                if (cloudSettings.whatsappCategories) updates.whatsappCategories = cloudSettings.whatsappCategories;
+                if (cloudSettings.theme) {
+                    updates.theme = cloudSettings.theme;
+                    if (cloudSettings.theme === 'default') {
+                        document.documentElement.removeAttribute('data-theme');
+                    } else {
+                        document.documentElement.setAttribute('data-theme', cloudSettings.theme);
+                    }
+                }
+                if (Object.keys(updates).length > 0) {
+                    set(updates);
+                    // Also persist locally
+                    if (updates.branding) saveToDB('isp_branding', updates.branding);
+                    if (updates.customRolePermissions !== undefined) saveToDB('isp_customRolePermissions', updates.customRolePermissions);
+                    if (updates.whatsappCategories) saveToDB('isp_whatsappCategories', updates.whatsappCategories);
+                    if (updates.theme) saveToDB('isp_theme', updates.theme);
+                }
+            }
+        } catch (e) {
+            console.warn('Error loading settings from cloud:', e);
+        }
+    },
 
     // ===================== FILES / IMAGES (MOCK) =====================
     uploadImage: async (file, path) => {

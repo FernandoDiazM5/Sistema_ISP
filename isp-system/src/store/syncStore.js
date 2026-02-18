@@ -1,6 +1,37 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion } from '../api/firebase';
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, pushLiveData, pullLiveData, subscribeLiveUpdates } from '../api/firebase';
+
+// ID unico de esta sesion (para no re-aplicar nuestros propios pushes)
+const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+// Debounce timer
+let livePushTimer = null;
+
+function getDataSnapshot() {
+    const s = useStore.getState();
+    return {
+        clients: s.clients,
+        tickets: s.tickets,
+        averias: s.averias,
+        tecnicos: s.tecnicos,
+        equipos: s.equipos,
+        visitas: s.visitas,
+        instalaciones: s.instalaciones,
+        derivaciones: s.derivaciones,
+        postVenta: s.postVenta,
+        sesionesRemoto: s.sesionesRemoto,
+        movimientosEquipos: s.movimientosEquipos,
+        whatsappLogs: s.whatsappLogs,
+        templates: s.templates,
+        columnPrefs: s.columnPrefs,
+        cleaningOptions: s.cleaningOptions,
+        importHistory: s.importHistory,
+        branding: s.branding,
+        customRolePermissions: s.customRolePermissions,
+        whatsappCategories: s.whatsappCategories,
+    };
+}
 
 const useSyncStore = create((set, get) => ({
     isSyncing: false,
@@ -11,39 +42,116 @@ const useSyncStore = create((set, get) => ({
     // Versioned backup state
     backupVersions: [],
     loadingVersions: false,
-    restoringVersion: null, // versionId being restored
+    restoringVersion: null,
 
     // Progress tracking
-    syncProgress: null, // { step, totalSteps, label, percent } or null
+    syncProgress: null,
+
+    // Live sync state
+    liveEnabled: false,
+    livePushing: false,
+    lastLiveUpdate: null,
+    liveUnsubscribe: null,
 
     setSyncMode: (mode) => set({ syncMode: mode }),
 
-    // ===================== PUSH (SUBIR RESPALDO) =====================
+    // ===================== LIVE SYNC (TIEMPO REAL) =====================
+    startLiveSync: () => {
+        if (get().liveEnabled) return;
+
+        // 1. Escuchar cambios de otros usuarios via onSnapshot
+        const unsub = subscribeLiveUpdates((meta) => {
+            // Si el push fue de esta misma sesion, ignorar
+            if (meta.pusherId === SESSION_ID) return;
+
+            // Otro usuario hizo push -> auto-pull
+            console.log('[LiveSync] Cambio detectado de otro usuario, descargando...');
+            get().livePull();
+        });
+
+        // 2. Suscribirse a cambios locales del store para auto-push
+        const storeUnsub = useStore.subscribe((state, prevState) => {
+            if (!get().liveEnabled) return;
+            // Detectar si hubo cambios en datos (no en UI state como activePage)
+            const dataKeys = [
+                'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
+                'visitas', 'instalaciones', 'derivaciones', 'postVenta',
+                'sesionesRemoto', 'movimientosEquipos', 'whatsappLogs',
+                'templates', 'branding', 'customRolePermissions', 'whatsappCategories',
+            ];
+            const changed = dataKeys.some(k => state[k] !== prevState[k]);
+            if (changed) {
+                get().debouncedLivePush();
+            }
+        });
+
+        set({
+            liveEnabled: true,
+            liveUnsubscribe: () => {
+                unsub();
+                storeUnsub();
+            }
+        });
+
+        // 3. Hacer un pull inicial para tener la ultima version
+        get().livePull();
+
+        console.log('[LiveSync] Sincronizacion en tiempo real activada');
+    },
+
+    stopLiveSync: () => {
+        const unsub = get().liveUnsubscribe;
+        if (unsub) unsub();
+        if (livePushTimer) clearTimeout(livePushTimer);
+        set({ liveEnabled: false, liveUnsubscribe: null });
+        console.log('[LiveSync] Sincronizacion en tiempo real desactivada');
+    },
+
+    // Push debounced (5 segundos despues del ultimo cambio)
+    debouncedLivePush: () => {
+        if (livePushTimer) clearTimeout(livePushTimer);
+        livePushTimer = setTimeout(async () => {
+            if (!get().liveEnabled || get().livePushing) return;
+            set({ livePushing: true });
+            try {
+                const data = getDataSnapshot();
+                await pushLiveData(data, SESSION_ID);
+                const now = new Date().toISOString();
+                set({ livePushing: false, lastLiveUpdate: now });
+                console.log('[LiveSync] Datos subidos automaticamente');
+            } catch (e) {
+                console.warn('[LiveSync] Error en auto-push:', e);
+                set({ livePushing: false });
+            }
+        }, 5000);
+    },
+
+    // Pull datos del live
+    livePull: async () => {
+        try {
+            const data = await pullLiveData();
+            if (data && data._meta) {
+                // No aplicar si nosotros mismos hicimos el push
+                if (data._meta.pusherId === SESSION_ID) return;
+
+                const restoreSystem = useStore.getState().restoreSystem;
+                if (restoreSystem) {
+                    restoreSystem(data);
+                }
+                set({ lastLiveUpdate: data._meta.updatedAt });
+                console.log('[LiveSync] Datos actualizados desde la nube');
+            }
+        } catch (e) {
+            console.warn('[LiveSync] Error en pull:', e);
+        }
+    },
+
+    // ===================== PUSH (SUBIR RESPALDO - BACKUP MANUAL) =====================
     syncPush: async () => {
         set({ isSyncing: true, syncError: null, syncProgress: { step: 0, totalSteps: 1, label: 'Preparando datos...', percent: 0 } });
         try {
-            const mainState = useStore.getState();
-            const dataToSync = {
-                clients: mainState.clients,
-                tickets: mainState.tickets,
-                averias: mainState.averias,
-                tecnicos: mainState.tecnicos,
-                equipos: mainState.equipos,
-                visitas: mainState.visitas,
-                instalaciones: mainState.instalaciones,
-                derivaciones: mainState.derivaciones,
-                postVenta: mainState.postVenta,
-                sesionesRemoto: mainState.sesionesRemoto,
-                movimientosEquipos: mainState.movimientosEquipos,
-                whatsappLogs: mainState.whatsappLogs,
-                templates: mainState.templates,
-                columnPrefs: mainState.columnPrefs,
-                cleaningOptions: mainState.cleaningOptions,
-                importHistory: mainState.importHistory,
-            };
-
+            const dataToSync = getDataSnapshot();
             const onProgress = (info) => set({ syncProgress: info });
-
             const result = await pushToCloud(dataToSync, onProgress);
 
             const now = new Date().toISOString();
@@ -61,7 +169,7 @@ const useSyncStore = create((set, get) => ({
         }
     },
 
-    // ===================== PULL LATEST (RESTAURAR ÚLTIMO) =====================
+    // ===================== PULL LATEST (RESTAURAR ÚLTIMO - BACKUP MANUAL) =====================
     syncPull: async () => {
         set({ isSyncing: true, syncError: null });
         try {

@@ -199,6 +199,9 @@ const useStore = create((set, get) => ({
 
       set({ ...loadedState, storeReady: true });
 
+      // Auto-load settings from Firebase (non-blocking)
+      get().loadSettingsFromCloud?.();
+
     } catch (e) {
       console.error("Error durante hydrateStore:", e);
       set({ storeReady: true });
@@ -311,12 +314,13 @@ const useStore = create((set, get) => ({
       'clients', 'tickets', 'averias', 'visitas', 'tecnicos',
       'equipos', 'instalaciones', 'postVenta', 'sesionesRemoto',
       'derivaciones', 'importHistory', 'whatsappLogs', 'templates',
-      'columnPrefs', 'cleaningOptions', 'movimientosEquipos'
+      'columnPrefs', 'cleaningOptions', 'movimientosEquipos',
+      'branding', 'customRolePermissions', 'whatsappCategories'
     ];
 
     const newState = {};
     keysToRestore.forEach(key => {
-      if (data[key]) {
+      if (data[key] !== undefined) {
         newState[key] = data[key];
         saveToDB(`isp_${key}`, data[key]);
       }

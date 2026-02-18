@@ -1,12 +1,15 @@
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, Cloud, CloudOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import useStore from '../../store/useStore';
+import useSyncStore from '../../store/syncStore';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
   const dataSource = useStore(s => s.dataSource);
   const lastImport = useStore(s => s.lastImport);
   const branding = useStore(s => s.branding);
+  const liveEnabled = useSyncStore(s => s.liveEnabled);
+  const livePushing = useSyncStore(s => s.livePushing);
 
   const defaultSyncLabel = lastImport
     ? `Última: ${new Date(lastImport.date).toLocaleDateString('es-PE')}`
@@ -43,6 +46,20 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Live Sync Indicator */}
+        <div className="flex items-center gap-1.5" title={liveEnabled ? (livePushing ? 'Sincronizando...' : 'Sync en vivo activo') : 'Sync desconectado'}>
+          {livePushing ? (
+            <Loader2 size={14} className="text-accent-blue animate-spin" />
+          ) : liveEnabled ? (
+            <Cloud size={14} className="text-accent-green" />
+          ) : (
+            <CloudOff size={14} className="text-text-muted" />
+          )}
+          <span className={`text-[10px] font-medium hidden sm:inline ${livePushing ? 'text-accent-blue' : liveEnabled ? 'text-accent-green' : 'text-text-muted'}`}>
+            {livePushing ? 'Sincronizando' : liveEnabled ? 'En vivo' : 'Offline'}
+          </span>
+        </div>
+
         <span className="text-xs text-text-secondary hidden sm:block">{user?.email}</span>
         <button
           onClick={handleLogout}

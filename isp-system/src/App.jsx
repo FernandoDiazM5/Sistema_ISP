@@ -6,6 +6,7 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import ReloadPrompt from './components/common/ReloadPrompt';
 import ToastContainer from './components/ui/Toast';
 import useStore from './store/useStore';
+import useSyncStore from './store/syncStore';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { ROLES } from './types/user';
 
@@ -62,6 +63,15 @@ function AppContent() {
       loadDemoData();
     }
   }, [storeReady, user, clients.length, loadDemoData]);
+
+  // Iniciar live sync cuando el store esta listo y el usuario autenticado
+  useEffect(() => {
+    if (storeReady && user) {
+      const { startLiveSync, stopLiveSync } = useSyncStore.getState();
+      startLiveSync();
+      return () => stopLiveSync();
+    }
+  }, [storeReady, user]);
 
   if (loading || !storeReady) return <LoadingSpinner />;
   if (!user) return (
