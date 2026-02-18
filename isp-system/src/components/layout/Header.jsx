@@ -6,12 +6,14 @@ export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
   const dataSource = useStore(s => s.dataSource);
   const lastImport = useStore(s => s.lastImport);
+  const branding = useStore(s => s.branding);
 
-  const syncLabel = lastImport
+  const defaultSyncLabel = lastImport
     ? `Última: ${new Date(lastImport.date).toLocaleDateString('es-PE')}`
     : dataSource === 'demo'
       ? 'Demo'
       : 'Sincronizado';
+  const syncLabel = branding?.syncLabel || defaultSyncLabel;
 
   const handleLogout = () => {
     if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
@@ -32,7 +34,7 @@ export default function Header({ onMenuClick }) {
 
         <div className="text-xs text-text-muted flex flex-col sm:flex-row sm:items-center sm:gap-1">
           <span className="hidden sm:inline">Zona:</span>
-          <span className="text-text-primary font-medium">CARABAYLLO</span>
+          <span className="text-text-primary font-medium">{branding?.zoneName || 'CARABAYLLO'}</span>
           <span className="hidden sm:inline">·</span>
           <span className="text-accent-green text-[10px] sm:text-xs bg-accent-green/10 px-2 py-0.5 rounded-full mt-0.5 sm:mt-0 w-fit">
             {syncLabel}

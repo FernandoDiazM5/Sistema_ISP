@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image, Download, Settings, Check, Filter } from 'lucide-react';
+import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image, Download, Settings, Check, Filter, Eye } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { rewriteWithAI, generateWithAI, TONES } from '../../api/geminiAI';
 import KPICard from '../common/KPICard';
@@ -92,6 +92,7 @@ export default function WhatsAppPage() {
   const [newCatName, setNewCatName] = useState('');
   const [editingCat, setEditingCat] = useState(null);
   const [editingCatName, setEditingCatName] = useState('');
+  const [viewingTpl, setViewingTpl] = useState(null); // Detail view modal
 
   // Template form
   const [tplForm, setTplForm] = useState({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false, imagenes: [], audios: [] });
@@ -111,7 +112,8 @@ export default function WhatsAppPage() {
   const [campaignTemplate, setCampaignTemplate] = useState(null);
   const [campaignIdx, setCampaignIdx] = useState(0);
   const [campaignFilter, setCampaignFilter] = useState('all');
-  const [campaignFilters, setCampaignFilters] = useState({ zona: '', nodo: '', tecnologia: '', plan: '' });
+  const [campaignFilters, setCampaignFilters] = useState({});
+  const [campaignSearch, setCampaignSearch] = useState('');
 
   // Filtered templates
   const filteredTemplates = useMemo(() => {
@@ -221,31 +223,63 @@ export default function WhatsAppPage() {
     setAiLoading(false);
   };
 
-  // Campaign - apply base + advanced filters
-  const applyCampaignFilters = (baseFilter, advFilters) => {
+  // Campaign filter columns (all filterable client fields)
+  const CAMPAIGN_FILTER_COLS = [
+    { key: 'zona', label: 'Zona' },
+    { key: 'nodo', label: 'Nodo', getter: c => c.nodo || c.nodo_router },
+    { key: 'tecnologia', label: 'Tecnología' },
+    { key: 'plan', label: 'Plan' },
+    { key: 'estado_cuenta', label: 'Estado Cuenta' },
+    { key: 'estado_servicio', label: 'Estado Servicio' },
+    { key: 'status', label: 'Conexión' },
+  ];
+
+  // Unique values for each filterable column
+  const campaignOptions = useMemo(() => {
+    const opts = {};
+    CAMPAIGN_FILTER_COLS.forEach(col => {
+      const getter = col.getter || (c => c[col.key]);
+      opts[col.key] = [...new Set(clients.map(getter).filter(Boolean))].sort();
+    });
+    return opts;
+  }, [clients]);
+
+  // Campaign - apply base + advanced filters + free text search
+  const applyCampaignFilters = (baseFilter, advFilters, search) => {
     let list = [...clients];
     if (baseFilter === 'deudores') list = list.filter(c => c.deuda_monto > 0);
     else if (baseFilter === 'cortados') list = list.filter(c => c.estado_servicio === 'Cortado' || c.estado_cuenta === 'SUSPENDIDO');
     else if (baseFilter === 'activos') list = list.filter(c => c.status === 'ONLINE' || c.estado_cuenta === 'ACTIVO');
-    if (advFilters.zona) list = list.filter(c => c.zona === advFilters.zona);
-    if (advFilters.nodo) list = list.filter(c => (c.nodo || c.nodo_router) === advFilters.nodo);
-    if (advFilters.tecnologia) list = list.filter(c => c.tecnologia === advFilters.tecnologia);
-    if (advFilters.plan) list = list.filter(c => c.plan === advFilters.plan);
+    // Apply each advanced dropdown filter
+    CAMPAIGN_FILTER_COLS.forEach(col => {
+      const val = advFilters[col.key];
+      if (val) {
+        const getter = col.getter || (c => c[col.key]);
+        list = list.filter(c => getter(c) === val);
+      }
+    });
+    // Free text search across all fields
+    if (search) {
+      const term = search.toLowerCase();
+      list = list.filter(c =>
+        (c.nombre || '').toLowerCase().includes(term) ||
+        (c.id || '').toLowerCase().includes(term) ||
+        (c.dni || '').toLowerCase().includes(term) ||
+        (c.direccion || '').toLowerCase().includes(term) ||
+        (c.movil_1 || '').includes(term) ||
+        (c.zona || '').toLowerCase().includes(term) ||
+        (c.nodo || c.nodo_router || '').toLowerCase().includes(term) ||
+        (c.plan || '').toLowerCase().includes(term) ||
+        (c.tecnologia || '').toLowerCase().includes(term)
+      );
+    }
     return list.filter(c => c.movil_1);
   };
 
-  const filteredCampaignCount = useMemo(() => applyCampaignFilters(campaignFilter, campaignFilters).length, [clients, campaignFilter, campaignFilters]);
-
-  // Unique values for campaign dropdowns
-  const campaignOptions = useMemo(() => ({
-    zonas: [...new Set(clients.map(c => c.zona).filter(Boolean))].sort(),
-    nodos: [...new Set(clients.map(c => c.nodo || c.nodo_router).filter(Boolean))].sort(),
-    tecnologias: [...new Set(clients.map(c => c.tecnologia).filter(Boolean))].sort(),
-    planes: [...new Set(clients.map(c => c.plan).filter(Boolean))].sort(),
-  }), [clients]);
+  const filteredCampaignCount = useMemo(() => applyCampaignFilters(campaignFilter, campaignFilters, campaignSearch).length, [clients, campaignFilter, campaignFilters, campaignSearch]);
 
   const startCampaign = () => {
-    const list = applyCampaignFilters(campaignFilter, campaignFilters);
+    const list = applyCampaignFilters(campaignFilter, campaignFilters, campaignSearch);
     if (list.length === 0) return alert('No hay clientes con número de teléfono para esta selección');
 
     setCampaignClients(list);
@@ -480,6 +514,10 @@ Reglas:
                     className="flex-1 py-1.5 rounded-lg bg-accent-green/10 text-accent-green text-[11px] font-semibold cursor-pointer border-none">
                     <Send size={12} className="inline mr-1" /> Usar
                   </button>
+                  <button onClick={() => setViewingTpl(tpl)} title="Ver detalle"
+                    className="p-1.5 rounded-lg bg-bg-secondary text-text-muted cursor-pointer border-none hover:text-accent-blue">
+                    <Eye size={12} />
+                  </button>
                   <CopyButton getTextFn={() => tpl.mensaje} title="Copiar mensaje" />
                   {tpl.audios?.some(a => a.guion) && (
                     <CopyButton getTextFn={() => tpl.audios.find(a => a.guion)?.guion || ''} title="Copiar guion de voz" />
@@ -709,42 +747,34 @@ Reglas:
                     ))}
                   </div>
 
-                  {/* Advanced filters */}
-                  <label className="text-xs text-text-muted mb-2 block flex items-center gap-1"><Filter size={12} /> Filtros Avanzados</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] text-text-muted mb-1 block">Zona</label>
-                      <select value={campaignFilters.zona} onChange={e => setCampaignFilters(f => ({ ...f, zona: e.target.value }))}
-                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
-                        <option value="">Todas</option>
-                        {campaignOptions.zonas.map(z => <option key={z} value={z}>{z}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-text-muted mb-1 block">Nodo</label>
-                      <select value={campaignFilters.nodo} onChange={e => setCampaignFilters(f => ({ ...f, nodo: e.target.value }))}
-                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
-                        <option value="">Todos</option>
-                        {campaignOptions.nodos.map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-text-muted mb-1 block">Tecnología</label>
-                      <select value={campaignFilters.tecnologia} onChange={e => setCampaignFilters(f => ({ ...f, tecnologia: e.target.value }))}
-                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
-                        <option value="">Todas</option>
-                        {campaignOptions.tecnologias.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-text-muted mb-1 block">Plan</label>
-                      <select value={campaignFilters.plan} onChange={e => setCampaignFilters(f => ({ ...f, plan: e.target.value }))}
-                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
-                        <option value="">Todos</option>
-                        {campaignOptions.planes.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
+                  {/* Free text search */}
+                  <div className="mb-3">
+                    <label className="text-xs text-text-muted mb-1.5 block flex items-center gap-1"><Search size={12} /> Buscar cliente</label>
+                    <input value={campaignSearch} onChange={e => setCampaignSearch(e.target.value)}
+                      placeholder="Nombre, DNI, dirección, nodo, zona..."
+                      className="w-full px-3 py-2 rounded-lg bg-bg-secondary border border-border text-xs" />
                   </div>
+
+                  {/* Advanced filters - dynamic from all columns */}
+                  <label className="text-xs text-text-muted mb-2 block flex items-center gap-1"><Filter size={12} /> Filtros por Columna</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {CAMPAIGN_FILTER_COLS.map(col => (
+                      <div key={col.key}>
+                        <label className="text-[10px] text-text-muted mb-1 block">{col.label}</label>
+                        <select value={campaignFilters[col.key] || ''} onChange={e => setCampaignFilters(f => ({ ...f, [col.key]: e.target.value }))}
+                          className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
+                          <option value="">Todos</option>
+                          {(campaignOptions[col.key] || []).map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                  {Object.values(campaignFilters).some(v => v) && (
+                    <button onClick={() => setCampaignFilters({})}
+                      className="mt-2 text-[10px] text-accent-red cursor-pointer bg-transparent border-none hover:underline">
+                      Limpiar filtros
+                    </button>
+                  )}
                   <div className="mt-3 p-2.5 rounded-xl bg-accent-blue/5 border border-accent-blue/20 text-center">
                     <span className="text-sm font-bold text-accent-blue">{filteredCampaignCount}</span>
                     <span className="text-xs text-text-muted ml-1.5">clientes coinciden</span>
@@ -1022,6 +1052,109 @@ Reglas:
                 disabled={!tplForm.titulo || !tplForm.mensaje}
                 className="py-2 px-5 rounded-lg bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer disabled:opacity-40">
                 {editingTpl ? 'Guardar Cambios' : 'Crear Plantilla'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: TEMPLATE DETAIL ==================== */}
+      {viewingTpl && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setViewingTpl(null)}>
+          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-[650px] max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-bold">{viewingTpl.titulo}</h3>
+                <span className="text-[10px] bg-accent-blue/10 text-accent-blue py-0.5 px-2 rounded font-semibold">{viewingTpl.categoria}</span>
+                {viewingTpl.favorito && <Star size={14} className="text-accent-yellow fill-accent-yellow" />}
+              </div>
+              <div className="flex items-center gap-2">
+                <CopyButton getTextFn={() => viewingTpl.mensaje} title="Copiar mensaje" size="md" />
+                <span className="text-[10px] text-text-muted font-mono">{viewingTpl.uso || 0} usos</span>
+                <button onClick={() => setViewingTpl(null)} className="p-1 rounded-lg bg-bg-secondary border-none cursor-pointer text-text-muted hover:text-text-primary">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 flex flex-col gap-5">
+              {/* Message */}
+              <div>
+                <label className="text-xs text-text-muted mb-1.5 block font-semibold">Mensaje</label>
+                <div className="p-4 rounded-xl bg-bg-secondary border border-border text-sm font-mono whitespace-pre-wrap">{viewingTpl.mensaje}</div>
+              </div>
+
+              {/* Images */}
+              {viewingTpl.imagenes?.length > 0 && (
+                <div>
+                  <label className="text-xs text-text-muted mb-2 block font-semibold">Imágenes ({viewingTpl.imagenes.length})</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {viewingTpl.imagenes.map(img => (
+                      <div key={img.id} className="relative group rounded-xl overflow-hidden border border-border">
+                        <a href={img.base64} target="_blank" rel="noopener noreferrer">
+                          <img src={img.base64} alt={img.nombre} className="w-full h-32 object-cover hover:opacity-90 transition-opacity" />
+                        </a>
+                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-2 flex items-center justify-between">
+                          <span className="text-[10px] text-white truncate flex-1">{img.nombre}</span>
+                          <a href={img.base64} download={img.nombre} onClick={e => e.stopPropagation()}
+                            className="p-1 rounded bg-white/20 text-white hover:bg-white/40 shrink-0 ml-1">
+                            <Download size={12} />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Audios */}
+              {viewingTpl.audios?.length > 0 && (
+                <div>
+                  <label className="text-xs text-text-muted mb-2 block font-semibold">Audios / Guiones ({viewingTpl.audios.length})</label>
+                  {viewingTpl.audios.map(aud => (
+                    <div key={aud.id} className="bg-bg-secondary rounded-xl p-4 mb-3 border border-border">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mic size={14} className="text-accent-purple" />
+                        <span className="text-xs font-semibold">{aud.nombre}</span>
+                        <span className="text-[10px] text-text-muted">({(aud.size / 1024).toFixed(0)} KB)</span>
+                      </div>
+                      <audio controls src={aud.base64} className="w-full h-9 mb-3" />
+                      {aud.guion && (
+                        <div className="bg-bg-card rounded-lg p-3 border border-border">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] text-text-muted font-semibold">Guion de Voz</span>
+                            <CopyButton getTextFn={() => aud.guion} title="Copiar guion" />
+                          </div>
+                          <p className="text-xs text-text-secondary whitespace-pre-wrap leading-relaxed">{aud.guion}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="flex items-center gap-2 text-[10px] text-text-muted">
+                <span>ID: {viewingTpl.id}</span>
+                <span>·</span>
+                <span>{viewingTpl.uso || 0} usos</span>
+                {viewingTpl.imagenes?.length > 0 && <><span>·</span><span>{viewingTpl.imagenes.length} imágenes</span></>}
+                {viewingTpl.audios?.length > 0 && <><span>·</span><span>{viewingTpl.audios.length} audios</span></>}
+              </div>
+            </div>
+
+            <div className="p-5 border-t border-border flex gap-2">
+              <button onClick={() => { setActiveTab('enviar'); selectTplForSend(viewingTpl); setViewingTpl(null); }}
+                className="flex-1 py-2.5 rounded-xl bg-accent-green border-none text-white text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5">
+                <Send size={14} /> Usar Plantilla
+              </button>
+              <button onClick={() => { openEditTpl(viewingTpl); setViewingTpl(null); }}
+                className="py-2.5 px-5 rounded-xl bg-bg-secondary border border-border text-text-secondary text-xs font-semibold cursor-pointer flex items-center gap-1.5">
+                <Edit3 size={14} /> Editar
+              </button>
+              <button onClick={() => setViewingTpl(null)}
+                className="py-2.5 px-5 rounded-xl bg-bg-secondary border border-border text-text-secondary text-xs cursor-pointer">
+                Cerrar
               </button>
             </div>
           </div>

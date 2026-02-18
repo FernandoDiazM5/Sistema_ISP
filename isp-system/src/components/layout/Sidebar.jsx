@@ -65,6 +65,7 @@ export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const role = ROLES[user?.rol] || ROLES.TECNICO;
   const hasPermission = useStore(s => s.hasPermission);
+  const branding = useStore(s => s.branding);
 
   // Filtrar items de navegación basado en permisos
   const getFilteredItems = (items) => {
@@ -92,13 +93,17 @@ export default function Sidebar({ isOpen, onClose }) {
     <div className="w-64 h-full bg-bg-sidebar border-r border-border flex flex-col py-5 px-3 shadow-2xl lg:shadow-none">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-2 mb-8">
-        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white shrink-0"
-          style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
-          <Wifi size={18} />
-        </div>
+        {branding?.appIcon ? (
+          <img src={branding.appIcon} className="w-9 h-9 rounded-[10px] object-cover shrink-0" alt="Logo" />
+        ) : (
+          <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white shrink-0"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
+            <Wifi size={18} />
+          </div>
+        )}
         <div>
-          <p className="font-bold text-sm tracking-tight text-white">ISP System</p>
-          <p className="text-[10px] text-text-muted">v2.0 Mobile</p>
+          <p className="font-bold text-sm tracking-tight text-white">{branding?.appName || 'ISP System'}</p>
+          <p className="text-[10px] text-text-muted">{branding?.appVersion || 'v2.0 Mobile'}</p>
         </div>
         <button onClick={onClose} className="lg:hidden ml-auto text-text-muted p-1">
           <LogOut size={18} className="rotate-180" />

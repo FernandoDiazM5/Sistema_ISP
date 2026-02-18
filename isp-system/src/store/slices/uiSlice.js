@@ -121,25 +121,48 @@ export const createUISlice = (set, get) => ({
     whatsappCategories: [],
 
     addCategory: (name) => set(s => {
-        if (s.whatsappCategories.includes(name)) return {};
-        const newCats = [...s.whatsappCategories, name];
+        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+        if (base.includes(name)) return {};
+        const newCats = [...base, name];
         saveToDB('isp_whatsappCategories', newCats);
         return { whatsappCategories: newCats };
     }),
 
     deleteCategory: (name) => set(s => {
-        const newCats = s.whatsappCategories.filter(c => c !== name);
+        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+        const newCats = base.filter(c => c !== name);
         saveToDB('isp_whatsappCategories', newCats);
         return { whatsappCategories: newCats };
     }),
 
     updateCategory: (oldName, newName) => set(s => {
-        const newCats = s.whatsappCategories.map(c => c === oldName ? newName : c);
+        const base = s.whatsappCategories.length > 0 ? s.whatsappCategories : ['Cobranza', 'General', 'Soporte', 'Promoción'];
+        const newCats = base.map(c => c === oldName ? newName : c);
         saveToDB('isp_whatsappCategories', newCats);
-        // Also update templates that use the old category name
         const newTemplates = s.templates.map(t => t.categoria === oldName ? { ...t, categoria: newName } : t);
         saveToDB('isp_templates', newTemplates);
         return { whatsappCategories: newCats, templates: newTemplates };
+    }),
+
+    // ===================== BRANDING =====================
+    branding: {
+        appName: 'ISP System',
+        appVersion: 'v2.0 Mobile',
+        appIcon: null,
+        zoneName: 'CARABAYLLO',
+        syncLabel: '',
+    },
+    setBranding: (updates) => set(s => {
+        const newBranding = { ...(s.branding || {}), ...updates };
+        saveToDB('isp_branding', newBranding);
+        return { branding: newBranding };
+    }),
+
+    // ===================== CUSTOM ROLE PERMISSIONS =====================
+    customRolePermissions: null,
+    setCustomRolePermissions: (permissions) => set(() => {
+        saveToDB('isp_customRolePermissions', permissions);
+        return { customRolePermissions: permissions };
     }),
 
     // ===================== FILES / IMAGES (MOCK) =====================

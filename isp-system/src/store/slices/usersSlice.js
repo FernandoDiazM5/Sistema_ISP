@@ -203,8 +203,9 @@ export const createUsersSlice = (set, get) => ({
     if (!userPermission) {
       // FIX: Asegurar que ROLES[role] existe
       const roleDef = Object.values(ROLES).find(r => r === currentUser.rol) || ROLES.VIEWER;
-      // Si el rol es un string (ej 'SUPER_ADMIN'), buscar en DEFAULT_PERMISSIONS
-      const rolePermissions = DEFAULT_PERMISSIONS[currentUser.rol];
+      // Verificar si hay permisos custom, sino usar defaults
+      const customPerms = get().customRolePermissions;
+      const rolePermissions = customPerms?.[currentUser.rol] || DEFAULT_PERMISSIONS[currentUser.rol];
       if (rolePermissions) {
         userPermission = rolePermissions[module];
       }

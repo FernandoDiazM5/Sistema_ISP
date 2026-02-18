@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, Shield, Database, Globe, Key, Users, Save, RefreshCw, CheckCircle, AlertTriangle, Wifi, UploadCloud, DownloadCloud, Moon, Sun, Monitor, Sparkles, Smartphone, Flower, Leaf, Wind, Clock, Trash2, FileJson, FileSpreadsheet, FileText, History, Loader2 } from 'lucide-react';
+import { Settings, Shield, Database, Globe, Key, Users, Save, RefreshCw, CheckCircle, AlertTriangle, Wifi, UploadCloud, DownloadCloud, Moon, Sun, Monitor, Sparkles, Smartphone, Flower, Leaf, Wind, Clock, Trash2, FileJson, FileSpreadsheet, FileText, History, Loader2, Image, RotateCcw, Pencil } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES as UI_ROLES, DEMO_USERS } from '../../auth/roles';
-import { ROLES } from '../../types/user';
+import { ROLES, DEFAULT_PERMISSIONS, PERMISSION_LEVELS, MODULES, MODULE_LABELS, ROLE_LABELS } from '../../types/user';
 import { CONFIG } from '../../utils/constants';
 import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
@@ -283,11 +283,92 @@ export default function ConfiguracionPage() {
   const averias = useStore(s => s.averias);
   const equipos = useStore(s => s.equipos);
   const theme = useStore(s => s.theme);
+  const branding = useStore(s => s.branding);
+  const setBranding = useStore(s => s.setBranding);
+  const customRolePermissions = useStore(s => s.customRolePermissions);
+  const setCustomRolePermissions = useStore(s => s.setCustomRolePermissions);
 
   const { syncPush, syncPull, isSyncing, lastSync, syncProgress } = useSyncStore();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('general');
+
+  // Branding local state
+  const [brandingForm, setBrandingForm] = useState({
+    appName: branding?.appName || 'ISP System',
+    appVersion: branding?.appVersion || 'v2.0 Mobile',
+    appIcon: branding?.appIcon || null,
+    zoneName: branding?.zoneName || 'CARABAYLLO',
+    syncLabel: branding?.syncLabel || '',
+  });
+  const [brandingSaved, setBrandingSaved] = useState(false);
+
+  // Roles editor local state
+  const EDITABLE_ROLES = [ROLES.ADMIN, ROLES.TECNICO, ROLES.VIEWER];
+  const EDITABLE_MODULES = Object.values(MODULES).filter(m => m !== MODULES.USUARIOS);
+  const PERM_OPTIONS = [
+    { value: PERMISSION_LEVELS.NONE, label: 'Ninguno' },
+    { value: PERMISSION_LEVELS.READ, label: 'Lectura' },
+    { value: PERMISSION_LEVELS.WRITE, label: 'Escritura' },
+    { value: PERMISSION_LEVELS.ADMIN, label: 'Admin' },
+  ];
+
+  const [editingRole, setEditingRole] = useState(null);
+  const [rolePerms, setRolePerms] = useState(() => {
+    const base = {};
+    EDITABLE_ROLES.forEach(role => {
+      base[role] = { ...(customRolePermissions?.[role] || DEFAULT_PERMISSIONS[role]) };
+    });
+    return base;
+  });
+  const [rolesSaved, setRolesSaved] = useState(false);
+
+  const handleSaveBranding = () => {
+    setBranding(brandingForm);
+    setBrandingSaved(true);
+    toast.success('Marca actualizada correctamente');
+    setTimeout(() => setBrandingSaved(false), 3000);
+  };
+
+  const handleIconUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 512000) {
+      toast.error('El archivo es muy grande. Maximo 500KB.');
+      return;
+    }
+    if (!file.type.match(/^image\/(png|jpeg|jpg|svg\+xml|webp)$/)) {
+      toast.error('Formato no soportado. Usa PNG, JPG, SVG o WebP.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setBrandingForm(p => ({ ...p, appIcon: ev.target.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveRoles = () => {
+    setCustomRolePermissions(rolePerms);
+    setRolesSaved(true);
+    toast.success('Permisos de roles actualizados');
+    setTimeout(() => setRolesSaved(false), 3000);
+  };
+
+  const handleRestoreRoleDefaults = (role) => {
+    setRolePerms(p => ({ ...p, [role]: { ...DEFAULT_PERMISSIONS[role] } }));
+    toast.success(`Permisos de ${ROLE_LABELS[role]?.label || role} restaurados a defaults`);
+  };
+
+  const handleRestoreAllDefaults = () => {
+    const base = {};
+    EDITABLE_ROLES.forEach(role => {
+      base[role] = { ...DEFAULT_PERMISSIONS[role] };
+    });
+    setRolePerms(base);
+    setCustomRolePermissions(null);
+    toast.success('Todos los permisos restaurados a defaults');
+  };
 
   const [apiValues, setApiValues] = useState(() => ({
     googleApiKey: localStorage.getItem('isp_google_api_key') || CONFIG.GOOGLE_API_KEY || '',
@@ -390,11 +471,15 @@ export default function ConfiguracionPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <div className="flex items-center gap-3 mb-5">
-              <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
-                <Wifi size={18} className="text-accent-blue" />
-              </div>
+              {brandingForm.appIcon ? (
+                <img src={brandingForm.appIcon} className="w-10 h-10 rounded-xl object-cover" alt="Logo" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-accent-blue/10 flex items-center justify-center">
+                  <Wifi size={18} className="text-accent-blue" />
+                </div>
+              )}
               <div>
-                <h3 className="text-sm font-bold">ISP System</h3>
+                <h3 className="text-sm font-bold">{brandingForm.appName || 'ISP System'}</h3>
                 <p className="text-[11px] text-text-muted">Sistema de Gestión para Proveedores de Internet</p>
               </div>
             </div>
@@ -403,6 +488,76 @@ export default function ConfiguracionPage() {
               <InfoRow label="Framework" value="React 18 + Vite 5" />
               <InfoRow label="Estado" value="Producción" badge="bg-emerald-500/10 text-emerald-400" />
               <InfoRow label="Última actualización" value={new Date().toLocaleDateString('es-PE')} />
+            </div>
+          </div>
+
+          {/* Branding / Personalizar Marca */}
+          <div className="bg-bg-card rounded-2xl p-6 border border-border col-span-1 md:col-span-2">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary flex items-center gap-2">
+              <Pencil size={16} className="text-accent-purple" /> Personalizar Marca
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Logo Upload */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border sm:col-span-2">
+                <label className="text-xs font-semibold mb-2 block">Logo del Sistema</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden shrink-0">
+                    {brandingForm.appIcon ? (
+                      <img src={brandingForm.appIcon} className="w-full h-full object-cover" alt="Logo" />
+                    ) : (
+                      <Wifi size={24} className="text-text-muted" />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-blue/10 text-accent-blue text-xs font-bold hover:bg-accent-blue/20 cursor-pointer transition-colors border-none w-fit">
+                      <Image size={14} /> Subir Logo
+                      <input type="file" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" onChange={handleIconUpload} className="hidden" />
+                    </label>
+                    {brandingForm.appIcon && (
+                      <button onClick={() => setBrandingForm(p => ({ ...p, appIcon: null }))}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 cursor-pointer border-none w-fit transition-colors">
+                        <RotateCcw size={12} /> Restaurar default
+                      </button>
+                    )}
+                    <p className="text-[10px] text-text-muted">PNG, JPG, SVG o WebP. Max 500KB.</p>
+                  </div>
+                </div>
+              </div>
+              {/* App Name */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Nombre del Software</label>
+                <input type="text" value={brandingForm.appName} onChange={e => setBrandingForm(p => ({ ...p, appName: e.target.value }))}
+                  placeholder="ISP System" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              {/* App Version */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Subtitulo / Version</label>
+                <input type="text" value={brandingForm.appVersion} onChange={e => setBrandingForm(p => ({ ...p, appVersion: e.target.value }))}
+                  placeholder="v2.0 Mobile" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              {/* Zone Name */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Nombre de Zona (Header)</label>
+                <input type="text" value={brandingForm.zoneName} onChange={e => setBrandingForm(p => ({ ...p, zoneName: e.target.value }))}
+                  placeholder="CARABAYLLO" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+              </div>
+              {/* Sync Label */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border">
+                <label className="text-xs font-semibold mb-1 block">Etiqueta de Estado (Header)</label>
+                <input type="text" value={brandingForm.syncLabel} onChange={e => setBrandingForm(p => ({ ...p, syncLabel: e.target.value }))}
+                  placeholder="Dejar vacio para auto (Demo/Sincronizado)" className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted" />
+                <p className="text-[10px] text-text-muted mt-1">Si esta vacio, se muestra automaticamente segun la fuente de datos.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+              <button onClick={handleSaveBranding} className="py-2.5 px-6 rounded-xl bg-accent-purple border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
+                <Save size={14} /> Guardar Marca
+              </button>
+              {brandingSaved && (
+                <span className="text-xs text-accent-green flex items-center gap-1">
+                  <CheckCircle size={14} /> Guardado correctamente
+                </span>
+              )}
             </div>
           </div>
 
@@ -459,38 +614,113 @@ export default function ConfiguracionPage() {
       {/* Tab: Usuarios & Roles */}
       {activeTab === 'usuarios' && (
         <div className="flex flex-col gap-6">
+          {/* Roles Overview Cards */}
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
-            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Roles del Sistema</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(UI_ROLES).map(([key, role]) => (
-                <div key={key} className="p-4 rounded-xl bg-bg-secondary border border-border">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                      style={{ background: role.color + '20', color: role.color }}>
-                      <Shield size={16} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">{role.label}</p>
-                      <p className="text-[11px] text-text-muted font-mono">{key}</p>
-                    </div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-text-secondary">Roles del Sistema</h3>
+              <div className="flex items-center gap-2">
+                {customRolePermissions && (
+                  <button onClick={handleRestoreAllDefaults}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium hover:bg-red-500/20 cursor-pointer border-none transition-colors">
+                    <RotateCcw size={12} /> Restaurar Todos
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              {/* SUPER_ADMIN card (read-only) */}
+              <div className="p-4 rounded-xl bg-bg-secondary border border-border opacity-70">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: (UI_ROLES.SUPER_ADMIN?.color || '#a855f7') + '20', color: UI_ROLES.SUPER_ADMIN?.color || '#a855f7' }}>
+                    <Shield size={14} />
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {role.permissions.slice(0, 6).map((p, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-white/[0.05] text-text-secondary border border-border">
-                        {p}
-                      </span>
-                    ))}
-                    {role.permissions.length > 6 && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-medium text-text-muted">
-                        +{role.permissions.length - 6} más
-                      </span>
-                    )}
+                  <div>
+                    <p className="text-xs font-bold">Super Admin</p>
+                    <p className="text-[10px] text-text-muted">Acceso total (no editable)</p>
                   </div>
                 </div>
-              ))}
+              </div>
+              {/* Editable role cards */}
+              {EDITABLE_ROLES.map(role => {
+                const rl = ROLE_LABELS[role] || {};
+                const uiRole = UI_ROLES[role] || {};
+                const isEditing = editingRole === role;
+                return (
+                  <button key={role} onClick={() => setEditingRole(isEditing ? null : role)}
+                    className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${isEditing
+                      ? 'bg-accent-blue/5 border-accent-blue/40 shadow-[0_0_12px_-3px_rgba(59,130,246,0.3)]'
+                      : 'bg-bg-secondary border-border hover:border-accent-blue/30'
+                    }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ background: (uiRole.color || '#6b7280') + '20', color: uiRole.color || '#6b7280' }}>
+                        <Shield size={14} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold">{rl.label || role}</p>
+                        <p className="text-[10px] text-text-muted">{isEditing ? 'Editando...' : 'Click para editar'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-text-muted">
+                        {Object.values(rolePerms[role] || {}).filter(v => v !== PERMISSION_LEVELS.NONE).length} modulos activos
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Role Permission Editor */}
+            {editingRole && (
+              <div className="mt-2 p-4 rounded-xl bg-bg-secondary border border-border animate-fade">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-bold text-text-primary flex items-center gap-2">
+                    <Shield size={14} style={{ color: UI_ROLES[editingRole]?.color || '#6b7280' }} />
+                    Permisos de {ROLE_LABELS[editingRole]?.label || editingRole}
+                  </h4>
+                  <button onClick={() => handleRestoreRoleDefaults(editingRole)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-bg-card text-text-muted text-[10px] font-medium hover:text-accent-blue cursor-pointer border border-border transition-colors">
+                    <RotateCcw size={10} /> Defaults
+                  </button>
+                </div>
+                <p className="text-[10px] text-text-muted mb-3">Para ocultar un modulo del sidebar, establece su permiso en "Ninguno".</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {EDITABLE_MODULES.map(mod => (
+                    <div key={mod} className="flex items-center justify-between py-2 px-3 rounded-lg bg-bg-card border border-border">
+                      <span className="text-[11px] font-medium">{MODULE_LABELS[mod] || mod}</span>
+                      <select
+                        value={rolePerms[editingRole]?.[mod] || PERMISSION_LEVELS.NONE}
+                        onChange={e => setRolePerms(p => ({
+                          ...p,
+                          [editingRole]: { ...p[editingRole], [mod]: e.target.value }
+                        }))}
+                        className="py-1 px-2 rounded-md bg-bg-secondary border border-border text-[11px] text-text-primary outline-none cursor-pointer focus:border-accent-blue"
+                      >
+                        {PERM_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 mt-4">
+              <button onClick={handleSaveRoles} className="py-2.5 px-6 rounded-xl bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer flex items-center gap-2 hover:opacity-90">
+                <Save size={14} /> Guardar Permisos
+              </button>
+              {rolesSaved && (
+                <span className="text-xs text-accent-green flex items-center gap-1">
+                  <CheckCircle size={14} /> Guardado correctamente
+                </span>
+              )}
             </div>
           </div>
 
+          {/* User Management Info */}
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-text-secondary">Gestión de Usuarios</h3>
@@ -501,50 +731,15 @@ export default function ConfiguracionPage() {
             </div>
             <div className="p-4 rounded-xl bg-accent-blue/5 border border-accent-blue/20">
               <p className="text-sm text-text-primary mb-2 font-medium">
-                📋 Para gestionar usuarios del sistema:
+                Para gestionar usuarios del sistema:
               </p>
               <ol className="text-xs text-text-secondary space-y-1.5 ml-4">
-                <li>1. Ve al módulo <strong className="text-accent-blue">Sistema → Usuarios</strong> en el menú lateral</li>
+                <li>1. Ve al modulo <strong className="text-accent-blue">Sistema &rarr; Usuarios</strong> en el menu lateral</li>
                 <li>2. Solo usuarios con rol <strong className="text-accent-purple">SUPER_ADMIN</strong> pueden acceder</li>
-                <li>3. Allí podrás crear, editar, activar/desactivar usuarios</li>
-                <li>4. También podrás personalizar permisos por módulo</li>
+                <li>3. Alli podras crear, editar, activar/desactivar usuarios</li>
+                <li>4. Tambien podras personalizar permisos por modulo para cada usuario</li>
               </ol>
             </div>
-          </div>
-
-          <div className="bg-bg-card rounded-2xl p-6 border border-border">
-            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Usuario Demo</h3>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="text-left text-[11px] text-text-muted uppercase">
-                  <th className="py-2 px-3">Correo</th>
-                  <th className="py-2 px-3">Rol</th>
-                  <th className="py-2 px-3">Permisos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {DEMO_USERS.map(u => {
-                  const r = UI_ROLES[u.rol] || UI_ROLES.VIEWER;
-                  return (
-                    <tr key={u.email} className="border-t border-border">
-                      <td className="py-2.5 px-3 font-mono text-xs">{u.email}</td>
-                      <td className="py-2.5 px-3">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
-                          style={{ background: r.color + '15', color: r.color }}>
-                          {r.label}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-text-muted text-[11px]">
-                        {r.permissions.includes('*') ? 'Acceso Total' : `${r.permissions.length} módulos`}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <p className="text-[11px] text-text-muted mt-3">
-              * Para acceso con Google OAuth, los usuarios deben estar registrados en Firebase
-            </p>
           </div>
 
           {/* Authorized Users Manager */}
