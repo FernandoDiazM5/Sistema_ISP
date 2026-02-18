@@ -117,6 +117,31 @@ export const createUISlice = (set, get) => ({
     campaignActive: false, campaignQueue: [], campaignIndex: 0,
     setCampaign: (data) => set(data),
 
+    // ===================== WHATSAPP CATEGORIES =====================
+    whatsappCategories: [],
+
+    addCategory: (name) => set(s => {
+        if (s.whatsappCategories.includes(name)) return {};
+        const newCats = [...s.whatsappCategories, name];
+        saveToDB('isp_whatsappCategories', newCats);
+        return { whatsappCategories: newCats };
+    }),
+
+    deleteCategory: (name) => set(s => {
+        const newCats = s.whatsappCategories.filter(c => c !== name);
+        saveToDB('isp_whatsappCategories', newCats);
+        return { whatsappCategories: newCats };
+    }),
+
+    updateCategory: (oldName, newName) => set(s => {
+        const newCats = s.whatsappCategories.map(c => c === oldName ? newName : c);
+        saveToDB('isp_whatsappCategories', newCats);
+        // Also update templates that use the old category name
+        const newTemplates = s.templates.map(t => t.categoria === oldName ? { ...t, categoria: newName } : t);
+        saveToDB('isp_templates', newTemplates);
+        return { whatsappCategories: newCats, templates: newTemplates };
+    }),
+
     // ===================== FILES / IMAGES (MOCK) =====================
     uploadImage: async (file, path) => {
         console.log(`[STORE] Mock uploading ${file.name} to ${path}`);

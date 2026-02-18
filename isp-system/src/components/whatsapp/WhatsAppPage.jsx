@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image } from 'lucide-react';
+import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image, Download, Settings, Check, Filter } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { rewriteWithAI, generateWithAI, TONES } from '../../api/geminiAI';
 import KPICard from '../common/KPICard';
@@ -44,7 +44,7 @@ function smartFormat(text, client) {
   });
 }
 
-const CATEGORIES = ['Todas', 'Cobranza', 'General', 'Soporte', 'Promoción'];
+const DEFAULT_CATEGORIES = ['Cobranza', 'General', 'Soporte', 'Promoción'];
 
 const VARIABLES = [
   { key: '{Saludo}', desc: 'Buenos días/tardes/noches' },
@@ -71,13 +71,27 @@ export default function WhatsAppPage() {
   const whatsappLogs = useStore(s => s.whatsappLogs);
   const campaignActive = useStore(s => s.campaignActive);
   const setCampaign = useStore(s => s.setCampaign);
+  const whatsappCategories = useStore(s => s.whatsappCategories);
+  const addCategory = useStore(s => s.addCategory);
+  const deleteCategory = useStore(s => s.deleteCategory);
+  const updateCategory = useStore(s => s.updateCategory);
+
+  // Dynamic categories (from store, with defaults fallback)
+  const categories = useMemo(() => {
+    const cats = whatsappCategories?.length > 0 ? whatsappCategories : DEFAULT_CATEGORIES;
+    return ['Todas', ...cats];
+  }, [whatsappCategories]);
 
   // UI State
-  const [activeTab, setActiveTab] = useState('plantillas'); // plantillas | enviar | campana | historial
+  const [activeTab, setActiveTab] = useState('plantillas');
   const [searchTpl, setSearchTpl] = useState('');
   const [filterCat, setFilterCat] = useState('Todas');
   const [showTplModal, setShowTplModal] = useState(false);
   const [editingTpl, setEditingTpl] = useState(null);
+  const [showCatModal, setShowCatModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCat, setEditingCat] = useState(null);
+  const [editingCatName, setEditingCatName] = useState('');
 
   // Template form
   const [tplForm, setTplForm] = useState({ titulo: '', categoria: 'Cobranza', mensaje: '', favorito: false, imagenes: [], audios: [] });
@@ -97,6 +111,7 @@ export default function WhatsAppPage() {
   const [campaignTemplate, setCampaignTemplate] = useState(null);
   const [campaignIdx, setCampaignIdx] = useState(0);
   const [campaignFilter, setCampaignFilter] = useState('all');
+  const [campaignFilters, setCampaignFilters] = useState({ zona: '', nodo: '', tecnologia: '', plan: '' });
 
   // Filtered templates
   const filteredTemplates = useMemo(() => {
@@ -206,14 +221,31 @@ export default function WhatsAppPage() {
     setAiLoading(false);
   };
 
-  // Campaign
-  const startCampaign = () => {
+  // Campaign - apply base + advanced filters
+  const applyCampaignFilters = (baseFilter, advFilters) => {
     let list = [...clients];
-    if (campaignFilter === 'deudores') list = list.filter(c => c.deuda_monto > 0);
-    else if (campaignFilter === 'cortados') list = list.filter(c => c.estado_servicio === 'Cortado' || c.estado_cuenta === 'SUSPENDIDO');
-    else if (campaignFilter === 'activos') list = list.filter(c => c.status === 'ONLINE' || c.estado_cuenta === 'ACTIVO');
+    if (baseFilter === 'deudores') list = list.filter(c => c.deuda_monto > 0);
+    else if (baseFilter === 'cortados') list = list.filter(c => c.estado_servicio === 'Cortado' || c.estado_cuenta === 'SUSPENDIDO');
+    else if (baseFilter === 'activos') list = list.filter(c => c.status === 'ONLINE' || c.estado_cuenta === 'ACTIVO');
+    if (advFilters.zona) list = list.filter(c => c.zona === advFilters.zona);
+    if (advFilters.nodo) list = list.filter(c => (c.nodo || c.nodo_router) === advFilters.nodo);
+    if (advFilters.tecnologia) list = list.filter(c => c.tecnologia === advFilters.tecnologia);
+    if (advFilters.plan) list = list.filter(c => c.plan === advFilters.plan);
+    return list.filter(c => c.movil_1);
+  };
 
-    list = list.filter(c => c.movil_1);
+  const filteredCampaignCount = useMemo(() => applyCampaignFilters(campaignFilter, campaignFilters).length, [clients, campaignFilter, campaignFilters]);
+
+  // Unique values for campaign dropdowns
+  const campaignOptions = useMemo(() => ({
+    zonas: [...new Set(clients.map(c => c.zona).filter(Boolean))].sort(),
+    nodos: [...new Set(clients.map(c => c.nodo || c.nodo_router).filter(Boolean))].sort(),
+    tecnologias: [...new Set(clients.map(c => c.tecnologia).filter(Boolean))].sort(),
+    planes: [...new Set(clients.map(c => c.plan).filter(Boolean))].sort(),
+  }), [clients]);
+
+  const startCampaign = () => {
+    const list = applyCampaignFilters(campaignFilter, campaignFilters);
     if (list.length === 0) return alert('No hay clientes con número de teléfono para esta selección');
 
     setCampaignClients(list);
@@ -389,14 +421,18 @@ Reglas:
               <input value={searchTpl} onChange={e => setSearchTpl(e.target.value)}
                 placeholder="Buscar plantillas..." className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-bg-secondary border border-border text-sm" />
             </div>
-            <div className="flex gap-1">
-              {CATEGORIES.map(cat => (
+            <div className="flex gap-1 flex-wrap">
+              {categories.map(cat => (
                 <button key={cat} onClick={() => setFilterCat(cat)}
                   className={`py-1.5 px-3 rounded-lg text-[11px] font-semibold cursor-pointer border-none transition-all
                     ${filterCat === cat ? 'bg-accent-blue text-white' : 'bg-bg-secondary text-text-muted hover:text-text-secondary'}`}>
                   {cat}
                 </button>
               ))}
+              <button onClick={() => setShowCatModal(true)}
+                className="p-1.5 rounded-lg bg-bg-secondary text-text-muted cursor-pointer border-none hover:text-accent-blue" title="Gestionar categorías">
+                <Settings size={12} />
+              </button>
             </div>
             <button onClick={openCreateTpl}
               className="py-2 px-4 rounded-lg bg-accent-green border-none text-white text-xs font-semibold cursor-pointer flex items-center gap-1.5">
@@ -421,9 +457,16 @@ Reglas:
                 {(tpl.imagenes?.length > 0 || tpl.audios?.length > 0) && (
                   <div className="flex items-center gap-2 mb-2">
                     {tpl.imagenes?.length > 0 && (
-                      <span className="text-[10px] text-text-muted flex items-center gap-0.5 bg-bg-secondary py-0.5 px-1.5 rounded">
-                        <Image size={10} /> {tpl.imagenes.length} img
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {tpl.imagenes.slice(0, 3).map(img => (
+                          <a key={img.id} href={img.base64} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                            <img src={img.base64} alt={img.nombre} className="w-8 h-8 rounded object-cover border border-border hover:ring-2 hover:ring-accent-blue" />
+                          </a>
+                        ))}
+                        {tpl.imagenes.length > 3 && (
+                          <span className="text-[9px] text-text-muted bg-bg-secondary rounded px-1 py-0.5">+{tpl.imagenes.length - 3}</span>
+                        )}
+                      </div>
                     )}
                     {tpl.audios?.length > 0 && (
                       <span className="text-[10px] text-text-muted flex items-center gap-0.5 bg-bg-secondary py-0.5 px-1.5 rounded">
@@ -562,6 +605,59 @@ Reglas:
               </div>
             </div>
 
+            {/* Template media attachments */}
+            {selectedTemplate && (selectedTemplate.imagenes?.length > 0 || selectedTemplate.audios?.length > 0) && (
+              <div className="bg-bg-card rounded-2xl border border-border p-4 mb-4">
+                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <Image size={14} /> Adjuntos de la Plantilla
+                </h3>
+                {selectedTemplate.imagenes?.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[11px] text-text-muted mb-2">Imágenes ({selectedTemplate.imagenes.length})</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {selectedTemplate.imagenes.map(img => (
+                        <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border">
+                          <a href={img.base64} target="_blank" rel="noopener noreferrer">
+                            <img src={img.base64} alt={img.nombre} className="w-full h-24 object-cover" />
+                          </a>
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-1.5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[9px] text-white truncate flex-1">{img.nombre}</span>
+                            <a href={img.base64} download={img.nombre} onClick={e => e.stopPropagation()}
+                              className="p-1 rounded bg-white/20 text-white hover:bg-white/40 shrink-0">
+                              <Download size={10} />
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedTemplate.audios?.length > 0 && (
+                  <div>
+                    <p className="text-[11px] text-text-muted mb-2">Audios ({selectedTemplate.audios.length})</p>
+                    {selectedTemplate.audios.map(aud => (
+                      <div key={aud.id} className="bg-bg-secondary rounded-xl p-3 mb-2 border border-border">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mic size={12} className="text-accent-purple" />
+                          <span className="text-xs font-medium truncate">{aud.nombre}</span>
+                        </div>
+                        <audio controls src={aud.base64} className="w-full h-8 mb-2" />
+                        {aud.guion && (
+                          <div className="bg-bg-card rounded-lg p-2.5 border border-border">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-text-muted font-semibold">Guion de voz</span>
+                              <CopyButton getTextFn={() => aud.guion} title="Copiar guion" />
+                            </div>
+                            <p className="text-xs text-text-secondary whitespace-pre-wrap">{aud.guion}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Send button */}
             <button onClick={sendWhatsApp}
               disabled={!messageText || (!selectedClient?.movil_1 && !manualPhone)}
@@ -593,31 +689,71 @@ Reglas:
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs text-text-muted mb-2 block">Filtro de Clientes</label>
-                  <div className="flex flex-col gap-2">
+                  <label className="text-xs text-text-muted mb-2 block">Estado de Clientes</label>
+                  <div className="flex flex-col gap-2 mb-4">
                     {[
-                      { value: 'all', label: 'Todos los clientes', count: clients.filter(c => c.movil_1).length },
-                      { value: 'deudores', label: 'Clientes con deuda', count: clients.filter(c => c.deuda_monto > 0 && c.movil_1).length },
-                      { value: 'cortados', label: 'Cortados / Suspendidos', count: clients.filter(c => (c.estado_servicio === 'Cortado' || c.estado_cuenta === 'SUSPENDIDO') && c.movil_1).length },
-                      { value: 'activos', label: 'Clientes activos', count: clients.filter(c => (c.status === 'ONLINE' || c.estado_cuenta === 'ACTIVO') && c.movil_1).length },
+                      { value: 'all', label: 'Todos los clientes' },
+                      { value: 'deudores', label: 'Clientes con deuda' },
+                      { value: 'cortados', label: 'Cortados / Suspendidos' },
+                      { value: 'activos', label: 'Clientes activos' },
                     ].map(f => (
                       <label key={f.value}
-                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                        className={`flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all
                           ${campaignFilter === f.value ? 'border-accent-blue bg-accent-blue/5' : 'border-border bg-bg-secondary'}`}>
                         <input type="radio" name="campFilter" value={f.value}
                           checked={campaignFilter === f.value}
                           onChange={() => setCampaignFilter(f.value)}
                           className="accent-accent-blue" />
-                        <span className="text-sm font-medium flex-1">{f.label}</span>
-                        <span className="text-xs text-text-muted font-mono">{f.count}</span>
+                        <span className="text-xs font-medium flex-1">{f.label}</span>
                       </label>
                     ))}
+                  </div>
+
+                  {/* Advanced filters */}
+                  <label className="text-xs text-text-muted mb-2 block flex items-center gap-1"><Filter size={12} /> Filtros Avanzados</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-text-muted mb-1 block">Zona</label>
+                      <select value={campaignFilters.zona} onChange={e => setCampaignFilters(f => ({ ...f, zona: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
+                        <option value="">Todas</option>
+                        {campaignOptions.zonas.map(z => <option key={z} value={z}>{z}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-text-muted mb-1 block">Nodo</label>
+                      <select value={campaignFilters.nodo} onChange={e => setCampaignFilters(f => ({ ...f, nodo: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
+                        <option value="">Todos</option>
+                        {campaignOptions.nodos.map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-text-muted mb-1 block">Tecnología</label>
+                      <select value={campaignFilters.tecnologia} onChange={e => setCampaignFilters(f => ({ ...f, tecnologia: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
+                        <option value="">Todas</option>
+                        {campaignOptions.tecnologias.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-text-muted mb-1 block">Plan</label>
+                      <select value={campaignFilters.plan} onChange={e => setCampaignFilters(f => ({ ...f, plan: e.target.value }))}
+                        className="w-full px-2 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs">
+                        <option value="">Todos</option>
+                        {campaignOptions.planes.map(p => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-3 p-2.5 rounded-xl bg-accent-blue/5 border border-accent-blue/20 text-center">
+                    <span className="text-sm font-bold text-accent-blue">{filteredCampaignCount}</span>
+                    <span className="text-xs text-text-muted ml-1.5">clientes coinciden</span>
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs text-text-muted mb-2 block">Plantilla para la campaña</label>
-                  <div className="flex flex-col gap-1.5 max-h-[200px] overflow-y-auto">
+                  <div className="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto">
                     {templates.map(tpl => (
                       <button key={tpl.id} onClick={() => setCampaignTemplate(tpl)}
                         className={`text-left p-3 rounded-xl text-xs cursor-pointer border transition-all
@@ -633,10 +769,10 @@ Reglas:
               </div>
 
               <button onClick={startCampaign}
-                disabled={!campaignTemplate}
+                disabled={!campaignTemplate || filteredCampaignCount === 0}
                 className="mt-6 w-full py-3 rounded-xl bg-accent-blue border-none text-white text-sm font-bold cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
                 <Play size={18} />
-                Iniciar Campaña
+                Iniciar Campaña ({filteredCampaignCount} clientes)
               </button>
             </div>
           ) : (
@@ -756,7 +892,7 @@ Reglas:
                 <label className="text-xs text-text-muted mb-1.5 block">Categoría</label>
                 <select value={tplForm.categoria} onChange={e => setTplForm(f => ({ ...f, categoria: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl bg-bg-secondary border border-border text-sm">
-                  {CATEGORIES.filter(c => c !== 'Todas').map(cat => (
+                  {categories.filter(c => c !== 'Todas').map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
@@ -887,6 +1023,102 @@ Reglas:
                 className="py-2 px-5 rounded-lg bg-accent-blue border-none text-white text-sm font-semibold cursor-pointer disabled:opacity-40">
                 {editingTpl ? 'Guardar Cambios' : 'Crear Plantilla'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL: CATEGORIES ==================== */}
+      {showCatModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowCatModal(false)}>
+          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-[400px] max-h-[70vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-border flex items-center justify-between">
+              <h3 className="text-sm font-bold">Gestionar Categorías</h3>
+              <button onClick={() => setShowCatModal(false)} className="p-1 rounded-lg bg-bg-secondary border-none cursor-pointer text-text-muted hover:text-text-primary">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5">
+              {/* Add new category */}
+              <div className="flex gap-2 mb-4">
+                <input value={newCatName} onChange={e => setNewCatName(e.target.value)}
+                  placeholder="Nueva categoría..."
+                  className="flex-1 px-3 py-2 rounded-lg bg-bg-secondary border border-border text-sm"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newCatName.trim()) {
+                      addCategory(newCatName.trim());
+                      setNewCatName('');
+                    }
+                  }} />
+                <button onClick={() => {
+                    if (newCatName.trim()) {
+                      addCategory(newCatName.trim());
+                      setNewCatName('');
+                    }
+                  }}
+                  disabled={!newCatName.trim()}
+                  className="py-2 px-4 rounded-lg bg-accent-blue border-none text-white text-xs font-semibold cursor-pointer disabled:opacity-40">
+                  <Plus size={14} />
+                </button>
+              </div>
+
+              {/* List categories */}
+              <div className="flex flex-col gap-1.5">
+                {(whatsappCategories?.length > 0 ? whatsappCategories : DEFAULT_CATEGORIES).map(cat => (
+                  <div key={cat} className="flex items-center gap-2 p-2.5 rounded-xl bg-bg-secondary border border-border">
+                    {editingCat === cat ? (
+                      <>
+                        <input value={editingCatName} onChange={e => setEditingCatName(e.target.value)}
+                          className="flex-1 px-2 py-1 rounded-lg bg-bg-card border border-border text-sm"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' && editingCatName.trim()) {
+                              updateCategory(cat, editingCatName.trim());
+                              setEditingCat(null);
+                            }
+                            if (e.key === 'Escape') setEditingCat(null);
+                          }} />
+                        <button onClick={() => {
+                            if (editingCatName.trim()) {
+                              updateCategory(cat, editingCatName.trim());
+                              setEditingCat(null);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-accent-green/10 text-accent-green border-none cursor-pointer">
+                          <Check size={12} />
+                        </button>
+                        <button onClick={() => setEditingCat(null)}
+                          className="p-1.5 rounded-lg bg-bg-card text-text-muted border-none cursor-pointer">
+                          <X size={12} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 text-sm font-medium">{cat}</span>
+                        <span className="text-[10px] text-text-muted font-mono">
+                          {templates.filter(t => t.categoria === cat).length} tpl
+                        </span>
+                        <button onClick={() => { setEditingCat(cat); setEditingCatName(cat); }}
+                          className="p-1.5 rounded-lg bg-bg-card text-text-muted border-none cursor-pointer hover:text-accent-blue">
+                          <Edit3 size={12} />
+                        </button>
+                        <button onClick={() => {
+                            const count = templates.filter(t => t.categoria === cat).length;
+                            if (count > 0) {
+                              alert(`No se puede eliminar "${cat}" porque tiene ${count} plantilla(s) asociadas.`);
+                              return;
+                            }
+                            if (confirm(`¿Eliminar la categoría "${cat}"?`)) deleteCategory(cat);
+                          }}
+                          className="p-1.5 rounded-lg bg-bg-card text-text-muted border-none cursor-pointer hover:text-accent-red">
+                          <Trash2 size={12} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

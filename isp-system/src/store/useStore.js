@@ -134,7 +134,7 @@ const useStore = create((set, get) => ({
         const lsMigrationKeys = [
           'isp_clients', 'isp_dataSource', 'isp_col_prefs', 'isp_lastImport',
           'isp_importHistory', 'isp_cleaningOptions', 'isp_templates',
-          'isp_whatsappLogs', 'isp_tecnicos', 'isp_tickets', 'isp_averias',
+          'isp_whatsappLogs', 'isp_whatsappCategories', 'isp_tecnicos', 'isp_tickets', 'isp_averias',
           'isp_equipos', 'isp_sesionesRemoto', 'isp_visitas',
           'isp_instalaciones', 'isp_derivaciones', 'isp_postVenta',
           'isp_movimientosEquipos'
@@ -169,6 +169,7 @@ const useStore = create((set, get) => ({
         'isp_cleaningOptions': 'cleaningOptions',
         'isp_templates': 'templates',
         'isp_whatsappLogs': 'whatsappLogs',
+        'isp_whatsappCategories': 'whatsappCategories',
         'isp_tecnicos': 'tecnicos',
         'isp_tickets': 'tickets',
         'isp_averias': 'averias',
