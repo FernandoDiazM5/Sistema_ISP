@@ -83,6 +83,12 @@ export default function TicketDetailModal({
                             <div><span className="text-text-muted">Tecnología: </span><span className="text-text-primary font-medium">{clientInfo.tecnologia || 'N/A'}</span></div>
                             <div><span className="text-text-muted">Dirección: </span><span className="text-text-primary font-medium">{clientInfo.direccion || 'N/A'}</span></div>
                             <div><span className="text-text-muted">Estado: </span><span className="text-text-primary font-medium">{clientInfo.estado_cuenta || 'N/A'}</span></div>
+                            {clientInfo.movil_1 && (
+                              <div><span className="text-text-muted">Teléfono: </span><span className="text-text-primary font-medium">{clientInfo.movil_1}</span></div>
+                            )}
+                            {clientInfo.nodo_router && (
+                              <div><span className="text-text-muted">Nodo: </span><span className="text-text-primary font-medium">{clientInfo.nodo_router}</span></div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -117,6 +123,12 @@ export default function TicketDetailModal({
                         <span className="text-text-muted block mb-0.5">Fecha</span>
                         <span className="font-medium">{ticket.fecha}</span>
                     </div>
+                    {ticket.fechaUpdate && ticket.fechaUpdate !== ticket.fecha && (
+                        <div>
+                            <span className="text-text-muted block mb-0.5">Actualizado</span>
+                            <span className="font-medium">{ticket.fechaUpdate}</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* SLA Info */}
@@ -235,12 +247,14 @@ export default function TicketDetailModal({
                         )}
                         {ticket.estado === 'En Proceso' && (
                             <>
+                                <button onClick={() => onStatusChange(ticket.id, 'Resuelto')} className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 border-none text-xs font-semibold cursor-pointer hover:bg-green-500/30">Resolver</button>
                                 <button onClick={() => onStatusChange(ticket.id, 'Escalado')} className="px-4 py-2 rounded-lg bg-orange-500/20 text-orange-400 border-none text-xs font-semibold cursor-pointer hover:bg-orange-500/30">Escalar</button>
                                 <button onClick={() => onStatusChange(ticket.id, 'Abierto')} className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border-none text-xs font-semibold cursor-pointer hover:bg-red-500/30">Devolver a Abierto</button>
                             </>
                         )}
                         {ticket.estado === 'Escalado' && (
                             <>
+                                <button onClick={() => onStatusChange(ticket.id, 'Resuelto')} className="px-4 py-2 rounded-lg bg-green-500/20 text-green-400 border-none text-xs font-semibold cursor-pointer hover:bg-green-500/30">Resolver</button>
                                 <button onClick={() => onStatusChange(ticket.id, 'En Proceso')} className="px-4 py-2 rounded-lg bg-yellow-500/20 text-yellow-400 border-none text-xs font-semibold cursor-pointer hover:bg-yellow-500/30">Devolver a En Proceso</button>
                             </>
                         )}

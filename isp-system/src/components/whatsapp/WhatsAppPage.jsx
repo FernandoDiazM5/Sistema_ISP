@@ -193,7 +193,9 @@ export default function WhatsAppPage() {
     if (!phone) return;
 
     const cleanPhone = phone.replace(/\D/g, '');
-    const url = `https://wa.me/51${cleanPhone}?text=${encodeURIComponent(messageText)}`;
+    // Evitar doble código de país: si ya empieza con 51 y tiene 11+ dígitos, no agregar
+    const fullPhone = cleanPhone.startsWith('51') && cleanPhone.length >= 11 ? cleanPhone : `51${cleanPhone}`;
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(messageText)}`;
     window.open(url, '_blank');
 
     if (selectedTemplate) incrementTemplateUse(selectedTemplate.id);
@@ -292,8 +294,9 @@ export default function WhatsAppPage() {
     if (!client || !campaignTemplate) return;
 
     const text = smartFormat(campaignTemplate.mensaje, client);
-    const phone = client.movil_1.replace(/\D/g, '');
-    const url = `https://wa.me/51${phone}?text=${encodeURIComponent(text)}`;
+    const phone = (client.movil_1 || '').replace(/\D/g, '');
+    const fullPhone = phone.startsWith('51') && phone.length >= 11 ? phone : `51${phone}`;
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
 
     incrementTemplateUse(campaignTemplate.id);
@@ -876,7 +879,7 @@ Reglas:
                 </tr>
               </thead>
               <tbody>
-                {whatsappLogs.map(log => (
+                {[...whatsappLogs].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(log => (
                   <tr key={log.id} className="border-b border-border">
                     <td className="py-3 px-4 text-text-muted text-xs">
                       {new Date(log.fecha).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}

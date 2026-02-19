@@ -36,6 +36,12 @@ export default function LoginPage() {
         return;
       }
 
+      if (!firebaseUser.activo) {
+        setError('Tu cuenta ha sido desactivada. Contacta al administrador.');
+        setLoading(false);
+        return;
+      }
+
       // Usuario autenticado y autorizado, completar login
       login({
         email: firebaseUser.email,

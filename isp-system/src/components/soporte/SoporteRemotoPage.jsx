@@ -345,8 +345,8 @@ export default function SoporteRemotoPage() {
     const client = clients.find(c => c.id === sesion.clienteId);
     addVisita({
       clienteId: sesion.clienteId,
-      clienteNombre: sesion.clienteNombre || client?.NOMBRE || '',
-      direccion: sesion.direccion || client?.DIRECCION_INSTALACION || '',
+      clienteNombre: sesion.clienteNombre || client?.nombre || '',
+      direccion: sesion.direccion || client?.direccion || '',
       tipo: 'Reparación',
       prioridad: 'Alta',
       estado: 'Programada',
@@ -379,9 +379,9 @@ export default function SoporteRemotoPage() {
     const client = clients.find(c => c.id === sesion.clienteId);
     addDerivacion({
       clienteId: sesion.clienteId,
-      clienteNombre: sesion.clienteNombre || client?.NOMBRE || '',
-      zona: client?.NODO || sesion.nodo || '',
-      tipo: 'Fibra Óptica',
+      clienteNombre: sesion.clienteNombre || client?.nombre || '',
+      zona: client?.nodo_router || sesion.nodo || '',
+      tipo: client?.tecnologia || 'Fibra Óptica',
       prioridad: 'Alta',
       estado: 'Pendiente',
       descripcion: `Derivado de Soporte Remoto (${sesion.id}). ${sesion.resultado || ''}`,

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X, Settings, Pencil, Trash2, DollarSign } from 'lucide-react';
 import useStore from '../../store/useStore';
 import CopyButton from '../common/CopyButton';
@@ -47,6 +47,15 @@ export default function PostVentaPage() {
   const [activeTab, setActiveTab] = useState('Todas');
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedPV, setSelectedPV] = useState(null);
+
+  useEffect(() => {
+    if (selectedPV) {
+      const updated = postVenta.find(a => a.id === selectedPV.id);
+      if (updated && updated !== selectedPV) {
+        setSelectedPV(updated);
+      }
+    }
+  }, [postVenta, selectedPV]);
 
   // --- New request form state ---
   const [clientSearch, setClientSearch] = useState('');

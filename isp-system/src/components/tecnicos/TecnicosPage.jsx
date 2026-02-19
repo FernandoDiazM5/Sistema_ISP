@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity } from 'lucide-react';
 import useStore from '../../store/useStore';
 
@@ -47,6 +47,16 @@ export default function TecnicosPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedTecnico, setSelectedTecnico] = useState(null);
+
+  useEffect(() => {
+    if (selectedTecnico) {
+      const updated = tecnicos.find(a => a.id === selectedTecnico.id);
+      if (updated && updated !== selectedTecnico) {
+        setSelectedTecnico(updated);
+      }
+    }
+  }, [tecnicos, selectedTecnico]);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [detailTab, setDetailTab] = useState('info');
 
@@ -70,10 +80,10 @@ export default function TecnicosPage() {
     if (!search) return tecnicos;
     const q = search.toLowerCase();
     return tecnicos.filter(t =>
-      t.nombre.toLowerCase().includes(q) ||
-      t.especialidad.toLowerCase().includes(q) ||
-      t.zona.toLowerCase().includes(q) ||
-      t.cargo.toLowerCase().includes(q)
+      (t.nombre && t.nombre.toLowerCase().includes(q)) ||
+      (t.especialidad && t.especialidad.toLowerCase().includes(q)) ||
+      (t.zona && t.zona.toLowerCase().includes(q)) ||
+      (t.cargo && t.cargo.toLowerCase().includes(q))
     );
   }, [tecnicos, search]);
 

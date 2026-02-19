@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Wifi, Cable, MapPin, Calendar, User, ChevronRight, X, Clock, CheckCircle2, AlertCircle, Loader2, Wrench, ArrowRight, FileText } from 'lucide-react';
 import useStore from '../../store/useStore';
 import CopyButton from '../common/CopyButton';
@@ -79,6 +79,16 @@ export default function InstalacionesPage() {
   const [filterTecnologia, setFilterTecnologia] = useState('all');
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedInstalacion, setSelectedInstalacion] = useState(null);
+
+  useEffect(() => {
+    if (selectedInstalacion) {
+      const updated = instalaciones.find(a => a.id === selectedInstalacion.id);
+      if (updated && updated !== selectedInstalacion) {
+        setSelectedInstalacion(updated);
+      }
+    }
+  }, [instalaciones, selectedInstalacion]);
+
   const [viewMode, setViewMode] = useState('pipeline');
 
   const [formData, setFormData] = useState({
@@ -147,12 +157,11 @@ export default function InstalacionesPage() {
   }, [derivaciones, selectedInstalacion]);
 
   const handleFormChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'tecnicoId') {
       const tec = tecnicos.find(t => t.id === value);
-      if (tec) {
-        setFormData(prev => ({ ...prev, tecnicoId: value, tecnicoNombre: tec.nombre }));
-      }
+      setFormData(prev => ({ ...prev, tecnicoId: value, tecnicoNombre: tec ? tec.nombre : '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
 

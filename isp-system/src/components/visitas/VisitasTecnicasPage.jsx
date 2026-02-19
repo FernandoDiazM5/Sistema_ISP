@@ -266,8 +266,8 @@ export default function VisitasTecnicasPage() {
     return visitas.filter(v => {
       const q = search.toLowerCase();
       const matchSearch = !search ||
-        v.clienteNombre.toLowerCase().includes(q) ||
-        v.id.toLowerCase().includes(q) ||
+        (v.clienteNombre && v.clienteNombre.toLowerCase().includes(q)) ||
+        (v.id && v.id.toLowerCase().includes(q)) ||
         (v.tecnicoNombre && v.tecnicoNombre.toLowerCase().includes(q)) ||
         (v.direccion && v.direccion.toLowerCase().includes(q));
       const matchEstado = filterEstado === 'all' || v.estado === filterEstado;
@@ -300,9 +300,9 @@ export default function VisitasTecnicasPage() {
     if (!formTicketSearch || formTicketSearch.length < 2) return [];
     const q = formTicketSearch.toLowerCase();
     return tickets.filter(t =>
-      t.id.toLowerCase().includes(q) ||
-      t.clienteNombre.toLowerCase().includes(q) ||
-      t.descripcion.toLowerCase().includes(q)
+      (t.id && t.id.toLowerCase().includes(q)) ||
+      (t.clienteNombre && t.clienteNombre.toLowerCase().includes(q)) ||
+      (t.descripcion && t.descripcion.toLowerCase().includes(q))
     ).slice(0, 8);
   }, [tickets, formTicketSearch]);
 
@@ -451,13 +451,13 @@ export default function VisitasTecnicasPage() {
     }
 
     updateVisita(selectedVisita.id, {
-      estado: 'Cancelada', // Podría ser 'Ausente' si se desea mantener ese estado
+      estado: 'Ausente',
       resultado: `Cliente Ausente: ${absentReason}`,
       evidenciaResultado: uploadedUrls,
       _historyEntry: {
         accion: 'Cliente Ausente',
         estadoAnterior: selectedVisita.estado,
-        estadoNuevo: 'Cancelada', // O 'Ausente'
+        estadoNuevo: 'Ausente',
         motivo: absentReason,
         adjuntos: absentAdjuntos,
         detalles: 'Se marcó al cliente como ausente en el domicilio'

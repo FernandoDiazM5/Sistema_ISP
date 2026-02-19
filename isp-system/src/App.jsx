@@ -40,6 +40,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const loadDemoData = useStore(s => s.loadDemoData);
   const clients = useStore(s => s.clients);
+  const dataSource = useStore(s => s.dataSource);
 
   const hydrateStore = useStore(s => s.hydrateStore);
   const storeReady = useStore(s => s.storeReady);
@@ -59,10 +60,10 @@ function AppContent() {
   }, [theme]);
 
   useEffect(() => {
-    if (storeReady && user && clients.length === 0) {
+    if (storeReady && user && clients.length === 0 && dataSource === 'demo') {
       loadDemoData();
     }
-  }, [storeReady, user, clients.length, loadDemoData]);
+  }, [storeReady, user, clients.length, dataSource, loadDemoData]);
 
   // Iniciar live sync cuando el store esta listo y el usuario autenticado
   useEffect(() => {

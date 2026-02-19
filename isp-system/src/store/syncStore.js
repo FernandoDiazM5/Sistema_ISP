@@ -22,6 +22,7 @@ function getDataSnapshot() {
         postVenta: s.postVenta,
         sesionesRemoto: s.sesionesRemoto,
         movimientosEquipos: s.movimientosEquipos,
+        requerimientos: s.requerimientos,
         whatsappLogs: s.whatsappLogs,
         templates: s.templates,
         columnPrefs: s.columnPrefs,
@@ -76,8 +77,9 @@ const useSyncStore = create((set, get) => ({
             const dataKeys = [
                 'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
                 'visitas', 'instalaciones', 'derivaciones', 'postVenta',
-                'sesionesRemoto', 'movimientosEquipos', 'whatsappLogs',
-                'templates', 'branding', 'customRolePermissions', 'whatsappCategories',
+                'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
+                'whatsappLogs', 'templates', 'branding', 'customRolePermissions',
+                'whatsappCategories',
             ];
             const changed = dataKeys.some(k => state[k] !== prevState[k]);
             if (changed) {

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Kanban, ArrowUpRight, ShieldAlert } from 'lucide-react';
+import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Kanban, ArrowUpRight, ShieldAlert, Search, Pencil } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
@@ -19,8 +19,10 @@ export default function AveriasPage() {
   const updateAveria = useStore(s => s.updateAveria);
 
   const [showForm, setShowForm] = useState(false);
+  const [editingAveria, setEditingAveria] = useState(null);
   const [selectedAveria, setSelectedAveria] = useState(null);
   const [filterEstado, setFilterEstado] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [newAdjuntos, setNewAdjuntos] = useState([]);
 
   // Resolution Modal State
@@ -38,32 +40,63 @@ export default function AveriasPage() {
   }, [averias, selectedAveria]);
 
   const filtered = useMemo(() => {
-    return filterEstado === 'all' ? averias : averias.filter(a => a.estado === filterEstado);
-  }, [averias, filterEstado]);
+    let list = filterEstado === 'all' ? averias : averias.filter(a => a.estado === filterEstado);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(a =>
+        (a.tipo || '').toLowerCase().includes(term) ||
+        (a.zona || '').toLowerCase().includes(term) ||
+        (a.nodo || '').toLowerCase().includes(term) ||
+        (a.descripcion || '').toLowerCase().includes(term) ||
+        (a.tecnicoAsignado || '').toLowerCase().includes(term) ||
+        (a.id || '').toLowerCase().includes(term)
+      );
+    }
+    return list;
+  }, [averias, filterEstado, searchTerm]);
 
   const stats = useMemo(() => ({
     activas: averias.filter(a => a.estado === 'Activa').length,
     enReparacion: averias.filter(a => a.estado === 'En reparación').length,
     resueltas: averias.filter(a => a.estado === 'Resuelta').length,
-    totalAfectados: averias.filter(a => a.estado !== 'Resuelta').reduce((s, a) => s + a.clientesAfectados, 0),
+    totalAfectados: averias.filter(a => a.estado !== 'Resuelta').reduce((s, a) => s + (a.clientesAfectados || 0), 0),
   }), [averias]);
 
-  const handleNewAveria = (e) => {
+  const openCreateForm = () => {
+    setEditingAveria(null);
+    setNewAdjuntos([]);
+    setShowForm(true);
+  };
+
+  const openEditForm = (averia) => {
+    setEditingAveria(averia);
+    setNewAdjuntos(averia.adjuntos || []);
+    setSelectedAveria(null);
+    setShowForm(true);
+  };
+
+  const handleSubmitAveria = (e) => {
     e.preventDefault();
     const form = new FormData(e.target);
-    addAveria({
+    const data = {
       tipo: form.get('tipo'),
       zona: form.get('zona'),
       nodo: form.get('nodo'),
       clientesAfectados: parseInt(form.get('afectados')) || 0,
-      estado: 'Activa',
       prioridad: form.get('prioridad'),
       reportadoPor: form.get('reportado'),
       tecnicoAsignado: form.get('tecnico'),
       descripcion: form.get('descripcion'),
       adjuntos: newAdjuntos,
-    });
+    };
+
+    if (editingAveria) {
+      updateAveria(editingAveria.id, { ...data, _historyComment: 'Avería editada manualmente' });
+    } else {
+      addAveria({ ...data, estado: 'Activa' });
+    }
     setShowForm(false);
+    setEditingAveria(null);
     setNewAdjuntos([]);
   };
 
@@ -101,7 +134,7 @@ export default function AveriasPage() {
           <h1 className="text-xl sm:text-[26px] font-bold tracking-tight">Averias e Incidencias</h1>
           <p className="text-text-secondary text-sm mt-1">Gestión de fallas de red e infraestructura</p>
         </div>
-        <button onClick={() => setShowForm(true)}
+        <button onClick={openCreateForm}
           className="py-2.5 px-4 rounded-xl bg-accent-red border-none text-white text-sm font-semibold cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 transition-opacity w-full sm:w-auto">
           <Plus size={16} /> Reportar Avería
         </button>
@@ -127,15 +160,27 @@ export default function AveriasPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 sm:gap-3 mb-5 flex-wrap">
-        {['all', 'Activa', 'En reparación', 'Coordinando', 'Resuelta'].map(e => (
-          <button key={e} onClick={() => setFilterEstado(e)}
-            className={`py-1.5 px-3 sm:px-4 rounded-lg text-[11px] sm:text-xs font-semibold border cursor-pointer transition-colors
-              ${filterEstado === e ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border text-text-secondary hover:border-accent-blue/50'}`}>
-            {e === 'all' ? 'Todas' : e}
-          </button>
-        ))}
+      {/* Search + Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1 max-w-sm">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Buscar por tipo, zona, nodo, técnico..."
+            className="w-full py-2 pl-9 pr-3 bg-bg-secondary border border-border text-text-primary rounded-lg text-xs outline-none focus:border-accent-blue placeholder:text-text-muted"
+          />
+        </div>
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
+          {['all', 'Activa', 'En reparación', 'Coordinando', 'Resuelta'].map(e => (
+            <button key={e} onClick={() => setFilterEstado(e)}
+              className={`py-1.5 px-3 sm:px-4 rounded-lg text-[11px] sm:text-xs font-semibold border cursor-pointer transition-colors
+                ${filterEstado === e ? 'bg-accent-blue/20 border-accent-blue text-accent-blue' : 'bg-bg-secondary border-border text-text-secondary hover:border-accent-blue/50'}`}>
+              {e === 'all' ? 'Todas' : e}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Averias List */}
@@ -182,13 +227,13 @@ export default function AveriasPage() {
         })}
       </div>
 
-      {/* Modal: Nueva Avería */}
+      {/* Modal: Nueva / Editar Avería */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowForm(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setShowForm(false); setEditingAveria(null); }}>
           <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[500px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold mb-4">Reportar Avería</h3>
-            <form onSubmit={handleNewAveria} className="flex flex-col gap-3">
-              <select name="tipo" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
+            <h3 className="text-lg font-bold mb-4">{editingAveria ? 'Editar Avería' : 'Reportar Avería'}</h3>
+            <form onSubmit={handleSubmitAveria} className="flex flex-col gap-3">
+              <select name="tipo" defaultValue={editingAveria?.tipo || 'Corte de fibra'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
                 <option value="Corte de fibra">Corte de fibra</option>
                 <option value="Caída de nodo">Caída de nodo</option>
                 <option value="Interferencia">Interferencia</option>
@@ -196,26 +241,28 @@ export default function AveriasPage() {
                 <option value="Daño de equipo">Daño de equipo</option>
                 <option value="Otra">Otra</option>
               </select>
-              <input name="zona" placeholder="Zona afectada (ej: PLANICIE 1)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="nodo" placeholder="Nodo/Torre afectado (ej: PLA1/ND2)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="afectados" type="number" placeholder="Clientes afectados (estimado)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <select name="prioridad" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
+              <input name="zona" defaultValue={editingAveria?.zona || ''} placeholder="Zona afectada (ej: PLANICIE 1)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <input name="nodo" defaultValue={editingAveria?.nodo || ''} placeholder="Nodo/Torre afectado (ej: PLA1/ND2)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <input name="afectados" defaultValue={editingAveria?.clientesAfectados || ''} type="number" placeholder="Clientes afectados (estimado)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <select name="prioridad" defaultValue={editingAveria?.prioridad || 'Crítica'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
                 <option value="Crítica">Crítica</option>
                 <option value="Alta">Alta</option>
                 <option value="Media">Media</option>
               </select>
-              <input name="reportado" placeholder="Reportado por" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="tecnico" placeholder="Técnico asignado" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <textarea name="descripcion" placeholder="Descripción de la avería..."
+              <input name="reportado" defaultValue={editingAveria?.reportadoPor || ''} placeholder="Reportado por" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <input name="tecnico" defaultValue={editingAveria?.tecnicoAsignado || ''} placeholder="Técnico asignado" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <textarea name="descripcion" defaultValue={editingAveria?.descripcion || ''} placeholder="Descripción de la avería..."
                 className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full" required />
 
               <Adjuntos value={newAdjuntos} onChange={setNewAdjuntos} max={5} />
 
               <div className="flex gap-3 mt-2">
-                <button type="button" onClick={() => setShowForm(false)}
+                <button type="button" onClick={() => { setShowForm(false); setEditingAveria(null); }}
                   className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:text-text-primary transition-colors">Cancelar</button>
                 <button type="submit"
-                  className="flex-1 py-2.5 rounded-lg bg-accent-red border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity">Reportar</button>
+                  className="flex-1 py-2.5 rounded-lg bg-accent-red border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity">
+                  {editingAveria ? 'Guardar Cambios' : 'Reportar'}
+                </button>
               </div>
             </form>
           </div>
@@ -261,7 +308,7 @@ export default function AveriasPage() {
                 <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1 flex items-center gap-1">
                   <Users size={10} /> Clientes Afectados
                 </p>
-                <p className="text-sm font-bold text-accent-red">{selectedAveria.clientesAfectados}</p>
+                <p className="text-sm font-bold text-accent-red">{selectedAveria.clientesAfectados || 0}</p>
               </div>
               <div className="bg-bg-secondary rounded-lg p-3">
                 <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1 flex items-center gap-1">
@@ -277,6 +324,24 @@ export default function AveriasPage() {
                 </p>
                 <p className="text-sm font-medium">{selectedAveria.fecha}</p>
               </div>
+              {selectedAveria.tecnicoAsignado && (
+                <div className="bg-bg-secondary rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Técnico Asignado</p>
+                  <p className="text-sm font-medium">{selectedAveria.tecnicoAsignado}</p>
+                </div>
+              )}
+              {selectedAveria.reportadoPor && (
+                <div className="bg-bg-secondary rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Reportado Por</p>
+                  <p className="text-sm font-medium">{selectedAveria.reportadoPor}</p>
+                </div>
+              )}
+              {selectedAveria.fechaResolucion && (
+                <div className="bg-bg-secondary rounded-lg p-3">
+                  <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Fecha Resolución</p>
+                  <p className="text-sm font-medium text-accent-green">{selectedAveria.fechaResolucion}</p>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -291,6 +356,29 @@ export default function AveriasPage() {
                 </div>
               )}
             </div>
+
+            {/* Resolución (si fue resuelta) */}
+            {selectedAveria.solucion && (
+              <div className="mb-5 bg-accent-green/5 border border-accent-green/20 rounded-lg p-3">
+                <p className="text-xs text-accent-green font-bold mb-2 uppercase tracking-wide">Informe de Resolución</p>
+                <div className="text-sm text-text-primary leading-relaxed mb-2">{selectedAveria.solucion}</div>
+                {selectedAveria.accionesRealizadas && selectedAveria.accionesRealizadas.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wide mb-1">Acciones Realizadas</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedAveria.accionesRealizadas.map((a, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-full bg-accent-green/10 text-accent-green text-[10px] font-medium">{a}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedAveria.adjuntosResolucion && selectedAveria.adjuntosResolucion.length > 0 && (
+                  <div className="mt-3">
+                    <Adjuntos value={selectedAveria.adjuntosResolucion} onChange={() => {}} readOnly max={5} />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Historial (Process Route) */}
             {selectedAveria.historial && selectedAveria.historial.length > 0 && (
@@ -344,7 +432,7 @@ export default function AveriasPage() {
             {/* Actions */}
             <div className="border-t border-border mt-5 pt-4">
               <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Acciones</p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {selectedAveria.estado === 'Activa' && (
                   <button
                     onClick={() => handleStatusChange(selectedAveria.id, 'En reparación')}
@@ -391,6 +479,14 @@ export default function AveriasPage() {
                     className="flex-1 py-2.5 rounded-lg bg-accent-red/20 text-accent-red border-none text-xs font-bold cursor-pointer hover:bg-accent-red/30 transition-colors"
                   >
                     Reabrir Avería
+                  </button>
+                )}
+                {selectedAveria.estado !== 'Resuelta' && (
+                  <button
+                    onClick={() => openEditForm(selectedAveria)}
+                    className="py-2.5 px-4 rounded-lg bg-accent-blue/20 text-accent-blue border-none text-xs font-bold cursor-pointer hover:bg-accent-blue/30 transition-colors flex items-center gap-1"
+                  >
+                    <Pencil size={12} /> Editar
                   </button>
                 )}
                 <button

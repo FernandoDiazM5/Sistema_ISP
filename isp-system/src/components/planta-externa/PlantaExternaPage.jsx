@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Cable, Wifi, MapPin, AlertTriangle, CheckCircle2, Clock, Wrench, X } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
@@ -53,6 +53,16 @@ export default function PlantaExternaPage() {
   const [filterPrioridad, setFilterPrioridad] = useState('all');
   const [showForm, setShowForm] = useState(false);
   const [selectedDerivacion, setSelectedDerivacion] = useState(null);
+
+  useEffect(() => {
+    if (selectedDerivacion) {
+      const updated = derivaciones.find(a => a.id === selectedDerivacion.id);
+      if (updated && updated !== selectedDerivacion) {
+        setSelectedDerivacion(updated);
+      }
+    }
+  }, [derivaciones, selectedDerivacion]);
+
   const [formInstSearch, setFormInstSearch] = useState('');
   const [showFormInstDropdown, setShowFormInstDropdown] = useState(false);
   const [formInstalacionId, setFormInstalacionId] = useState('');
@@ -94,10 +104,11 @@ export default function PlantaExternaPage() {
       const q = search.toLowerCase();
       const matchSearch = !search ||
         d.id.toLowerCase().includes(q) ||
-        d.tipo.toLowerCase().includes(q) ||
-        d.zona.toLowerCase().includes(q) ||
-        d.direccion.toLowerCase().includes(q) ||
-        d.tecnicoNombre.toLowerCase().includes(q) ||
+        (d.tipo && d.tipo.toLowerCase().includes(q)) ||
+        (d.zona && d.zona.toLowerCase().includes(q)) ||
+        (d.direccion && d.direccion.toLowerCase().includes(q)) ||
+        (d.clienteNombre && d.clienteNombre.toLowerCase().includes(q)) ||
+        (d.tecnicoNombre && d.tecnicoNombre.toLowerCase().includes(q)) ||
         (d.material && d.material.toLowerCase().includes(q));
 
       let matchTipo = true;
@@ -363,7 +374,7 @@ export default function PlantaExternaPage() {
 
               <div className="flex items-center gap-1.5 text-xs text-text-secondary mb-2">
                 <MapPin size={12} className="text-text-muted" />
-                <span>{d.zona} - {d.direccion}</span>
+                <span>{d.zona}{d.direccion ? ` - ${d.direccion}` : ''}</span>
               </div>
 
               <div className="flex items-center gap-4 text-[11px] text-text-muted flex-wrap">
@@ -802,6 +813,22 @@ export default function PlantaExternaPage() {
                       Reprogramar
                     </button>
                   )}
+                  <button
+                    onClick={() => handleStatusChange(selectedDerivacion.id, 'Cancelada')}
+                    className="py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-muted text-xs cursor-pointer hover:text-text-secondary"
+                  >
+                    Cancelar
+                  </button>
+                </>
+              )}
+              {selectedDerivacion.estado === 'Reprogramada' && (
+                <>
+                  <button
+                    onClick={() => handleStatusChange(selectedDerivacion.id, 'En progreso')}
+                    className="flex-1 py-2.5 rounded-lg bg-accent-blue/20 text-accent-blue border-none text-xs font-semibold cursor-pointer hover:bg-accent-blue/30"
+                  >
+                    Retomar En Progreso
+                  </button>
                   <button
                     onClick={() => handleStatusChange(selectedDerivacion.id, 'Cancelada')}
                     className="py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-muted text-xs cursor-pointer hover:text-text-secondary"

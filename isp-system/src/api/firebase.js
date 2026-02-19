@@ -1,8 +1,21 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs, writeBatch, deleteDoc, onSnapshot } from 'firebase/firestore';
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    collection,
+    getDocs,
+    writeBatch,
+    deleteDoc,
+    onSnapshot,
+    enableIndexedDbPersistence,
+    initializeFirestore,
+    CACHE_SIZE_UNLIMITED
+} from 'firebase/firestore';
 import { CONFIG } from '../utils/constants';
 
-// Obtener configuración de Firebase desde CONFIG (usa getters lazy)
+// Obtener configuración de Firebase desde CONFIG
 const getConfig = () => CONFIG.FIREBASE;
 
 let db = null;
@@ -18,8 +31,21 @@ export const initFirebase = () => {
     if (!app) {
         try {
             app = initializeApp(config);
-            db = getFirestore(app);
-            console.log('Firebase initialized');
+            // Inicializar Firestore con persistencia y caché ilimitada
+            db = initializeFirestore(app, {
+                cacheSizeBytes: CACHE_SIZE_UNLIMITED
+            });
+
+            // Habilitar persistencia offline
+            enableIndexedDbPersistence(db).catch((err) => {
+                if (err.code == 'failed-precondition') {
+                    console.warn('Persistencia falló: Multiples pestañas abiertas.');
+                } else if (err.code == 'unimplemented') {
+                    console.warn('Persistencia no soportada por el navegador.');
+                }
+            });
+
+            console.log('Firebase initialized with persistence');
         } catch (e) {
             console.error('Error initializing Firebase', e);
         }
@@ -27,12 +53,177 @@ export const initFirebase = () => {
     return db;
 };
 
-// Exportar la instancia de app para que otros módulos (Auth, etc.) la reutilicen
 export const getFirebaseApp = () => {
     if (!app) {
         initFirebase();
     }
     return app;
+};
+
+// ===================== EXPORTED UTILS =====================
+
+/**
+ * Guarda un documento en una colección específica
+ * @param {string} collectionName 
+ * @param {object} data - Debe incluir 'id' si es posible
+ * @returns {Promise<boolean>}
+ */
+export const saveDocument = async (collectionName, data) => {
+    const database = initFirebase();
+    if (!database) return false;
+
+    try {
+        const docId = data.id || doc(collection(database, collectionName)).id;
+        const finalData = { ...data, updatedAt: new Date().toISOString() };
+        if (!finalData.id) finalData.id = docId;
+
+        await setDoc(doc(database, collectionName, docId), finalData, { merge: true });
+        return true;
+    } catch (error) {
+        console.error(`Error saving document to ${collectionName}:`, error);
+        return false;
+    }
+};
+
+/**
+ * Guarda multiples documentos en batch
+ * @param {string} collectionName 
+ * @param {Array} items 
+ */
+export const saveBatchDocuments = async (collectionName, items) => {
+    const database = initFirebase();
+    if (!database) return false;
+
+    const BATCH_SIZE = 450;
+    try {
+        for (let i = 0; i < items.length; i += BATCH_SIZE) {
+            const batch = writeBatch(database);
+            const chunk = items.slice(i, i + BATCH_SIZE);
+
+            chunk.forEach(item => {
+                const docRef = doc(database, collectionName, item.id);
+                batch.set(docRef, { ...item, updatedAt: new Date().toISOString() }, { merge: true });
+            });
+
+            await batch.commit();
+        }
+        return true;
+    } catch (error) {
+        console.error(`Error saving batch to ${collectionName}:`, error);
+        return false;
+    }
+};
+
+/**
+ * Escucha cambios en tiempo real en una colección
+ * @param {string} collectionName 
+ * @param {function} callback 
+ * @returns {function} unsubscribe
+ */
+export const subscribeToCollection = (collectionName, callback) => {
+    const database = initFirebase();
+    if (!database) return () => { };
+
+    // TODO: Add support for queries/filters if needed
+    const q = collection(database, collectionName);
+
+    return onSnapshot(q, (snapshot) => {
+        const items = [];
+        snapshot.forEach(doc => {
+            items.push({ id: doc.id, ...doc.data() });
+        });
+        callback(items);
+    }, (error) => {
+        console.error(`Error listening to ${collectionName}:`, error);
+    });
+};
+
+/**
+ * Elimina un documento
+ */
+export const deleteDocument = async (collectionName, docId) => {
+    const database = initFirebase();
+    if (!database) return false;
+
+    try {
+        await deleteDoc(doc(database, collectionName, docId));
+        return true;
+    } catch (error) {
+        console.error(`Error deleting from ${collectionName}:`, error);
+        return false;
+    }
+};
+
+// ===================== MIGRATION HELPERS (LEGACY SUPPORT) =====================
+
+// ===================== MIGRATION HELPERS (LEGACY SUPPORT) =====================
+
+/**
+ * Migra datos de chunks a colecciones
+ * @param {object} legacyData 
+ */
+export const migrateDataToCollections = async (legacyData) => {
+    const database = initFirebase();
+    if (!database) return false;
+
+    console.log('Iniciando migración de datos...');
+    const COLLECTIONS = [
+        'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+        'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+        'movimientosEquipos', 'whatsappLogs', 'templates'
+    ];
+
+    try {
+        const batchSize = 450;
+        let batch = writeBatch(database);
+        let operationCount = 0;
+
+        for (const colName of COLLECTIONS) {
+            const items = legacyData[colName] || [];
+            console.log(`Migrando ${items.length} items de ${colName}...`);
+
+            for (const item of items) {
+                if (!item.id) continue;
+
+                const docRef = doc(database, colName, item.id);
+                // Asegurar que tengan createdAt/updatedAt
+                const dataToSave = {
+                    ...item,
+                    updatedAt: new Date().toISOString()
+                };
+                if (!dataToSave.createdAt) dataToSave.createdAt = new Date().toISOString();
+
+                batch.set(docRef, dataToSave, { merge: true });
+                operationCount++;
+
+                if (operationCount >= batchSize) {
+                    await batch.commit();
+                    batch = writeBatch(database);
+                    operationCount = 0;
+                }
+            }
+        }
+
+        if (operationCount > 0) {
+            await batch.commit();
+        }
+
+        // Migrar Configuración
+        await setDoc(doc(database, 'config', 'app_settings'), {
+            columnPrefs: legacyData.columnPrefs || {},
+            cleaningOptions: legacyData.cleaningOptions || {},
+            importHistory: legacyData.importHistory || [],
+            branding: legacyData.branding || {},
+            customRolePermissions: legacyData.customRolePermissions || null,
+            whatsappCategories: legacyData.whatsappCategories || [],
+        }, { merge: true });
+
+        console.log('Migración completada exitosamente.');
+        return true;
+    } catch (error) {
+        console.error('Error during migration:', error);
+        return false;
+    }
 };
 
 // ===================== HELPERS =====================
@@ -103,7 +294,7 @@ export const pushToCloud = async (data, onProgress = () => { }) => {
     const COLLECTION_NAMES = [
         'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-        'movimientosEquipos', 'whatsappLogs', 'templates',
+        'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
     ];
 
     const MAX_DOC_BYTES = 800000; // 800KB safe limit (Firestore max 1MB)
@@ -209,7 +400,7 @@ export const pullBackupVersion = async (versionId) => {
     const COLLECTION_NAMES = [
         'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-        'movimientosEquipos', 'whatsappLogs', 'templates',
+        'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
     ];
 
     const collectionsData = {};
@@ -250,6 +441,7 @@ export const pullBackupVersion = async (versionId) => {
         postVenta: collectionsData.postVenta || [],
         sesionesRemoto: collectionsData.sesionesRemoto || [],
         movimientosEquipos: collectionsData.movimientosEquipos || [],
+        requerimientos: collectionsData.requerimientos || [],
         whatsappLogs: collectionsData.whatsappLogs || [],
         templates: collectionsData.templates || [],
         columnPrefs: configData.columnPrefs,
@@ -409,7 +601,7 @@ let liveUnsubscribe = null;
 
 export const subscribeLiveUpdates = (callback) => {
     const database = initFirebase();
-    if (!database) return () => {};
+    if (!database) return () => { };
 
     // Cancelar suscripcion anterior si existe
     if (liveUnsubscribe) {

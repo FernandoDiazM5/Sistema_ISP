@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, FileText, Clock, CheckCircle2, AlertCircle, X, Pencil, Trash2, ArrowRight, Settings } from 'lucide-react';
 import useStore from '../../store/useStore';
 
@@ -34,6 +34,16 @@ export default function RequerimientosPage() {
     const [filterTipo, setFilterTipo] = useState('all');
     const [showForm, setShowForm] = useState(false);
     const [selectedReq, setSelectedReq] = useState(null);
+
+    useEffect(() => {
+        if (selectedReq) {
+            const updated = requerimientos.find(a => a.id === selectedReq.id);
+            if (updated && updated !== selectedReq) {
+                setSelectedReq(updated);
+            }
+        }
+    }, [requerimientos, selectedReq]);
+
     const [showTiposModal, setShowTiposModal] = useState(false);
     const [tipoForm, setTipoForm] = useState({ nombre: '', categoria: 'General' });
     const [editingTipoId, setEditingTipoId] = useState(null);

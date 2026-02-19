@@ -89,7 +89,7 @@ export default function Sidebar({ isOpen, onClose }) {
     });
   };
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="w-64 h-full bg-bg-sidebar border-r border-border flex flex-col py-5 px-3 shadow-2xl lg:shadow-none">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-2 mb-8">
@@ -179,7 +179,7 @@ export default function Sidebar({ isOpen, onClose }) {
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:z-0
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <SidebarContent />
+        {sidebarContent}
       </div>
     </>
   );

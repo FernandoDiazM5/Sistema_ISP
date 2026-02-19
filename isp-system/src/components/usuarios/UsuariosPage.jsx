@@ -10,10 +10,10 @@ const ESTADO_COLORS = {
 };
 
 const ROLE_COLORS = {
-  [ROLES.SUPER_ADMIN]: 'purple',
-  [ROLES.ADMIN]: 'blue',
-  [ROLES.TECNICO]: 'green',
-  [ROLES.VIEWER]: 'gray',
+  [ROLES.SUPER_ADMIN]: { badge: 'bg-purple-500/15 text-purple-500', border: 'border-purple-500 bg-purple-500/10', text: 'text-purple-500' },
+  [ROLES.ADMIN]: { badge: 'bg-blue-500/15 text-blue-500', border: 'border-blue-500 bg-blue-500/10', text: 'text-blue-500' },
+  [ROLES.TECNICO]: { badge: 'bg-green-500/15 text-green-500', border: 'border-green-500 bg-green-500/10', text: 'text-green-500' },
+  [ROLES.VIEWER]: { badge: 'bg-gray-500/15 text-gray-500', border: 'border-gray-500 bg-gray-500/10', text: 'text-gray-500' },
 };
 
 const PERMISSION_LEVEL_LABELS = {
@@ -428,7 +428,7 @@ export default function UsuariosPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-${ROLE_COLORS[user.rol]}-500/15 text-${ROLE_COLORS[user.rol]}-500`}>
+                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${ROLE_COLORS[user.rol]?.badge || 'bg-gray-500/15 text-gray-500'}`}>
                           {user.rol === ROLES.SUPER_ADMIN && <Crown className="w-4 h-4" />}
                           {user.rol === ROLES.ADMIN && <Shield className="w-4 h-4" />}
                           <span className="text-sm font-medium">{roleInfo?.label}</span>
@@ -679,8 +679,8 @@ export default function UsuariosPage() {
                         key={rol}
                         className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           form.rol === rol
-                            ? `border-${ROLE_COLORS[rol]}-500 bg-${ROLE_COLORS[rol]}-500/10`
-                            : 'border-dark-border hover:border-gray-500'
+                            ? (ROLE_COLORS[rol]?.border || 'border-gray-500 bg-gray-500/10')
+                            : 'border-border hover:border-text-muted'
                         }`}
                       >
                         <input
@@ -692,12 +692,12 @@ export default function UsuariosPage() {
                           className="hidden"
                         />
                         <div className="flex-1">
-                          <div className={`font-medium text-${ROLE_COLORS[rol]}-500`}>
+                          <div className={`font-medium ${ROLE_COLORS[rol]?.text || 'text-gray-500'}`}>
                             {info.label}
                           </div>
-                          <div className="text-sm text-gray-400">{info.desc}</div>
+                          <div className="text-sm text-text-muted">{info.desc}</div>
                         </div>
-                        {form.rol === rol && <CheckCircle2 className={`w-5 h-5 text-${ROLE_COLORS[rol]}-500`} />}
+                        {form.rol === rol && <CheckCircle2 className={`w-5 h-5 ${ROLE_COLORS[rol]?.text || 'text-gray-500'}`} />}
                       </label>
                     );
                   })}

@@ -126,7 +126,7 @@ export default function TicketCreateModal({ onClose, onSuccess, initialData = nu
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                     <button onClick={() => { setSelectedClient(null); setClientSearch(''); }} className="text-xs text-accent-red hover:underline border-none bg-transparent cursor-pointer">Cambiar</button>
-                                    <button type="button" onClick={() => window.open(`/?page=clientes&search=${selectedClient.id}`, '_blank')} className="text-xs text-accent-blue hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer">
+                                    <button type="button" onClick={() => window.open(`/clientes/${selectedClient.id}`, '_blank')} className="text-xs text-accent-blue hover:underline flex items-center gap-1 border-none bg-transparent cursor-pointer">
                                         <ExternalLink size={12} /> Ver Perfil
                                     </button>
                                 </div>

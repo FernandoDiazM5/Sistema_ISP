@@ -79,7 +79,17 @@ export default function EquiposPage() {
   const handleSave = () => {
     if (!form.tipo || !form.serial) return;
     if (editingId) {
-      updateEquipo(editingId, { ...form, fechaAsignacion: form.estado === 'En uso' ? new Date().toISOString().split('T')[0] : null });
+      const existing = equipos.find(e => e.id === editingId);
+      const updates = { ...form };
+      // Solo actualizar fechaAsignacion si cambió a 'En uso' desde otro estado
+      if (form.estado === 'En uso' && existing?.estado !== 'En uso') {
+        updates.fechaAsignacion = new Date().toISOString().split('T')[0];
+      } else if (form.estado !== 'En uso') {
+        updates.fechaAsignacion = null;
+        updates.clienteId = '';
+        updates.clienteNombre = '';
+      }
+      updateEquipo(editingId, updates);
     } else {
       addEquipo({ ...form, fechaAsignacion: form.estado === 'En uso' ? new Date().toISOString().split('T')[0] : null });
     }

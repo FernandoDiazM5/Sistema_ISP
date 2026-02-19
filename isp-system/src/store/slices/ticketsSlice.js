@@ -24,7 +24,7 @@ export const createTicketsSlice = (set, get) => ({
     tickets: [],
 
     addTicket: (ticket) => set(s => {
-        const newTickets = [{ ...ticket, id: getNextId(s.tickets, 'TK'), fecha: new Date().toISOString().split('T')[0], fechaUpdate: new Date().toISOString().split('T')[0] }, ...s.tickets];
+        const newTickets = [{ ...ticket, id: getNextId(s.tickets, 'TK'), fecha: new Date().toISOString().split('T')[0], fechaUpdate: new Date().toISOString().split('T')[0], historial: [] }, ...s.tickets];
         saveToDB('isp_tickets', newTickets);
         return { tickets: newTickets };
     }),
@@ -79,7 +79,7 @@ export const createTicketsSlice = (set, get) => ({
     averias: [],
 
     addAveria: (averia) => set(s => {
-        const newAverias = [{ ...averia, id: getNextId(s.averias, 'AV'), fecha: new Date().toISOString().split('T')[0], fechaResolucion: null }, ...s.averias];
+        const newAverias = [{ ...averia, id: getNextId(s.averias, 'AV'), fecha: new Date().toISOString().split('T')[0], fechaResolucion: null, historial: [] }, ...s.averias];
         saveToDB('isp_averias', newAverias);
         return { averias: newAverias };
     }),

@@ -5,7 +5,8 @@
       "Bash(tee:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(wc:*)"
     ]
   }
 }

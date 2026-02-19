@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { DEMO_RAW_DATA } from '../utils/constants';
-import { transformClientData } from '../api/dataTransformer';
-import * as db from '../utils/db';
+import { subscribeToCollection, saveDocument, deleteDocument, migrateDataToCollections } from '../api/firebase';
+import * as db from '../utils/db'; // Legacy DB access for migration
 
 // ===================== SLICE IMPORTS =====================
 import { createClientsSlice } from './slices/clientsSlice';
@@ -10,18 +9,6 @@ import { createOperationsSlice } from './slices/operationsSlice';
 import { createUISlice } from './slices/uiSlice';
 import { createAuthSlice } from './slices/authSlice';
 import { createUsersSlice } from './slices/usersSlice';
-
-// ===================== HELPERS =====================
-async function saveToDB(key, data) {
-  try {
-    await db.set(key, data);
-  } catch (e) {
-    console.error(`Error saving to DB (${key}):`, e);
-  }
-}
-
-// ===================== DEMO DATA =====================
-import { getSeedData } from '../utils/seedData';
 
 // ===================== CATÁLOGOS (solo lectura) =====================
 const CATEGORIAS = [
@@ -115,6 +102,7 @@ const TIPOS_REQUERIMIENTO = [
 // ===================== STORE COMPOSITION =====================
 const useStore = create((set, get) => ({
   storeReady: false,
+  isMigrating: false,
 
   // ===================== COMPOSE SLICES =====================
   ...createClientsSlice(set, get),
@@ -124,83 +112,89 @@ const useStore = create((set, get) => ({
   ...createAuthSlice(set, get),
   ...createUsersSlice(set, get),
 
-  // ===================== HYDRATION & MIGRATION =====================
+  // ===================== INITIALIZATION =====================
   hydrateStore: async () => {
     try {
-      const dbKeys = await db.keys();
+      // 1. Verificar si necesitamos migrar datos legacy
+      const legacyKeys = await db.keys();
+      const hasLegacyData = legacyKeys.some(k => k.startsWith('isp_'));
+      const migrationDone = localStorage.getItem('migration_v1_done');
 
-      if (dbKeys.length === 0) {
-        // Migración silenciosa desde localStorage si IndexedDB está vacía
-        const lsMigrationKeys = [
-          'isp_clients', 'isp_dataSource', 'isp_col_prefs', 'isp_lastImport',
-          'isp_importHistory', 'isp_cleaningOptions', 'isp_templates',
-          'isp_whatsappLogs', 'isp_whatsappCategories', 'isp_branding', 'isp_customRolePermissions', 'isp_tecnicos', 'isp_tickets', 'isp_averias',
-          'isp_equipos', 'isp_sesionesRemoto', 'isp_visitas',
-          'isp_instalaciones', 'isp_derivaciones', 'isp_postVenta',
-          'isp_movimientosEquipos'
-        ];
+      if (hasLegacyData && !migrationDone) {
+        set({ isMigrating: true });
+        console.log("Detectados datos legacy. Iniciando migración...");
 
-        const entries = [];
-        lsMigrationKeys.forEach(key => {
-          const val = localStorage.getItem(key);
-          if (val) {
-            try {
-              entries.push([key, JSON.parse(val)]);
-            } catch (e) {
-              // Ignorar errores de parseo en migración
-            }
+        // Cargar todo desde IndexedDB
+        const legacyData = {};
+        for (const key of legacyKeys) {
+          if (key.startsWith('isp_')) {
+            const val = await db.get(key);
+            legacyData[key.replace('isp_', '')] = val;
           }
-        });
-
-        if (entries.length > 0) {
-          await db.setMany(entries);
         }
+
+        // Ejecutar migración
+        const success = await migrateDataToCollections(legacyData);
+        if (success) {
+          localStorage.setItem('migration_v1_done', 'true');
+          // Opcional: Limpiar IndexedDB viejo
+          // await db.clear(); 
+          console.log("Migración finalizada.");
+        } else {
+          console.error("Falló la migración.");
+        }
+        set({ isMigrating: false });
       }
 
-      const currentKeys = await db.keys();
-      const loadedState = {};
-
+      // 2. Suscribirse a colecciones en tiempo real
+      // Esto poblará el store automáticamente desde la caché local o la nube
+      // Hidratar desde IndexedDB primero (datos locales rápidos)
       const keyMap = {
-        'isp_clients': 'clients',
-        'isp_dataSource': 'dataSource',
-        'isp_col_prefs': 'columnPrefs',
-        'isp_lastImport': 'lastImport',
-        'isp_importHistory': 'importHistory',
-        'isp_cleaningOptions': 'cleaningOptions',
-        'isp_templates': 'templates',
-        'isp_whatsappLogs': 'whatsappLogs',
-        'isp_whatsappCategories': 'whatsappCategories',
-        'isp_branding': 'branding',
-        'isp_customRolePermissions': 'customRolePermissions',
-        'isp_tecnicos': 'tecnicos',
-        'isp_tickets': 'tickets',
-        'isp_averias': 'averias',
-        'isp_equipos': 'equipos',
-        'isp_sesionesRemoto': 'sesionesRemoto',
-        'isp_visitas': 'visitas',
-        'isp_instalaciones': 'instalaciones',
-        'isp_derivaciones': 'derivaciones',
-        'isp_postVenta': 'postVenta',
-        'isp_movimientosEquipos': 'movimientosEquipos',
-        'isp_catalogoServicios': 'catalogoServicios',
-        'isp_requerimientos': 'requerimientos',
-        'isp_tiposRequerimiento': 'tiposRequerimiento',
-        'isp_theme': 'theme'
+        isp_clients: 'clients',
+        isp_tickets: 'tickets',
+        isp_averias: 'averias',
+        isp_equipos: 'equipos',
+        isp_visitas: 'visitas',
+        isp_instalaciones: 'instalaciones',
+        isp_derivaciones: 'derivaciones',
+        isp_postVenta: 'postVenta',
+        isp_sesionesRemoto: 'sesionesRemoto',
+        isp_movimientosEquipos: 'movimientosEquipos',
+        isp_whatsappLogs: 'whatsappLogs',
+        isp_templates: 'templates',
+        isp_requerimientos: 'requerimientos',
+        isp_col_prefs: 'columnPrefs',
+        isp_cleaningOptions: 'cleaningOptions',
+        isp_importHistory: 'importHistory',
+        isp_branding: 'branding',
+        isp_customRolePermissions: 'customRolePermissions',
+        isp_whatsappCategories: 'whatsappCategories',
+        isp_theme: 'theme',
       };
 
-      for (const dbKey of currentKeys) {
-        if (keyMap[dbKey]) {
+      const updates = {};
+      for (const [dbKey, stateKey] of Object.entries(keyMap)) {
+        try {
           const val = await db.get(dbKey);
           if (val !== undefined && val !== null) {
-            loadedState[keyMap[dbKey]] = val;
+            updates[stateKey] = val;
           }
-        }
+        } catch (e) { /* ignore missing keys */ }
+      }
+      if (Object.keys(updates).length > 0) {
+        set(updates);
       }
 
-      set({ ...loadedState, storeReady: true });
+      // Aplicar tema si fue cargado
+      if (updates.theme && updates.theme !== 'default') {
+        document.documentElement.setAttribute('data-theme', updates.theme);
+      }
 
-      // Auto-load settings from Firebase (non-blocking)
+      // Cargar settings de Firebase (no bloqueante)
       get().loadSettingsFromCloud?.();
+
+      // Marca la tienda como lista
+      set({ storeReady: true });
 
     } catch (e) {
       console.error("Error durante hydrateStore:", e);
@@ -208,21 +202,11 @@ const useStore = create((set, get) => ({
     }
   },
 
-  // ===================== DEMO DATA =====================
-  loadDemoData: async () => {
-    const seed = getSeedData(transformClientData);
-    set({ dataSource: 'demo', ...seed });
-
-    for (const [key, val] of Object.entries(seed)) {
-      await saveToDB(`isp_${key}`, val);
-    }
-    await saveToDB('isp_dataSource', 'demo');
-  },
-
-  // ===================== TÉCNICOS =====================
+  // ===================== TÉCNICOS (Wrapper para Firestore) =====================
   tecnicos: [],
 
-  addTecnico: (tecnico) => set(s => {
+  addTecnico: (tecnico) => {
+    const s = get();
     const getNextId = (col, prefix) => {
       if (!col || col.length === 0) return `${prefix}-001`;
       const maxId = col.reduce((max, item) => {
@@ -233,22 +217,71 @@ const useStore = create((set, get) => ({
       return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
     };
     const newId = getNextId(s.tecnicos, 'TEC');
-    const newTecnicos = [{ ...tecnico, id: newId }, ...s.tecnicos];
-    saveToDB('isp_tecnicos', newTecnicos);
-    return { tecnicos: newTecnicos };
-  }),
+    const newTecnico = { ...tecnico, id: newId };
 
-  updateTecnico: (id, updates) => set(s => {
-    const newTecnicos = s.tecnicos.map(t => t.id === id ? { ...t, ...updates } : t);
-    saveToDB('isp_tecnicos', newTecnicos);
-    return { tecnicos: newTecnicos };
-  }),
+    // Actualización optimista local
+    set(state => ({ tecnicos: [newTecnico, ...state.tecnicos] }));
+    // Persistencia
+    saveDocument('tecnicos', newTecnico);
+  },
 
-  deleteTecnico: (id) => set(s => {
-    const newTecnicos = s.tecnicos.filter(t => t.id !== id);
-    saveToDB('isp_tecnicos', newTecnicos);
-    return { tecnicos: newTecnicos };
-  }),
+  updateTecnico: (id, updates) => {
+    set(s => ({
+      tecnicos: s.tecnicos.map(t => t.id === id ? { ...t, ...updates } : t)
+    }));
+    saveDocument('tecnicos', { id, ...updates });
+  },
+
+  deleteTecnico: (id) => {
+    set(s => ({ tecnicos: s.tecnicos.filter(t => t.id !== id) }));
+    deleteDocument('tecnicos', id);
+  },
+
+  // ===================== RESTORE SYSTEM (para backups y live sync) =====================
+  restoreSystem: (data) => {
+    const keysToRestore = [
+      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+      'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
+      'columnPrefs', 'cleaningOptions', 'importHistory',
+      'branding', 'customRolePermissions', 'whatsappCategories',
+    ];
+    const updates = {};
+    for (const key of keysToRestore) {
+      if (data[key] !== undefined) {
+        updates[key] = data[key];
+      }
+    }
+    if (Object.keys(updates).length > 0) {
+      set(updates);
+      // Persistir localmente en IndexedDB
+      const dbKeyMap = {
+        clients: 'isp_clients', tickets: 'isp_tickets', averias: 'isp_averias',
+        equipos: 'isp_equipos', visitas: 'isp_visitas', instalaciones: 'isp_instalaciones',
+        derivaciones: 'isp_derivaciones', postVenta: 'isp_postVenta',
+        sesionesRemoto: 'isp_sesionesRemoto', movimientosEquipos: 'isp_movimientosEquipos',
+        whatsappLogs: 'isp_whatsappLogs', templates: 'isp_templates',
+        requerimientos: 'isp_requerimientos', columnPrefs: 'isp_col_prefs',
+        cleaningOptions: 'isp_cleaningOptions', importHistory: 'isp_importHistory',
+        branding: 'isp_branding', customRolePermissions: 'isp_customRolePermissions',
+        whatsappCategories: 'isp_whatsappCategories',
+      };
+      for (const [stateKey, dbKey] of Object.entries(dbKeyMap)) {
+        if (updates[stateKey] !== undefined) {
+          db.set(dbKey, updates[stateKey]).catch(() => {});
+        }
+      }
+    }
+    // Aplicar tema si viene en los datos
+    if (data.theme) {
+      set({ theme: data.theme });
+      if (data.theme === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', data.theme);
+      }
+    }
+  },
 
   // ===================== CATÁLOGOS =====================
   categorias: CATEGORIAS,
@@ -264,69 +297,35 @@ const useStore = create((set, get) => ({
       return !isNaN(num) && num > max ? num : max;
     }, 0);
     const newId = `SRV-${String(maxId + 1).padStart(2, '0')}`;
-    const newCatalogo = [...s.catalogoServicios, { ...servicio, id: newId }];
-    saveToDB('isp_catalogoServicios', newCatalogo);
-    return { catalogoServicios: newCatalogo };
+    return { catalogoServicios: [...s.catalogoServicios, { ...servicio, id: newId }] };
   }),
 
-  updateServicioCatalogo: (id, updates) => set(s => {
-    const newCatalogo = s.catalogoServicios.map(srv => srv.id === id ? { ...srv, ...updates } : srv);
-    saveToDB('isp_catalogoServicios', newCatalogo);
-    return { catalogoServicios: newCatalogo };
-  }),
+  deleteServicioCatalogo: (id) => set(s => ({
+    catalogoServicios: s.catalogoServicios.filter(srv => srv.id !== id),
+  })),
 
-  deleteServicioCatalogo: (id) => set(s => {
-    const newCatalogo = s.catalogoServicios.filter(srv => srv.id !== id);
-    saveToDB('isp_catalogoServicios', newCatalogo);
-    return { catalogoServicios: newCatalogo };
-  }),
-
+  // CRUD para Tipos de Requerimiento
   addTipoRequerimiento: (tipo) => set(s => {
     const maxId = s.tiposRequerimiento.reduce((max, t) => {
       const num = parseInt(t.id.split('-')[1] || 0);
       return !isNaN(num) && num > max ? num : max;
     }, 0);
     const newId = `TREQ-${String(maxId + 1).padStart(2, '0')}`;
-    const newTipos = [...s.tiposRequerimiento, { ...tipo, id: newId }];
-    saveToDB('isp_tiposRequerimiento', newTipos);
-    return { tiposRequerimiento: newTipos };
+    return { tiposRequerimiento: [...s.tiposRequerimiento, { ...tipo, id: newId }] };
   }),
 
-  updateTipoRequerimiento: (id, updates) => set(s => {
-    const newTipos = s.tiposRequerimiento.map(t => t.id === id ? { ...t, ...updates } : t);
-    saveToDB('isp_tiposRequerimiento', newTipos);
-    return { tiposRequerimiento: newTipos };
-  }),
+  updateTipoRequerimiento: (id, updates) => set(s => ({
+    tiposRequerimiento: s.tiposRequerimiento.map(t => t.id === id ? { ...t, ...updates } : t),
+  })),
 
-  deleteTipoRequerimiento: (id) => set(s => {
-    const newTipos = s.tiposRequerimiento.filter(t => t.id !== id);
-    saveToDB('isp_tiposRequerimiento', newTipos);
-    return { tiposRequerimiento: newTipos };
-  }),
+  deleteTipoRequerimiento: (id) => set(s => ({
+    tiposRequerimiento: s.tiposRequerimiento.filter(t => t.id !== id),
+  })),
 
+  // Helpers de lectura
   getSubcategoriasByCategoria: (catId) => SUBCATEGORIAS.filter(s => s.categoriaId === catId),
   getEstadosByEntidad: (entidad) => ESTADOS_CATALOGO.filter(e => e.entidad === entidad),
   getSLABySubcategoria: (subId) => PRIORIDADES_SLA.find(p => p.subcategoriaId === subId),
-
-  // ===================== SISTEMA: RESTAURACIÓN =====================
-  restoreSystem: (data) => set(() => {
-    const keysToRestore = [
-      'clients', 'tickets', 'averias', 'visitas', 'tecnicos',
-      'equipos', 'instalaciones', 'postVenta', 'sesionesRemoto',
-      'derivaciones', 'importHistory', 'whatsappLogs', 'templates',
-      'columnPrefs', 'cleaningOptions', 'movimientosEquipos',
-      'branding', 'customRolePermissions', 'whatsappCategories'
-    ];
-
-    const newState = {};
-    keysToRestore.forEach(key => {
-      if (data[key] !== undefined) {
-        newState[key] = data[key];
-        saveToDB(`isp_${key}`, data[key]);
-      }
-    });
-    return newState;
-  }),
 }));
 
 export default useStore;

@@ -14,9 +14,9 @@ export default function ReportesPage() {
   const averias = useStore(s => s.averias);
 
   const cobranza = useMemo(() => {
-    const conDeuda = clients.filter(c => c.deuda_monto > 0);
-    const totalDeuda = conDeuda.reduce((s, c) => s + c.deuda_monto, 0);
-    const ingresoMensual = clients.reduce((s, c) => s + c.precio, 0);
+    const conDeuda = clients.filter(c => (c.deuda_monto || 0) > 0);
+    const totalDeuda = conDeuda.reduce((s, c) => s + (c.deuda_monto || 0), 0);
+    const ingresoMensual = clients.reduce((s, c) => s + (c.precio || 0), 0);
     const cortados = clients.filter(c => c.estado_servicio === 'Cortado').length;
     const suspendidos = clients.filter(c => c.estado_cuenta === 'SUSPENDIDO').length;
 
@@ -32,8 +32,8 @@ export default function ReportesPage() {
     // Por tecnología
     const radioClients = clients.filter(c => c.tecnologia === 'Radio Enlace');
     const fibraClients = clients.filter(c => c.tecnologia === 'Fibra Óptica');
-    const ingresoRadio = radioClients.reduce((s, c) => s + c.precio, 0);
-    const ingresoFibra = fibraClients.reduce((s, c) => s + c.precio, 0);
+    const ingresoRadio = radioClients.reduce((s, c) => s + (c.precio || 0), 0);
+    const ingresoFibra = fibraClients.reduce((s, c) => s + (c.precio || 0), 0);
 
     // Clientes morosos (deuda > 0 ordenados por monto)
     const morosos = [...conDeuda].sort((a, b) => b.deuda_monto - a.deuda_monto).slice(0, 10);

@@ -14,11 +14,11 @@ export default function DashboardPage() {
     const offline = total - online;
     const radio = clients.filter(c => c.tecnologia === 'Radio Enlace').length;
     const fibra = clients.filter(c => c.tecnologia === 'Fibra Óptica').length;
-    const conDeuda = clients.filter(c => c.deuda_monto > 0).length;
-    const totalDeuda = clients.reduce((s, c) => s + c.deuda_monto, 0);
+    const conDeuda = clients.filter(c => (c.deuda_monto || 0) > 0).length;
+    const totalDeuda = clients.reduce((s, c) => s + (c.deuda_monto || 0), 0);
     const activos = clients.filter(c => c.estado_cuenta === 'ACTIVO').length;
     const suspendidos = clients.filter(c => c.estado_cuenta === 'SUSPENDIDO').length;
-    const conTV = clients.filter(c => c.servicios_adicionales.length > 0).length;
+    const conTV = clients.filter(c => c.servicios_adicionales?.length > 0).length;
 
     const nodos = {};
     clients.forEach(c => { if (c.nodo_router) nodos[c.nodo_router] = (nodos[c.nodo_router] || 0) + 1; });

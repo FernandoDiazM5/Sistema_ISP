@@ -109,10 +109,7 @@ export default function TicketsPage() {
       const matchStatus = localFilters.estado.length === 0 || localFilters.estado.includes(t.estado);
       const matchPrioridad = localFilters.prioridad.length === 0 || localFilters.prioridad.includes(t.prioridad);
 
-      // Kanban view overrides status filter
-      const matchKanban = viewMode === 'list' || matchStatus;
-
-      return matchStart && matchEnd && matchKanban && matchPrioridad;
+      return matchStart && matchEnd && matchStatus && matchPrioridad;
     });
   }, [filteredData, dateRange, viewMode, localFilters]);
 
