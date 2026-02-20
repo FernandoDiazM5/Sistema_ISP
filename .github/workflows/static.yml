@@ -30,7 +30,7 @@ jobs:
           cache-dependency-path: 'isp-system/package-lock.json'
 
       - name: Install dependencies
-        run: cd isp-system && npm ci
+        run: cd isp-system && npm install
 
       - name: Build
         env:
@@ -61,9 +61,13 @@ jobs:
         run: |
           cd isp-system/dist
 
+          echo "📂 Verificando contenido de dist:"
+          ls -la
+
           # Crear script Node.js para inyectar variables (Nativo para el entorno)
           cat > inject.js << 'EOF'
           const fs = require('fs');
+          try {
           const html = fs.readFileSync('index.html', 'utf8');
           
           const envConfig = {
@@ -89,6 +93,10 @@ jobs:
           const newHtml = html.replace('</head>', script + '\n</head>');
           fs.writeFileSync('index.html', newHtml);
           console.log('✅ Variables inyectadas correctamente en index.html');
+          } catch (error) {
+            console.error('❌ Error crítico inyectando variables:', error);
+            process.exit(1);
+          }
           EOF
           
           # Ejecutar script con Node.js
