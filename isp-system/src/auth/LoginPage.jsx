@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wifi, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Wifi, Mail, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
 import useStore from '../store/useStore';
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleError, setGoogleError] = useState(''); // Error específico de Google OAuth
   const googleInitialized = useRef(false);
   const googleButtonRef = useRef(null);
 
@@ -62,15 +63,30 @@ export default function LoginPage() {
 
   useEffect(() => {
     let checkInterval;
+    let retries = 0;
+    const MAX_RETRIES = 20; // 10 segundos máximo de espera
 
     const initGoogleOAuth = () => {
       const clientId = CONFIG.GOOGLE_CLIENT_ID;
 
-      // Si no hay clientId o ya se inicializó manualmente, salir
-      if (!clientId || googleInitialized.current) return false;
+      // Si ya se inicializó, no reintentar
+      if (googleInitialized.current) return true;
+
+      // Si no hay clientId configurado, mostrar error y dejar de reintentar
+      if (!clientId) {
+        setGoogleError('No se encontró el GOOGLE_CLIENT_ID. Si limpiaste la caché del navegador, necesitas volver a configurarlo en el archivo .env o en localStorage.');
+        return true; // retornar true para detener el polling
+      }
 
       // Si el script de Google aún no termina de cargar en el navegador (ej. Firefox)
-      if (!window.google || !window.google.accounts) return false;
+      if (!window.google || !window.google.accounts) {
+        retries++;
+        if (retries >= MAX_RETRIES) {
+          setGoogleError('No se pudo cargar el servicio de Google. Verifica tu conexión a internet o intenta recargar la página.');
+          return true;
+        }
+        return false;
+      }
 
       try {
         window.google.accounts.id.initialize({
@@ -79,16 +95,18 @@ export default function LoginPage() {
           ux_mode: 'popup',
         });
         googleInitialized.current = true;
+        setGoogleError(''); // Limpiar cualquier error previo
         return true;
       } catch (err) {
         console.error('Error al inicializar Google:', err);
-        return false;
+        setGoogleError('Error al inicializar Google OAuth. Verifica la configuración del Client ID.');
+        return true;
       }
     };
 
     const tryInit = () => {
       if (!initGoogleOAuth()) {
-        checkInterval = setTimeout(tryInit, 500); // Reintentar cada 500ms hasta que window.google exista
+        checkInterval = setTimeout(tryInit, 500);
       }
     };
 
@@ -99,9 +117,10 @@ export default function LoginPage() {
 
   // Renderizar el botón nativo de Google cuando la pestaña es 'google'
   useEffect(() => {
-    if (loginMethod !== 'google' || !googleButtonRef.current) return;
+    if (loginMethod !== 'google' || !googleButtonRef.current || googleError) return;
 
     let renderInterval;
+    let renderRetries = 0;
 
     const tryRenderButton = () => {
       if (googleInitialized.current && window.google && window.google.accounts) {
@@ -120,14 +139,17 @@ export default function LoginPage() {
           console.error("Error renderizando boton de google:", e);
         }
       } else {
-        renderInterval = setTimeout(tryRenderButton, 500);
+        renderRetries++;
+        if (renderRetries < 20) {
+          renderInterval = setTimeout(tryRenderButton, 500);
+        }
       }
     };
 
     tryRenderButton();
 
     return () => clearTimeout(renderInterval);
-  }, [loginMethod]);
+  }, [loginMethod, googleError]);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -230,16 +252,16 @@ export default function LoginPage() {
           <button
             onClick={() => setLoginMethod('email')}
             className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${loginMethod === 'email'
-                ? 'bg-accent-blue text-white shadow-sm'
-                : 'bg-transparent text-text-secondary hover:text-text-primary'
+              ? 'bg-accent-blue text-white shadow-sm'
+              : 'bg-transparent text-text-secondary hover:text-text-primary'
               }`}>
             Email y Contraseña
           </button>
           <button
             onClick={() => setLoginMethod('google')}
             className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${loginMethod === 'google'
-                ? 'bg-accent-blue text-white shadow-sm'
-                : 'bg-transparent text-text-secondary hover:text-text-primary'
+              ? 'bg-accent-blue text-white shadow-sm'
+              : 'bg-transparent text-text-secondary hover:text-text-primary'
               }`}>
             Google OAuth
           </button>
@@ -302,15 +324,31 @@ export default function LoginPage() {
         {/* Google Login */}
         {loginMethod === 'google' && (
           <div className="flex flex-col gap-4">
-            <p className="text-xs text-text-secondary text-center mb-2">
-              Inicia sesión con tu cuenta de Google autorizada
-            </p>
-            {loading ? (
-              <div className="w-full py-3 text-center text-sm text-text-secondary">
-                Verificando...
+            {googleError ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/15 flex items-center justify-center">
+                  <AlertTriangle size={24} className="text-amber-400" />
+                </div>
+                <p className="text-xs text-amber-300 text-center leading-relaxed max-w-[320px]">
+                  {googleError}
+                </p>
+                <p className="text-[11px] text-text-muted text-center leading-relaxed">
+                  Usa la pestaña <strong className="text-text-secondary">Email y Contraseña</strong> como alternativa, o configura el <code className="bg-bg-secondary px-1.5 py-0.5 rounded text-accent-cyan text-[10px]">VITE_GOOGLE_CLIENT_ID</code> en tu archivo <code className="bg-bg-secondary px-1.5 py-0.5 rounded text-accent-cyan text-[10px]">.env</code>
+                </p>
               </div>
             ) : (
-              <div ref={googleButtonRef} className="flex justify-center" />
+              <>
+                <p className="text-xs text-text-secondary text-center mb-2">
+                  Inicia sesión con tu cuenta de Google autorizada
+                </p>
+                {loading ? (
+                  <div className="w-full py-3 text-center text-sm text-text-secondary">
+                    Verificando...
+                  </div>
+                ) : (
+                  <div ref={googleButtonRef} className="flex justify-center" />
+                )}
+              </>
             )}
           </div>
         )}
