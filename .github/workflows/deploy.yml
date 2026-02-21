@@ -1,0 +1,80 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './isp-system/package-lock.json'
+      
+      - name: Install dependencies
+        run: |
+          cd isp-system
+          npm install
+      
+      - name: Build
+        run: |
+          cd isp-system
+          npm run build
+      
+      - name: Inyectar variables de entorno en index.html
+        run: |
+          cd isp-system/dist
+          cat << 'EOF' > inject.cjs
+          const fs = require('fs');
+          const path = require('path');
+          
+          const envConfig = {
+            FIREBASE_API_KEY: "${{ secrets.FIREBASE_API_KEY }}",
+            FIREBASE_AUTH_DOMAIN: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
+            FIREBASE_PROJECT_ID: "${{ secrets.FIREBASE_PROJECT_ID }}",
+            FIREBASE_STORAGE_BUCKET: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
+            FIREBASE_APP_ID: "${{ secrets.FIREBASE_APP_ID }}"
+          };
+          
+          const scriptTag = `<script>window.ENV_CONFIG = ${JSON.stringify(envConfig)};</script>`;
+          const indexPath = path.join(__dirname, 'index.html');
+          
+          let html = fs.readFileSync(indexPath, 'utf-8');
+          html = html.replace('<head>', '<head>' + scriptTag);
+          fs.writeFileSync(indexPath, html);
+          console.log('Variables de entorno inyectadas con exito.');
+          EOF
+          node inject.cjs
+          rm inject.cjs
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './isp-system/dist'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
