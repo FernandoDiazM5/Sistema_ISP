@@ -1,1 +1,0 @@
-import{c as a}from"./index-CE-Gmpg_.js";const t=[["path",{d:"M7 7h10v10",key:"1tivn9"}],["path",{d:"M7 17 17 7",key:"1vkiza"}]],e=a("arrow-up-right",t);const o=[["path",{d:"M5 3v14",key:"9nsxs2"}],["path",{d:"M12 3v8",key:"1h2ygw"}],["path",{d:"M19 3v18",key:"1sk56x"}]],c=a("kanban",o);export{e as A,c as K};
