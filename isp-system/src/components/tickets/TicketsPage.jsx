@@ -214,33 +214,37 @@ export default function TicketsPage() {
 
     const tipoLabel = tipo === 'visita' ? 'Visita Técnica' : tipo === 'soporte' ? 'Soporte Remoto' : tipo === 'requerimiento' ? 'Req. Administrativo' : 'Planta Externa';
 
-    updateTicket(ticketId, {
+    const escalationPayload = {
       estado: 'Escalado',
       _historyEstadoLabel: `Escalado - ${tipoLabel}`,
       _historyComment: `Derivado a ${tipoLabel}: ${motivo}`
-    });
+    };
 
     setShowEscalationModal(false);
     setEscalationTarget(null);
 
-    // Si es visita o soporte, abrir modal de creación
+    // Si es visita o soporte, abrir modal de creación y guardar payload para confirmación
     if (tipo === 'visita') {
-      setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico });
+      setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico, escalationPayload });
     } else if (tipo === 'soporte') {
-      setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico });
-    } else if (tipo === 'requerimiento') {
-      const defaultTipo = tiposRequerimiento.length > 0 ? tiposRequerimiento[0].nombre : 'Otro';
-      addRequerimiento({
-        titulo: `[${ticketId}] ${motivo}`,
-        tipo: defaultTipo,
-        prioridad: ticket.prioridad || 'Media',
-        solicitante: ticket.asignado || ticket.clienteNombre || '',
-        descripcion: `Requerimiento generado desde ticket ${ticketId}.\nCliente: ${ticket.clienteNombre || 'N/A'}\nMotivo: ${motivo}`,
-        montoEstimado: 0,
-        estado: 'Pendiente',
-        fechaLimite: null,
-        ticketOrigen: ticketId,
-      });
+      setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico, escalationPayload });
+    } else if (tipo === 'requerimiento' || tipo === 'planta_externa') {
+      // Como no hay modal intermedio para estos dos, se actualiza el ticket de inmediato
+      updateTicket(ticketId, escalationPayload);
+      if (tipo === 'requerimiento') {
+        const defaultTipo = tiposRequerimiento.length > 0 ? tiposRequerimiento[0].nombre : 'Otro';
+        addRequerimiento({
+          titulo: `[${ticketId}] ${motivo}`,
+          tipo: defaultTipo,
+          prioridad: ticket.prioridad || 'Media',
+          solicitante: ticket.asignado || ticket.clienteNombre || '',
+          descripcion: `Requerimiento generado desde ticket ${ticketId}.\nCliente: ${ticket.clienteNombre || 'N/A'}\nMotivo: ${motivo}`,
+          montoEstimado: 0,
+          estado: 'Pendiente',
+          fechaLimite: null,
+          ticketOrigen: ticketId,
+        });
+      }
     }
   };
 
@@ -479,8 +483,14 @@ export default function TicketsPage() {
         <InlineVisitaModal
           ticket={inlineVisitaData.ticket}
           client={inlineVisitaData.client}
+          diagnostico={inlineVisitaData.diagnostico}
           onClose={() => setInlineVisitaData(null)}
-          onSuccess={() => setInlineVisitaData(null)}
+          onSuccess={() => {
+            if (inlineVisitaData.escalationPayload) {
+              updateTicket(inlineVisitaData.ticket.id, inlineVisitaData.escalationPayload);
+            }
+            setInlineVisitaData(null);
+          }}
         />
       )}
 
@@ -488,8 +498,14 @@ export default function TicketsPage() {
         <InlineSoporteModal
           ticket={inlineSoporteData.ticket}
           client={inlineSoporteData.client}
+          diagnostico={inlineSoporteData.diagnostico}
           onClose={() => setInlineSoporteData(null)}
-          onSuccess={() => setInlineSoporteData(null)}
+          onSuccess={() => {
+            if (inlineSoporteData.escalationPayload) {
+              updateTicket(inlineSoporteData.ticket.id, inlineSoporteData.escalationPayload);
+            }
+            setInlineSoporteData(null);
+          }}
         />
       )}
 
