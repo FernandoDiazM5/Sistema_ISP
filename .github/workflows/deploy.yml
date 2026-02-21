@@ -34,39 +34,24 @@ jobs:
       - name: Install dependencies
         run: |
           cd isp-system
-          npm install
+          npm ci
       
-      - name: Build
+      - name: Build with injected secrets
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.VITE_GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_API_KEY: ${{ secrets.VITE_GOOGLE_API_KEY }}
+          VITE_GOOGLE_SHEET_ID: ${{ secrets.VITE_GOOGLE_SHEET_ID }}
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
         run: |
           cd isp-system
           npm run build
       
-      - name: Inyectar variables de entorno en index.html
-        run: |
-          cd isp-system/dist
-          cat << 'EOF' > inject.cjs
-          const fs = require('fs');
-          const path = require('path');
-          
-          const envConfig = {
-            FIREBASE_API_KEY: "${{ secrets.FIREBASE_API_KEY }}",
-            FIREBASE_AUTH_DOMAIN: "${{ secrets.FIREBASE_AUTH_DOMAIN }}",
-            FIREBASE_PROJECT_ID: "${{ secrets.FIREBASE_PROJECT_ID }}",
-            FIREBASE_STORAGE_BUCKET: "${{ secrets.FIREBASE_STORAGE_BUCKET }}",
-            FIREBASE_APP_ID: "${{ secrets.FIREBASE_APP_ID }}"
-          };
-          
-          const scriptTag = `<script>window.ENV_CONFIG = ${JSON.stringify(envConfig)};</script>`;
-          const indexPath = path.join(__dirname, 'index.html');
-          
-          let html = fs.readFileSync(indexPath, 'utf-8');
-          html = html.replace('<head>', '<head>' + scriptTag);
-          fs.writeFileSync(indexPath, html);
-          console.log('Variables de entorno inyectadas con exito.');
-          EOF
-          node inject.cjs
-          rm inject.cjs
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
       
