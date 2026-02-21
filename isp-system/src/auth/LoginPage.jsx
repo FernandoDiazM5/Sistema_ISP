@@ -61,48 +61,72 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const clientId = CONFIG.GOOGLE_CLIENT_ID;
+    let checkInterval;
 
-    if (!clientId || googleInitialized.current || !window.google) {
-      return;
-    }
+    const initGoogleOAuth = () => {
+      const clientId = CONFIG.GOOGLE_CLIENT_ID;
 
-    try {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCredential,
-        ux_mode: 'popup',
-      });
+      // Si no hay clientId o ya se inicializó manualmente, salir
+      if (!clientId || googleInitialized.current) return false;
 
-      googleInitialized.current = true;
-    } catch (err) {
-      console.error('Error al inicializar Google:', err);
-    }
+      // Si el script de Google aún no termina de cargar en el navegador (ej. Firefox)
+      if (!window.google || !window.google.accounts) return false;
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleCredential,
+          ux_mode: 'popup',
+        });
+        googleInitialized.current = true;
+        return true;
+      } catch (err) {
+        console.error('Error al inicializar Google:', err);
+        return false;
+      }
+    };
+
+    const tryInit = () => {
+      if (!initGoogleOAuth()) {
+        checkInterval = setTimeout(tryInit, 500); // Reintentar cada 500ms hasta que window.google exista
+      }
+    };
+
+    tryInit();
+
+    return () => clearTimeout(checkInterval);
   }, [login, loadCurrentUserByEmail]);
 
   // Renderizar el botón nativo de Google cuando la pestaña es 'google'
   useEffect(() => {
-    if (
-      loginMethod !== 'google' ||
-      !googleInitialized.current ||
-      !window.google ||
-      !googleButtonRef.current
-    ) {
-      return;
-    }
+    if (loginMethod !== 'google' || !googleButtonRef.current) return;
 
-    // Limpiar contenido previo
-    googleButtonRef.current.innerHTML = '';
+    let renderInterval;
 
-    window.google.accounts.id.renderButton(googleButtonRef.current, {
-      type: 'standard',
-      theme: 'filled_black',
-      size: 'large',
-      text: 'continue_with',
-      shape: 'pill',
-      width: 360,
-      locale: 'es',
-    });
+    const tryRenderButton = () => {
+      if (googleInitialized.current && window.google && window.google.accounts) {
+        googleButtonRef.current.innerHTML = '';
+        try {
+          window.google.accounts.id.renderButton(googleButtonRef.current, {
+            type: 'standard',
+            theme: 'filled_black',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'pill',
+            width: 360,
+            locale: 'es',
+          });
+        } catch (e) {
+          console.error("Error renderizando boton de google:", e);
+        }
+      } else {
+        renderInterval = setTimeout(tryRenderButton, 500);
+      }
+    };
+
+    tryRenderButton();
+
+    return () => clearTimeout(renderInterval);
   }, [loginMethod]);
 
   const handleEmailLogin = async (e) => {
@@ -205,20 +229,18 @@ export default function LoginPage() {
         <div className="flex gap-2 mb-6 p-1 bg-bg-secondary rounded-xl">
           <button
             onClick={() => setLoginMethod('email')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${
-              loginMethod === 'email'
+            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${loginMethod === 'email'
                 ? 'bg-accent-blue text-white shadow-sm'
                 : 'bg-transparent text-text-secondary hover:text-text-primary'
-            }`}>
+              }`}>
             Email y Contraseña
           </button>
           <button
             onClick={() => setLoginMethod('google')}
-            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${
-              loginMethod === 'google'
+            className={`flex-1 py-2 px-4 rounded-lg text-xs font-semibold transition-all border-none cursor-pointer ${loginMethod === 'google'
                 ? 'bg-accent-blue text-white shadow-sm'
                 : 'bg-transparent text-text-secondary hover:text-text-primary'
-            }`}>
+              }`}>
             Google OAuth
           </button>
         </div>
