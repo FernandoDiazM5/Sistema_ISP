@@ -9,6 +9,7 @@ import useSyncStore from '../../store/syncStore';
 import useToast from '../../hooks/useToast';
 import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from '../../utils/exportBackup';
 import AuthorizedUsersManager from './AuthorizedUsersManager';
+import { saveDocument } from '../../api/firebase';
 
 function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
   const [show, setShow] = useState(false);
@@ -39,7 +40,13 @@ function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
 
 // ===================== BACKUP HISTORY SECTION =====================
 function BackupHistorySection() {
-  const { backupVersions, loadingVersions, loadVersions, restoreVersion, removeVersion, restoringVersion, downloadVersionData } = useSyncStore();
+  const backupVersions = useSyncStore(s => s.backupVersions);
+  const loadingVersions = useSyncStore(s => s.loadingVersions);
+  const loadVersions = useSyncStore(s => s.loadVersions);
+  const restoreVersion = useSyncStore(s => s.restoreVersion);
+  const removeVersion = useSyncStore(s => s.removeVersion);
+  const restoringVersion = useSyncStore(s => s.restoringVersion);
+  const downloadVersionData = useSyncStore(s => s.downloadVersionData);
   const toast = useToast();
   const [downloadingId, setDownloadingId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -277,7 +284,11 @@ export default function ConfiguracionPage() {
   const customRolePermissions = useStore(s => s.customRolePermissions);
   const setCustomRolePermissions = useStore(s => s.setCustomRolePermissions);
 
-  const { syncPush, syncPull, isSyncing, lastSync, syncProgress } = useSyncStore();
+  const syncPush = useSyncStore(s => s.syncPush);
+  const syncPull = useSyncStore(s => s.syncPull);
+  const isSyncing = useSyncStore(s => s.isSyncing);
+  const lastSync = useSyncStore(s => s.lastSync);
+  const syncProgress = useSyncStore(s => s.syncProgress);
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('general');
@@ -430,6 +441,32 @@ export default function ConfiguracionPage() {
     const ok = await syncPull();
     if (ok) toast.success('Datos restaurados desde Firebase');
     else toast.error('Error al restaurar datos');
+  };
+
+  const handleMigrarCatalogos = async () => {
+    if (!window.confirm('¿Migrar catálogos base a Firebase? Esto subirá la configuración base (Servicios, SLA, Categorias). Hazlo solo 1 vez.')) return;
+
+    toast.info('Subiendo catálogos, no cierres la ventana...');
+    try {
+      const store = useStore.getState();
+      const collections = [
+        'categorias', 'subcategorias', 'prioridadesSLA',
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      ];
+
+      let total = 0;
+      for (const col of collections) {
+        const items = store[col] || [];
+        for (const item of items) {
+          await saveDocument(col, item);
+          total++;
+        }
+      }
+      toast.success(`${total} registros subidos correctamente.`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Error al subir catálogos.');
+    }
   };
 
   const tabs = [
@@ -651,7 +688,7 @@ export default function ConfiguracionPage() {
                     className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${isEditing
                       ? 'bg-accent-blue/5 border-accent-blue/40 shadow-[0_0_12px_-3px_rgba(59,130,246,0.3)]'
                       : 'bg-bg-secondary border-border hover:border-accent-blue/30'
-                    }`}>
+                      }`}>
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center"
                         style={{ background: (uiRole.color || '#6b7280') + '20', color: uiRole.color || '#6b7280' }}>
@@ -902,6 +939,22 @@ export default function ConfiguracionPage() {
       {/* Tab: Sistema */}
       {activeTab === 'sistema' && (
         <div className="flex flex-col gap-6">
+          <div className="bg-bg-card rounded-2xl p-6 border border-border">
+            <h3 className="text-sm font-semibold mb-4 text-text-secondary">Migración Inicial</h3>
+            <div className="flex items-center justify-between p-4 bg-bg-secondary rounded-xl border border-border">
+              <div>
+                <p className="text-sm font-medium text-text-primary">Subir Catálogos a Firebase</p>
+                <p className="text-[11px] text-text-muted mt-1">Usa esto la primera vez para subir los diccionarios base.</p>
+              </div>
+              <button
+                onClick={handleMigrarCatalogos}
+                className="px-4 py-2 rounded-lg bg-accent-blue text-white text-xs font-bold hover:bg-accent-blue/90 transition-colors cursor-pointer border-none"
+              >
+                Migrar a Nube
+              </button>
+            </div>
+          </div>
+
           <div className="bg-bg-card rounded-2xl p-6 border border-border">
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Parámetros de la Empresa</h3>
             <div className="flex flex-col gap-4">

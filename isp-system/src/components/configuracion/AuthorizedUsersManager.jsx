@@ -5,7 +5,9 @@ import Card from '../ui/Card';
 import Button from '../ui/Button';
 
 export default function AuthorizedUsersManager() {
-  const { authorizedEmails, addAuthorizedEmail, removeAuthorizedEmail } = useStore();
+  const authorizedEmails = useStore(s => s.authorizedEmails);
+  const addAuthorizedEmail = useStore(s => s.addAuthorizedEmail);
+  const removeAuthorizedEmail = useStore(s => s.removeAuthorizedEmail);
   const [newEmail, setNewEmail] = useState('');
 
   const handleAdd = () => {

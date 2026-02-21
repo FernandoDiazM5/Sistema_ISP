@@ -10,6 +10,9 @@ import { createUISlice } from './slices/uiSlice';
 import { createAuthSlice } from './slices/authSlice';
 import { createUsersSlice } from './slices/usersSlice';
 
+// ===================== TYPE IMPORTS =====================
+import { ITecnico, ICatalogoServicio } from '../types/models';
+
 // ===================== CATÁLOGOS (solo lectura) =====================
 const CATEGORIAS = [
   { id: 'CAT-01', nombre: 'Falla de Internet', descripcion: 'Problemas de navegación, velocidad y latencia' },
@@ -100,7 +103,40 @@ const TIPOS_REQUERIMIENTO = [
 ];
 
 // ===================== STORE COMPOSITION =====================
-const useStore = create((set, get) => ({
+export interface StoreState {
+  storeReady: boolean;
+  isMigrating: boolean;
+  theme?: string;
+
+  tecnicos: ITecnico[];
+  addTecnico: (tecnico: Omit<ITecnico, 'id'>) => void;
+  updateTecnico: (id: string, updates: Partial<ITecnico>) => void;
+  deleteTecnico: (id: string) => void;
+
+  restoreSystem: (data: any) => void;
+
+  categorias: any[];
+  subcategorias: any[];
+  prioridadesSLA: any[];
+  estadosCatalogo: any[];
+  catalogoServicios: ICatalogoServicio[];
+  tiposRequerimiento: any[];
+
+  addServicioCatalogo: (servicio: Omit<ICatalogoServicio, 'id'>) => void;
+  deleteServicioCatalogo: (id: string) => void;
+  addTipoRequerimiento: (tipo: any) => void;
+  updateTipoRequerimiento: (id: string, updates: any) => void;
+  deleteTipoRequerimiento: (id: string) => void;
+
+  getSubcategoriasByCategoria: (catId: string) => any[];
+  getEstadosByEntidad: (entidad: string) => any[];
+  getSLABySubcategoria: (subId: string) => any;
+  hydrateStore: () => Promise<void>;
+
+  [key: string]: any; // Permite integrar los slices gradualmente
+}
+
+const useStore = create<StoreState>((set: any, get: any) => ({
   storeReady: false,
   isMigrating: false,
 
@@ -170,9 +206,15 @@ const useStore = create((set, get) => ({
         isp_customRolePermissions: 'customRolePermissions',
         isp_whatsappCategories: 'whatsappCategories',
         isp_theme: 'theme',
+        isp_categorias: 'categorias',
+        isp_subcategorias: 'subcategorias',
+        isp_prioridadesSLA: 'prioridadesSLA',
+        isp_estadosCatalogo: 'estadosCatalogo',
+        isp_catalogoServicios: 'catalogoServicios',
+        isp_tiposRequerimiento: 'tiposRequerimiento',
       };
 
-      const updates = {};
+      const updates: any = {};
       for (const [dbKey, stateKey] of Object.entries(keyMap)) {
         try {
           const val = await db.get(dbKey);
@@ -205,7 +247,7 @@ const useStore = create((set, get) => ({
   // ===================== TÉCNICOS (Wrapper para Firestore) =====================
   tecnicos: [],
 
-  addTecnico: (tecnico) => {
+  addTecnico: (tecnico: Omit<ITecnico, 'id'>) => {
     const s = get();
     const getNextId = (col, prefix) => {
       if (!col || col.length === 0) return `${prefix}-001`;
@@ -225,20 +267,20 @@ const useStore = create((set, get) => ({
     saveDocument('tecnicos', newTecnico);
   },
 
-  updateTecnico: (id, updates) => {
-    set(s => ({
+  updateTecnico: (id: string, updates: Partial<ITecnico>) => {
+    set((s: any) => ({
       tecnicos: s.tecnicos.map(t => t.id === id ? { ...t, ...updates } : t)
     }));
     saveDocument('tecnicos', { id, ...updates });
   },
 
-  deleteTecnico: (id) => {
-    set(s => ({ tecnicos: s.tecnicos.filter(t => t.id !== id) }));
+  deleteTecnico: (id: string) => {
+    set((s: any) => ({ tecnicos: s.tecnicos.filter((t: any) => t.id !== id) }));
     deleteDocument('tecnicos', id);
   },
 
   // ===================== RESTORE SYSTEM (para backups y live sync) =====================
-  restoreSystem: (data) => {
+  restoreSystem: (data: any) => {
     const keysToRestore = [
       'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
@@ -246,7 +288,7 @@ const useStore = create((set, get) => ({
       'columnPrefs', 'cleaningOptions', 'importHistory',
       'branding', 'customRolePermissions', 'whatsappCategories',
     ];
-    const updates = {};
+    const updates: any = {};
     for (const key of keysToRestore) {
       if (data[key] !== undefined) {
         updates[key] = data[key];
@@ -265,10 +307,16 @@ const useStore = create((set, get) => ({
         cleaningOptions: 'isp_cleaningOptions', importHistory: 'isp_importHistory',
         branding: 'isp_branding', customRolePermissions: 'isp_customRolePermissions',
         whatsappCategories: 'isp_whatsappCategories',
+        categorias: 'isp_categorias',
+        subcategorias: 'isp_subcategorias',
+        prioridadesSLA: 'isp_prioridadesSLA',
+        estadosCatalogo: 'isp_estadosCatalogo',
+        catalogoServicios: 'isp_catalogoServicios',
+        tiposRequerimiento: 'isp_tiposRequerimiento',
       };
       for (const [stateKey, dbKey] of Object.entries(dbKeyMap)) {
         if (updates[stateKey] !== undefined) {
-          db.set(dbKey, updates[stateKey]).catch(() => {});
+          db.set(dbKey, updates[stateKey]).catch(() => { });
         }
       }
     }
@@ -322,10 +370,10 @@ const useStore = create((set, get) => ({
     tiposRequerimiento: s.tiposRequerimiento.filter(t => t.id !== id),
   })),
 
-  // Helpers de lectura
-  getSubcategoriasByCategoria: (catId) => SUBCATEGORIAS.filter(s => s.categoriaId === catId),
-  getEstadosByEntidad: (entidad) => ESTADOS_CATALOGO.filter(e => e.entidad === entidad),
-  getSLABySubcategoria: (subId) => PRIORIDADES_SLA.find(p => p.subcategoriaId === subId),
+  // Helpers de lectura dinámicos
+  getSubcategoriasByCategoria: (catId) => get().subcategorias.filter((s: any) => s.categoriaId === catId),
+  getEstadosByEntidad: (entidad) => get().estadosCatalogo.filter((e: any) => e.entidad === entidad),
+  getSLABySubcategoria: (subId) => get().prioridadesSLA.find((p: any) => p.subcategoriaId === subId),
 }));
 
 export default useStore;
