@@ -9,9 +9,9 @@ import {
     writeBatch,
     deleteDoc,
     onSnapshot,
-    enableIndexedDbPersistence,
     initializeFirestore,
-    CACHE_SIZE_UNLIMITED
+    persistentLocalCache,
+    persistentMultipleTabManager
 } from 'firebase/firestore';
 import { CONFIG } from '../utils/constants';
 
@@ -31,18 +31,11 @@ export const initFirebase = () => {
     if (!app) {
         try {
             app = initializeApp(config);
-            // Inicializar Firestore con persistencia y caché ilimitada
+            // Inicializar Firestore con persistencia moderna v9/v10
             db = initializeFirestore(app, {
-                cacheSizeBytes: CACHE_SIZE_UNLIMITED
-            });
-
-            // Habilitar persistencia offline
-            enableIndexedDbPersistence(db).catch((err) => {
-                if (err.code == 'failed-precondition') {
-                    console.warn('Persistencia falló: Multiples pestañas abiertas.');
-                } else if (err.code == 'unimplemented') {
-                    console.warn('Persistencia no soportada por el navegador.');
-                }
+                localCache: persistentLocalCache({
+                    tabManager: persistentMultipleTabManager()
+                })
             });
 
             console.log('Firebase initialized with persistence');
