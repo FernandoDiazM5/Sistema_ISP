@@ -8,6 +8,7 @@ import ToastContainer from './components/ui/Toast';
 import useStore from './store/useStore';
 import useSyncStore from './store/syncStore';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { ROLES } from './types/user';
 
 // Cargar utilidad de inicialización en desarrollo
@@ -138,10 +139,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-      <ReloadPrompt />
-      <ToastContainer />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+        <ReloadPrompt />
+        <ToastContainer />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

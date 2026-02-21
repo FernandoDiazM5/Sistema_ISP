@@ -55,6 +55,8 @@ export async function createUserWithPassword(email, password) {
       message = 'Email inválido';
     } else if (error.code === 'auth/weak-password') {
       message = 'La contraseña debe tener al menos 6 caracteres';
+    } else if (error?.message?.includes('api-key-not-valid')) {
+      message = 'La API Key de Firebase es inválida o no está configurada por este usuario de Firefox. Revise Configuración > Sistema.';
     }
 
     return {
