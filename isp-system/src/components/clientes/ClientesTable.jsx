@@ -54,29 +54,29 @@ export default function ClientesTable({ data, columns, pagination, setPagination
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div className="bg-bg-secondary p-2 rounded-lg">
-                                    <span className="text-text-muted block text-[10px] uppercase">Plan</span>
-                                    <span className="font-medium text-text-secondary">{row.original.plan || 'N/A'}</span>
+                            <div className="flex flex-col gap-1.5 text-xs py-1">
+                                <div className="flex justify-between items-center py-1.5 border-b border-white/5">
+                                    <span className="text-text-muted text-[10px] uppercase tracking-wider font-semibold">Plan</span>
+                                    <span className="font-bold text-text-primary">{row.original.plan || 'N/A'}</span>
                                 </div>
-                                <div className="bg-bg-secondary p-2 rounded-lg">
-                                    <span className="text-text-muted block text-[10px] uppercase">Zona</span>
+                                <div className="flex justify-between items-center py-1.5 border-b border-white/5">
+                                    <span className="text-text-muted text-[10px] uppercase tracking-wider font-semibold">Zona</span>
                                     <span className="font-medium text-text-secondary">{row.original.zona || 'N/A'}</span>
                                 </div>
-                                <div className="bg-bg-secondary p-2 rounded-lg">
-                                    <span className="text-text-muted block text-[10px] uppercase">IP</span>
-                                    <span className="font-mono text-text-secondary">{row.original.ip_address || 'N/A'}</span>
+                                <div className="flex justify-between items-center py-1.5 border-b border-white/5">
+                                    <span className="text-text-muted text-[10px] uppercase tracking-wider font-semibold">IP Address</span>
+                                    <span className="font-mono text-text-secondary">{row.original.ip || row.original.ip_address || 'N/A'}</span>
                                 </div>
-                                <div className="bg-bg-secondary p-2 rounded-lg">
-                                    <span className="text-text-muted block text-[10px] uppercase">Deuda</span>
-                                    <span className="font-bold text-text-primary">S/. {row.original.deuda_monto?.toFixed(2) || '0.00'}</span>
+                                <div className="flex justify-between items-center py-1.5">
+                                    <span className="text-text-muted text-[10px] uppercase tracking-wider font-semibold">Deuda</span>
+                                    <span className={`font-bold ${row.original.deuda_monto > 0 ? 'text-accent-red' : 'text-text-primary'}`}>
+                                        S/. {row.original.deuda_monto?.toFixed(2) || '0.00'}
+                                    </span>
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 mt-1">
-                                <div className="flex-1">
-                                    {getCellValue(row, 'actions')}
-                                </div>
+                            <div className="flex justify-end gap-2 mt-1 pt-3 border-t border-white/5">
+                                {getCellValue(row, 'actions')}
                             </div>
                         </div>
                     ))
@@ -151,28 +151,28 @@ export default function ClientesTable({ data, columns, pagination, setPagination
 
                 <div className="flex items-center gap-1.5">
                     <button
-                        className="p-1.5 rounded-lg border border-border bg-bg-secondary text-text-secondary disabled:opacity-50 hover:bg-bg-card transition-colors"
+                        className="p-1.5 rounded-xl border-none bg-bg-secondary text-text-secondary disabled:opacity-30 disabled:pointer-events-none hover:bg-bg-card hover:text-text-primary hover:shadow-sm transition-all active:scale-95"
                         onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
                     >
                         <ChevronsLeft size={16} />
                     </button>
                     <button
-                        className="p-1.5 rounded-lg border border-border bg-bg-secondary text-text-secondary disabled:opacity-50 hover:bg-bg-card transition-colors"
+                        className="p-1.5 rounded-xl border-none bg-bg-secondary text-text-secondary disabled:opacity-30 disabled:pointer-events-none hover:bg-bg-card hover:text-text-primary hover:shadow-sm transition-all active:scale-95"
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
                     >
                         <ChevronLeft size={16} />
                     </button>
                     <button
-                        className="p-1.5 rounded-lg border border-border bg-bg-secondary text-text-secondary disabled:opacity-50 hover:bg-bg-card transition-colors"
+                        className="p-1.5 rounded-xl border-none bg-bg-secondary text-text-secondary disabled:opacity-30 disabled:pointer-events-none hover:bg-bg-card hover:text-text-primary hover:shadow-sm transition-all active:scale-95"
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
                     >
                         <ChevronRight size={16} />
                     </button>
                     <button
-                        className="p-1.5 rounded-lg border border-border bg-bg-secondary text-text-secondary disabled:opacity-50 hover:bg-bg-card transition-colors"
+                        className="p-1.5 rounded-xl border-none bg-bg-secondary text-text-secondary disabled:opacity-30 disabled:pointer-events-none hover:bg-bg-card hover:text-text-primary hover:shadow-sm transition-all active:scale-95"
                         onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                         disabled={!table.getCanNextPage()}
                     >

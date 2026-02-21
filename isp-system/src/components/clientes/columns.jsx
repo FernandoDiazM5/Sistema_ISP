@@ -103,33 +103,31 @@ export function buildColumns({ onCreateTicket, onCreatePostVenta, onViewDetail }
                 {onCreateTicket && (
                     <button
                         onClick={(e) => { e.stopPropagation(); onCreateTicket(row.original); }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent-blue/10 text-accent-blue text-[10px] font-bold hover:bg-accent-blue/25 transition-colors cursor-pointer border-none whitespace-nowrap"
-                        title={`Crear ticket para ${row.original.nombre}`}
+                        className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50 active:scale-95"
+                        title="Crear Ticket"
                     >
-                        <TicketPlus size={12} />
-                        <span>Ticket</span>
+                        <TicketPlus size={16} />
                     </button>
                 )}
                 {onCreatePostVenta && (
                     <button
                         onClick={(e) => { e.stopPropagation(); onCreatePostVenta(row.original); }}
-                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-accent-purple/10 text-accent-purple text-[10px] font-bold hover:bg-accent-purple/25 transition-colors cursor-pointer border-none whitespace-nowrap"
-                        title={`Crear post-venta para ${row.original.nombre}`}
+                        className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-accent-purple hover:bg-accent-purple/10 transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-accent-purple/50 active:scale-95"
+                        title="Crear Post-Venta"
                     >
-                        <ShoppingBag size={12} />
-                        <span>PV</span>
+                        <ShoppingBag size={16} />
                     </button>
                 )}
                 <button
                     onClick={(e) => { e.stopPropagation(); onViewDetail?.(row.original); }}
-                    className="flex items-center justify-center p-1.5 rounded-lg hover:bg-accent-blue/15 text-accent-blue transition-colors cursor-pointer bg-transparent border-none ml-1"
-                    title={`Ver detalle de ${row.original.nombre}`}
+                    className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-text-primary hover:bg-bg-secondary transition-colors cursor-pointer border-none ml-1 outline-none focus-visible:ring-2 focus-visible:ring-text-primary/50 active:scale-95"
+                    title="Ver Detalle del Cliente"
                 >
-                    <Eye size={15} />
+                    <Eye size={16} />
                 </button>
             </div>
         ),
-        size: hasActions ? 190 : 50,
+        size: hasActions ? 120 : 50,
         enableSorting: false,
     });
 
