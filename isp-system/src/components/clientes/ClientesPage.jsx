@@ -182,8 +182,8 @@ export default function ClientesPage() {
               {showSearchScope && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowSearchScope(false)} />
-                  <div className="absolute right-0 top-full mt-2 z-50 w-[200px] bg-bg-card border border-border rounded-xl shadow-2xl shadow-black/30 py-2 max-h-[400px] overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
-                    <div className="px-3.5 py-2 border-b border-border mb-1 flex justify-between items-center">
+                  <div className="absolute right-0 top-full mt-3 z-50 w-[200px] glass-panel rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-2 max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="px-3.5 py-2 border-b border-white/5 mb-1 flex justify-between items-center bg-bg-secondary/30">
                       <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide">Campos</span>
                       <button
                         onClick={() => setSearchScope(SEARCH_FIELDS.map(f => f.key))}
@@ -237,8 +237,8 @@ export default function ClientesPage() {
             {showColumnSelector && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowColumnSelector(false)} />
-                <div className="absolute right-0 top-full mt-2 z-50 w-[220px] bg-bg-card border border-border rounded-xl shadow-2xl shadow-black/30 py-2 max-h-[400px] overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
-                  <div className="px-3.5 py-2 border-b border-border mb-1">
+                <div className="absolute right-0 top-full mt-3 z-50 w-[220px] glass-panel rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-2 max-h-[400px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="px-3.5 py-2 border-b border-white/5 mb-1 bg-bg-secondary/30">
                     <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wide">
                       Columnas visibles
                     </span>
@@ -314,11 +314,11 @@ export default function ClientesPage() {
 
       {/* ====== MODAL: Crear Post-Venta desde Cliente ====== */}
       {pvClient && (
-        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-bg-card border border-border rounded-2xl w-full max-w-[440px] shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-bg-card border border-white/10 rounded-[24px] w-full max-w-[440px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-accent-purple/10 p-5 flex items-center gap-3 border-b border-accent-purple/20">
-              <div className="w-10 h-10 rounded-xl bg-accent-purple/20 flex items-center justify-center">
+            <div className="bg-accent-purple/5 p-6 flex items-center gap-4 border-b border-white/5">
+              <div className="w-12 h-12 rounded-2xl bg-accent-purple/10 flex items-center justify-center border border-accent-purple/20 shadow-sm">
                 <ShoppingBag size={18} className="text-accent-purple" />
               </div>
               <div className="flex-1">

@@ -43,7 +43,7 @@ export default function ClientesTable({ data, columns, pagination, setPagination
                     <div className="text-center py-10 text-text-muted text-sm">No se encontraron clientes.</div>
                 ) : (
                     table.getRowModel().rows.map(row => (
-                        <div key={row.id} className="bg-bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col gap-3">
+                        <div key={row.id} className="bento-card p-4 flex flex-col gap-3">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="font-bold text-text-primary text-sm">{row.original.nombre}</p>
@@ -84,9 +84,9 @@ export default function ClientesTable({ data, columns, pagination, setPagination
             </div>
 
             {/* --- DESKTOP TABLE VIEW (Visible >= md) --- */}
-            <div className="hidden md:block flex-1 overflow-auto rounded-xl border border-border bg-bg-card">
+            <div className="hidden md:block flex-1 overflow-auto bento-card border border-white/5">
                 <table className="w-full border-collapse text-[13px]">
-                    <thead className="bg-bg-secondary sticky top-0 z-10">
+                    <thead className="bg-bg-secondary/85 backdrop-blur-md sticky top-0 z-10 border-b border-border shadow-sm">
                         {table.getHeaderGroups().map(headerGroup => (
                             <tr key={headerGroup.id}>
                                 {headerGroup.headers.map(header => (
