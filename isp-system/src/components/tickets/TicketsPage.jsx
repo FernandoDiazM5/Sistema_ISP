@@ -228,7 +228,7 @@ export default function TicketsPage() {
       setInlineVisitaData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico, escalationPayload });
     } else if (tipo === 'soporte') {
       setInlineSoporteData({ ticket, client: getClientInfo(ticket.clienteId), diagnostico, escalationPayload });
-    } else if (tipo === 'requerimiento' || tipo === 'planta_externa') {
+    } else if (tipo === 'requerimiento' || tipo === 'planta') {
       // Como no hay modal intermedio para estos dos, se actualiza el ticket de inmediato
       updateTicket(ticketId, escalationPayload);
       if (tipo === 'requerimiento') {
