@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose }) {
   };
 
   const sidebarContent = (
-    <div className="w-64 h-full bg-bg-sidebar border-r border-border flex flex-col py-5 px-3 shadow-2xl lg:shadow-none">
+    <div className="w-[260px] h-full bg-bg-sidebar/95 backdrop-blur-3xl border-r border-white/5 flex flex-col py-6 px-4 shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-10">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-2 mb-8">
         {branding?.appIcon ? (
@@ -127,13 +127,13 @@ export default function Sidebar({ isOpen, onClose }) {
                     key={item.to}
                     to={item.to}
                     onClick={() => { if (onClose) onClose(); }} // Cerrar drawer al navegar
-                    className={({ isActive }) => `flex items-center gap-2.5 py-2 px-3 rounded-[10px] border-none text-[13px] cursor-pointer transition-all w-full text-left
+                    className={({ isActive }) => `flex items-center gap-3 py-2.5 px-3.5 rounded-xl border-none text-[13px] cursor-pointer transition-all w-full text-left font-medium outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50
                       ${isActive
-                        ? 'bg-accent-blue/12 text-accent-blue font-semibold'
-                        : 'bg-transparent text-text-secondary font-normal hover:bg-white/[0.04]'
+                        ? 'bg-accent-blue/10 text-accent-blue shadow-sm shadow-accent-blue/5'
+                        : 'bg-transparent text-text-secondary hover:bg-text-secondary/5 hover:text-text-primary'
                       }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={18} className={({ isActive }) => isActive ? "text-accent-blue" : "text-text-muted"} />
                     {item.label}
                   </NavLink>
                 );

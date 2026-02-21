@@ -238,17 +238,18 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: var(--color-bg-secondary);
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: var(--color-border-light);
-    border-radius: 3px;
+    background: var(--color-border);
+    border-radius: 4px;
+    border: 2px solid var(--color-bg-primary); /* Para efecto de "flotación" */
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -270,7 +271,7 @@
 
   input:focus,
   select:focus {
-    border-color: var(--color-accent-blue);
+    /* Retiramos el border simple en favor de utilidades modulares que controlaremos desde React */
   }
 
   input::placeholder {
@@ -279,6 +280,31 @@
 }
 
 @layer utilities {
+  /* ==================================
+     PREMIUM UI UTILITIES (GLASS/BENTO)
+     ================================== */
+  
+  .glass-panel {
+    @apply bg-bg-card/90 backdrop-blur-xl border border-white/5;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .glass-panel-light {
+    @apply bg-bg-card/90 backdrop-blur-xl border border-black/5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+  }
+
+  .premium-shadow {
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3);
+  }
+
+  .bento-card {
+    @apply relative overflow-hidden rounded-2xl border border-white/5 bg-bg-card transition-all duration-300;
+  }
+  
+  .bento-card:hover {
+    @apply border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] -translate-y-0.5;
+  }
   @keyframes fade-in {
     from {
       opacity: 0;

@@ -26,20 +26,20 @@ const Input = React.memo(function Input({
                 <input
                     type={type}
                     className={`
-            w-full rounded-xl bg-bg-secondary border border-border 
+            w-full rounded-2xl bg-bg-secondary border border-border 
             text-sm text-text-primary placeholder:text-text-muted 
             outline-none transition-all duration-200
-            focus:border-accent-blue focus:bg-bg-card
+            focus:border-accent-blue focus:ring-[3px] focus:ring-accent-blue/20 focus:bg-bg-card
             disabled:opacity-50 disabled:cursor-not-allowed
             ${Icon ? 'pl-9' : 'pl-3'} 
-            ${error ? 'border-red-500 focus:border-red-500' : ''}
+            ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}
             ${className}
             py-2.5
           `}
                     {...props}
                 />
             </div>
-            {error && <span className="text-xs text-red-500">{error}</span>}
+            {error && <span className="text-xs text-red-500 mt-0.5 ml-1">{error}</span>}
         </div>
     );
 });

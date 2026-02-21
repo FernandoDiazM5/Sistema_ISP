@@ -72,21 +72,21 @@ export default function DashboardPage() {
       {/* Row 2: Tech + Connections + TV */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-7">
         {/* Tech distribution */}
-        <div className="animate-fade stagger-3 bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-5 text-text-secondary">Distribución por Tecnología</h3>
+        <div className="animate-fade stagger-3 bento-card p-6">
+          <h3 className="text-sm font-bold mb-5 text-text-secondary uppercase tracking-wide">Distribución por Tecnología</h3>
           <div className="flex flex-col gap-4">
             {[
               { label: 'Radio Enlace', count: stats.radio, color: '#3b82f6' },
               { label: 'Fibra Óptica', count: stats.fibra, color: '#8b5cf6' },
               { label: 'No Determinado', count: stats.total - stats.radio - stats.fibra, color: '#6b7280' },
             ].map(t => (
-              <div key={t.label}>
+              <div key={t.label} className="group cursor-default">
                 <div className="flex justify-between mb-1.5 text-[13px]">
-                  <span className="font-semibold" style={{ color: t.color }}>{t.label}</span>
-                  <span className="font-mono text-xs">{t.count} ({pct(t.count)}%)</span>
+                  <span className="font-semibold transition-colors" style={{ color: t.color }}>{t.label}</span>
+                  <span className="font-mono text-xs font-bold text-text-primary group-hover:text-accent-blue transition-colors">{t.count} ({pct(t.count)}%)</span>
                 </div>
-                <div className="h-1.5 bg-bg-secondary rounded-sm">
-                  <div className="h-full rounded-sm transition-all duration-700"
+                <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-1000 ease-out"
                     style={{ width: `${pct(t.count)}%`, background: t.color }} />
                 </div>
               </div>
@@ -95,48 +95,50 @@ export default function DashboardPage() {
         </div>
 
         {/* Connection status donut */}
-        <div className="animate-fade stagger-4 bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-5 text-text-secondary">Estado de Conexiones</h3>
+        <div className="animate-fade stagger-4 bento-card p-6">
+          <h3 className="text-sm font-bold mb-5 text-text-secondary uppercase tracking-wide">Estado de Conexiones</h3>
           <div className="flex items-center justify-center gap-8 h-[calc(100%-40px)]">
             <div className="text-center">
-              <div className="w-[90px] h-[90px] rounded-full flex items-center justify-center relative"
+              <div className="w-[100px] h-[100px] rounded-full flex items-center justify-center relative shadow-inner"
                 style={{
-                  background: `conic-gradient(#10b981 ${stats.online / (stats.total || 1) * 360}deg, #1e293b ${stats.online / (stats.total || 1) * 360}deg)`,
+                  background: `conic-gradient(#10b981 ${stats.online / (stats.total || 1) * 360}deg, var(--color-bg-secondary) ${stats.online / (stats.total || 1) * 360}deg)`,
                 }}>
-                <div className="w-[68px] h-[68px] rounded-full bg-bg-card flex items-center justify-center">
-                  <span className="font-mono text-lg font-bold">{pct(stats.online)}%</span>
+                <div className="w-[76px] h-[76px] rounded-full bg-bg-card flex items-center justify-center shadow-sm">
+                  <span className="font-mono text-xl font-bold text-text-primary">{pct(stats.online)}%</span>
                 </div>
               </div>
-              <p className="text-[11px] text-text-muted mt-2">ONLINE</p>
+              <p className="text-[11px] font-bold text-text-muted mt-3 tracking-wider">ONLINE RATES</p>
             </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-accent-green" />
-                <span className="text-xs">Online: {stats.online}</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2.5 bg-bg-secondary/50 px-3 py-1.5 rounded-lg border border-white/5">
+                <span className="w-2.5 h-2.5 rounded-full bg-accent-green shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                <span className="text-xs font-semibold text-text-primary">Online: {stats.online}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-bg-secondary border-2 border-gray-600" />
-                <span className="text-xs">Offline: {stats.offline}</span>
+              <div className="flex items-center gap-2.5 bg-bg-secondary/50 px-3 py-1.5 rounded-lg border border-white/5">
+                <span className="w-2.5 h-2.5 rounded-full bg-bg-secondary border-2 border-text-muted" />
+                <span className="text-xs font-semibold text-text-secondary">Offline: {stats.offline}</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* TV services */}
-        <div className="animate-fade stagger-5 bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-5 text-text-secondary">Servicios Adicionales</h3>
-          <div className="text-center mb-4">
-            <p className="text-4xl font-bold font-mono text-accent-cyan">{stats.conTV}</p>
-            <p className="text-xs text-text-muted">Clientes con TV/IPTV</p>
-          </div>
-          <div className="flex justify-center gap-4">
-            <div className="text-center py-2 px-4 bg-bg-secondary rounded-[10px]">
-              <p className="text-lg font-bold">{stats.total - stats.conTV}</p>
-              <p className="text-[10px] text-text-muted">Solo Internet</p>
+        <div className="animate-fade stagger-5 bento-card p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-bold mb-5 text-text-secondary uppercase tracking-wide">Servicios Adicionales</h3>
+            <div className="text-center mb-6">
+              <p className="text-[42px] leading-tight font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-accent-cyan to-accent-blue drop-shadow-sm">{stats.conTV}</p>
+              <p className="text-[11px] font-bold text-text-muted uppercase tracking-wider mt-1">Suscripciones TV/IPTV</p>
             </div>
-            <div className="text-center py-2 px-4 bg-bg-secondary rounded-[10px]">
-              <p className="text-lg font-bold">{pct(stats.conTV)}%</p>
-              <p className="text-[10px] text-text-muted">Penetración TV</p>
+          </div>
+          <div className="flex justify-center gap-3">
+            <div className="flex-1 text-center py-2.5 px-2 bg-bg-secondary/60 rounded-xl border border-white/5 hover:bg-bg-secondary transition-colors">
+              <p className="text-lg font-bold text-text-primary">{stats.total - stats.conTV}</p>
+              <p className="text-[10px] uppercase tracking-wide font-semibold text-text-muted mt-0.5">Solo Internet</p>
+            </div>
+            <div className="flex-1 text-center py-2.5 px-2 bg-bg-secondary/60 rounded-xl border border-white/5 hover:bg-bg-secondary transition-colors">
+              <p className="text-lg font-bold text-text-primary">{pct(stats.conTV)}%</p>
+              <p className="text-[10px] uppercase tracking-wide font-semibold text-text-muted mt-0.5">Penetración</p>
             </div>
           </div>
         </div>
@@ -144,19 +146,19 @@ export default function DashboardPage() {
 
       {/* Row 3: Top nodos + Top planes */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="animate-fade stagger-5 bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-4 text-text-secondary">Top Nodos / Torres</h3>
-          <div className="flex flex-col gap-2">
+        <div className="animate-fade stagger-5 bento-card p-6">
+          <h3 className="text-sm font-bold mb-4 text-text-secondary tracking-wide uppercase">Top Nodos / Torres</h3>
+          <div className="flex flex-col gap-3">
             {stats.topNodos.map(([nodo, count], i) => (
               <div key={nodo} className="flex items-center gap-3 py-1.5">
-                <span className="font-mono text-[11px] text-text-muted w-5">{i + 1}</span>
+                <span className="font-mono text-[11px] text-text-muted w-5 bg-bg-secondary w-6 h-6 flex items-center justify-center rounded-md font-bold">{i + 1}</span>
                 <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-medium">{nodo}</span>
-                    <span className="font-mono text-[11px] text-text-secondary">{count}</span>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-text-primary">{nodo}</span>
+                    <span className="font-mono text-[11px] text-text-secondary font-bold">{count}</span>
                   </div>
-                  <div className="h-[3px] bg-bg-secondary rounded-sm">
-                    <div className="h-full bg-accent-blue rounded-sm"
+                  <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-accent-blue rounded-full transition-all duration-1000 ease-out"
                       style={{ width: `${(count / (stats.topNodos[0]?.[1] || 1)) * 100}%` }} />
                   </div>
                 </div>
@@ -165,19 +167,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="animate-fade stagger-6 bg-bg-card rounded-2xl p-6 border border-border">
-          <h3 className="text-sm font-semibold mb-4 text-text-secondary">Top Planes Contratados</h3>
-          <div className="flex flex-col gap-2">
+        <div className="animate-fade stagger-6 bento-card p-6">
+          <h3 className="text-sm font-bold mb-4 text-text-secondary tracking-wide uppercase">Top Planes Contratados</h3>
+          <div className="flex flex-col gap-3">
             {stats.topPlanes.map(([plan, count], i) => (
               <div key={plan} className="flex items-center gap-3 py-1.5">
-                <span className="font-mono text-[11px] text-text-muted w-5">{i + 1}</span>
+                <span className="font-mono text-[11px] text-text-muted w-5 bg-bg-secondary w-6 h-6 flex items-center justify-center rounded-md font-bold">{i + 1}</span>
                 <div className="flex-1">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[11px] font-medium max-w-[75%] overflow-hidden text-ellipsis whitespace-nowrap">{plan}</span>
-                    <span className="font-mono text-[11px] text-text-secondary">{count}</span>
+                  <div className="flex justify-between mb-1.5">
+                    <span className="text-[11px] font-semibold text-text-primary max-w-[75%] overflow-hidden text-ellipsis whitespace-nowrap">{plan}</span>
+                    <span className="font-mono text-[11px] text-text-secondary font-bold">{count}</span>
                   </div>
-                  <div className="h-[3px] bg-bg-secondary rounded-sm">
-                    <div className="h-full bg-accent-purple rounded-sm"
+                  <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-accent-purple rounded-full transition-all duration-1000 ease-out"
                       style={{ width: `${(count / (stats.topPlanes[0]?.[1] || 1)) * 100}%` }} />
                   </div>
                 </div>
