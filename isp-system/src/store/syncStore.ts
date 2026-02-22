@@ -47,6 +47,7 @@ export interface SyncStoreState {
     livePushing: boolean;
     lastLiveUpdate: string | null;
     liveUnsubscribe: (() => void) | null;
+    isReceivingRemoteData: boolean;
 
     // Cola Offline
     offlineQueue: any[];
@@ -86,6 +87,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
     livePushing: false,
     lastLiveUpdate: null,
     liveUnsubscribe: null,
+    isReceivingRemoteData: false,
 
     // ===================== OFFLINE QUEUE =====================
     offlineQueue: JSON.parse(localStorage.getItem('isp_offline_queue') || '[]'),
@@ -151,15 +153,19 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
         const unsubTickets = subscribeToOpenTickets((liveOpenTickets: any[]) => {
             const storeState = useStore.getState();
             if (storeState.applyDeltas && liveOpenTickets.length > 0) {
+                // Bloqueamos el hook de auto-push local para no generar The Ping Pong Loop
+                set({ isReceivingRemoteData: true });
                 // Sobrescribe el store local con estos mini-cambios y los guarda en IndexedDB.
                 storeState.applyDeltas({ tickets: liveOpenTickets });
+                // Liberamos el candado una vez inyectada la mutación
+                set({ isReceivingRemoteData: false });
             }
         });
         unsubscribers.push(unsubTickets as () => void);
 
         // 2. Suscribirse a cambios locales del store para auto-push NATIVO (Escritura delta)
         const storeUnsub = useStore.subscribe((state: any, prevState: any) => {
-            if (!get().liveEnabled) return;
+            if (!get().liveEnabled || get().isReceivingRemoteData) return;
 
             const dataKeys = [
                 'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
@@ -247,6 +253,8 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             // Inyectar a Zustand y persistir permanentemente en IndexedDB
             const storeState = useStore.getState();
 
+            set({ isReceivingRemoteData: true }); // BLOQUEO ANTI-REBOTE
+
             if (lastSyncStr && storeState.applyDeltas) {
                 // Fusión inteligente: Solo sobreescribir los items nuevos/modificados
                 storeState.applyDeltas(data);
@@ -256,6 +264,8 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             } else {
                 useStore.setState(data);
             }
+
+            set({ isReceivingRemoteData: false }); // DESBLOQUEO
 
             const now = new Date().toISOString();
             localStorage.setItem('isp_last_sync', now);
