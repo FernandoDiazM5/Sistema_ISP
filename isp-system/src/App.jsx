@@ -39,7 +39,6 @@ const UsuariosPage = lazy(() => import('./components/usuarios/UsuariosPage'));
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const loadDemoData = useStore(s => s.loadDemoData);
   const clients = useStore(s => s.clients);
   const dataSource = useStore(s => s.dataSource);
 
@@ -59,12 +58,6 @@ function AppContent() {
       document.documentElement.setAttribute('data-theme', theme);
     }
   }, [theme]);
-
-  useEffect(() => {
-    if (storeReady && user && clients.length === 0 && dataSource === 'demo') {
-      loadDemoData();
-    }
-  }, [storeReady, user, clients.length, dataSource, loadDemoData]);
 
   // Iniciar live sync cuando el store esta listo y el usuario autenticado
   useEffect(() => {
