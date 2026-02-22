@@ -147,6 +147,52 @@ export const deleteDocument = async (collectionName, docId) => {
     }
 };
 
+/**
+ * Extrae todos los documentos de las colecciones activas para una sincronizacion viva
+ * @param {function} onProgress Callback para la barra de progreso
+ */
+export const pullLiveCollections = async (onProgress = () => { }) => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
+
+    const collectionsToSync = [
+        'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
+        'visitas', 'instalaciones', 'derivaciones', 'postVenta',
+        'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
+        'whatsappLogs', 'templates', 'whatsappCategories',
+        'categorias', 'subcategorias', 'prioridadesSLA',
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+    ];
+
+    const data = {};
+    let currentStep = 0;
+    const totalSteps = collectionsToSync.length;
+
+    for (const colName of collectionsToSync) {
+        currentStep++;
+        onProgress({
+            step: currentStep,
+            totalSteps,
+            label: `Sincronizando ${colName}...`,
+            percent: Math.round((currentStep / totalSteps) * 100)
+        });
+
+        try {
+            const querySnapshot = await getDocs(collection(database, colName));
+            const items = [];
+            querySnapshot.forEach(doc => {
+                items.push({ id: doc.id, ...doc.data() });
+            });
+            data[colName] = items;
+        } catch (e) {
+            console.error(`Error al descargar coleccion viva ${colName}:`, e);
+            data[colName] = [];
+        }
+    }
+
+    return data;
+};
+
 // ===================== MIGRATION HELPERS (LEGACY SUPPORT) =====================
 
 // ===================== MIGRATION HELPERS (LEGACY SUPPORT) =====================

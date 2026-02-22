@@ -1,9 +1,10 @@
-import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog } from 'lucide-react';
+import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
 import { ROLES as USER_ROLES, MODULES } from '../../types/user';
 import useStore from '../../store/useStore';
+import useSyncStore from '../../store/syncStore';
 
 const navSections = [
   {
@@ -66,6 +67,13 @@ export default function Sidebar({ isOpen, onClose }) {
   const role = ROLES[user?.rol] || ROLES.TECNICO;
   const hasPermission = useStore(s => s.hasPermission);
   const branding = useStore(s => s.branding);
+
+  const livePull = useSyncStore(s => s.livePull);
+  const isSyncing = useSyncStore(s => s.isSyncing);
+
+  const handleLiveSync = async () => {
+    await livePull();
+  };
 
   // Filtrar items de navegación basado en permisos
   const getFilteredItems = (items) => {
@@ -159,6 +167,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <p className="text-[10px] font-medium" style={{ color: role.color }}>{role.label}</p>
           </div>
         </div>
+        <button onClick={handleLiveSync} disabled={isSyncing}
+          className="flex items-center gap-1.5 w-full justify-center py-1.5 mb-1.5 rounded-lg border border-accent-blue/30 bg-accent-blue/10 text-accent-blue text-[11px] font-semibold cursor-pointer hover:bg-accent-blue/20 transition-colors disabled:opacity-50">
+          <RefreshCw size={12} className={isSyncing ? "animate-spin" : ""} />
+          {isSyncing ? 'Descargando...' : 'Sincronizar Cloud'}
+        </button>
         <button onClick={logout}
           className="flex items-center gap-1.5 w-full justify-center py-1.5 rounded-lg border border-border bg-transparent text-text-muted text-[11px] cursor-pointer hover:border-accent-red hover:text-accent-red transition-colors">
           <LogOut size={12} />

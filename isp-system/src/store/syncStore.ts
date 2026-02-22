@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection } from '../api/firebase';
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections } from '../api/firebase';
 
 // ID unico de esta sesion (para no re-aplicar nuestros propios pushes)
 const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -52,7 +52,7 @@ export interface SyncStoreState {
     startLiveSync: () => void;
     stopLiveSync: () => void;
     debouncedLivePush: () => void;
-    livePull: () => Promise<void>;
+    livePull: () => Promise<boolean>;
     syncPush: () => Promise<any>;
     syncPull: () => Promise<boolean>;
     loadVersions: () => Promise<any[]>;
@@ -171,7 +171,28 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
 
     // Ya no usamos pushLiveData en el nuevo modelo atómico
     debouncedLivePush: () => { },
-    livePull: async () => { },
+
+    // ===================== LIVE PULL (DESCARGA DIRECTA DE COLECCIONES) =====================
+    livePull: async () => {
+        set({ isSyncing: true, syncError: null, syncProgress: { step: 0, totalSteps: 1, label: 'Iniciando conexión...', percent: 0 } });
+        try {
+            const onProgress = (info) => set({ syncProgress: info });
+            const data = await pullLiveCollections(onProgress);
+
+            // Inyectar datos directamente a Zustand (lo cual disparará guardados IndexedDB)
+            useStore.setState(data);
+
+            const now = new Date().toISOString();
+            localStorage.setItem('isp_last_sync', now);
+            set({ lastSync: now, isSyncing: false, syncProgress: null });
+
+            return true;
+        } catch (error) {
+            console.error('Live Pull Error:', error);
+            set({ isSyncing: false, syncError: error.message, syncProgress: null });
+            return false;
+        }
+    },
 
     // ===================== PUSH (SUBIR RESPALDO - BACKUP MANUAL) =====================
     syncPush: async () => {
