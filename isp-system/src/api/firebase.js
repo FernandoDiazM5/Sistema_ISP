@@ -11,7 +11,9 @@ import {
     onSnapshot,
     initializeFirestore,
     persistentLocalCache,
-    persistentMultipleTabManager
+    persistentMultipleTabManager,
+    query,
+    where
 } from 'firebase/firestore';
 import { CONFIG } from '../utils/constants';
 
@@ -21,9 +23,15 @@ const getConfig = () => CONFIG.FIREBASE;
 let db = null;
 let app = null;
 
+// ===================== OFFLINE QUEUE INTERCEPTOR =====================
+let offlineCallback = null;
+export const setOfflineQueueCallback = (cb) => {
+    offlineCallback = cb;
+};
+
 export const initFirebase = () => {
     const config = getConfig();
-    if (!config.apiKey || !config.projectId) {
+    if (!config || !config.apiKey || !config.projectId) {
         console.warn('Firebase config missing');
         return null;
     }
@@ -56,7 +64,7 @@ export const getFirebaseApp = () => {
 // ===================== EXPORTED UTILS =====================
 
 /**
- * Guarda un documento en una colección específica
+ * Guarda un documento en una colección específica (con soporte Offline Queue)
  * @param {string} collectionName 
  * @param {object} data - Debe incluir 'id' si es posible
  * @returns {Promise<boolean>}
@@ -65,17 +73,32 @@ export const saveDocument = async (collectionName, data) => {
     const database = initFirebase();
     if (!database) return false;
 
-    try {
-        const docId = data.id || doc(collection(database, collectionName)).id;
-        const finalData = { ...data, updatedAt: new Date().toISOString() };
-        if (!finalData.id) finalData.id = docId;
+    const docId = data.id || doc(collection(database, collectionName)).id;
+    const finalData = { ...data, updatedAt: new Date().toISOString() };
+    if (!finalData.id) finalData.id = docId;
 
+    try {
         await setDoc(doc(database, collectionName, docId), finalData, { merge: true });
         return true;
     } catch (error) {
         console.error(`Error saving document to ${collectionName}:`, error);
+        // Si no hay red, la petición de Firebase suele lanzar 'unavailable'
+        if (error.code === 'unavailable' || !navigator.onLine) {
+            console.log(`Guardado offline encolado: ${collectionName}/${docId}`);
+            if (offlineCallback) offlineCallback({ type: 'save', collectionName, id: docId, data: finalData });
+        }
         return false;
     }
+};
+
+/**
+ * Guarda un documento sin interceptar errores para purgar la cola interna
+ */
+export const saveDocumentDirect = async (collectionName, data) => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
+    const docRef = doc(database, collectionName, data.id);
+    await setDoc(docRef, data, { merge: true });
 };
 
 /**
@@ -132,7 +155,33 @@ export const subscribeToCollection = (collectionName, callback) => {
 };
 
 /**
- * Elimina un documento
+ * Escucha cambios en tiempo real SÓLO en tickets abiertos para ahorrar cuotas de lectura API
+ * @param {function} callback
+ * @returns {function} unsubscribe
+ */
+export const subscribeToOpenTickets = (callback) => {
+    const database = initFirebase();
+    if (!database) return () => { };
+
+    const openStatus = ['EST-01', 'EST-02', 'EST-03', 'Abierto', 'En Proceso', 'Escalado'];
+    const q = query(
+        collection(database, 'tickets'),
+        where('estado', 'in', openStatus)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const items = [];
+        snapshot.forEach(doc => {
+            items.push({ id: doc.id, ...doc.data() });
+        });
+        callback(items);
+    }, (error) => {
+        console.error(`Error en Stream Híbrido de Tickets:`, error);
+    });
+};
+
+/**
+ * Elimina un documento (con soporte Offline Queue)
  */
 export const deleteDocument = async (collectionName, docId) => {
     const database = initFirebase();
@@ -143,15 +192,30 @@ export const deleteDocument = async (collectionName, docId) => {
         return true;
     } catch (error) {
         console.error(`Error deleting from ${collectionName}:`, error);
+        if (error.code === 'unavailable' || !navigator.onLine) {
+            console.log(`Borrado offline encolado para ${collectionName}/${docId}`);
+            if (offlineCallback) offlineCallback({ type: 'delete', collectionName, id: docId });
+        }
         return false;
     }
 };
 
 /**
+ * Elimina un documento sin interceptar errores. Útil para reintentar desde la Offline Queue.
+ */
+export const deleteDocumentDirect = async (collectionName, docId) => {
+    const database = initFirebase();
+    if (!database) throw new Error('Firebase no configurado');
+    await deleteDoc(doc(database, collectionName, docId));
+};
+
+/**
  * Extrae todos los documentos de las colecciones activas para una sincronizacion viva
+ * Si pasamos lastSyncTimestamp, realizará una sincronización Delta (incremental).
+ * @param {string|null} lastSyncTimestamp Fecha ISO de la ultima sincronizacion
  * @param {function} onProgress Callback para la barra de progreso
  */
-export const pullLiveCollections = async (onProgress = () => { }) => {
+export const pullLiveCollections = async (lastSyncTimestamp = null, onProgress = (info) => { }) => {
     const database = initFirebase();
     if (!database) throw new Error('Firebase no configurado');
 
@@ -178,7 +242,15 @@ export const pullLiveCollections = async (onProgress = () => { }) => {
         });
 
         try {
-            const querySnapshot = await getDocs(collection(database, colName));
+            const colRef = collection(database, colName);
+            let q = colRef;
+
+            if (lastSyncTimestamp) {
+                // Sincronización Delta Incremental
+                q = query(colRef, where('updatedAt', '>', lastSyncTimestamp));
+            }
+
+            const querySnapshot = await getDocs(q);
             const items = [];
             querySnapshot.forEach(doc => {
                 items.push({ id: doc.id, ...doc.data() });
@@ -275,7 +347,7 @@ const CLIENT_CHUNK_SIZE = 200;
 // TODO: Todo se guarda SÓLO en backups_history/{versionId}/data/*
 // Ya no se escriben colecciones separadas "backups" ni "clients"
 // onProgress(info) → { step, totalSteps, label, percent }
-export const pushToCloud = async (data, onProgress = () => { }) => {
+export const pushToCloud = async (data, onProgress = (info) => { }) => {
     const database = initFirebase();
     if (!database) throw new Error('Firebase no configurado');
 

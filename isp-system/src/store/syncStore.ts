@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections } from '../api/firebase';
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections, subscribeToOpenTickets, setOfflineQueueCallback, saveDocumentDirect, deleteDocumentDirect } from '../api/firebase';
 
 // ID unico de esta sesion (para no re-aplicar nuestros propios pushes)
 const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -48,6 +48,12 @@ export interface SyncStoreState {
     lastLiveUpdate: string | null;
     liveUnsubscribe: (() => void) | null;
 
+    // Cola Offline
+    offlineQueue: any[];
+    addOfflineAction: (action: any) => void;
+    removeOfflineAction: (id: string, col: string) => void;
+    processOfflineQueue: () => Promise<void>;
+
     setSyncMode: (mode: 'manual' | 'auto') => void;
     startLiveSync: () => void;
     stopLiveSync: () => void;
@@ -81,6 +87,56 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
     lastLiveUpdate: null,
     liveUnsubscribe: null,
 
+    // ===================== OFFLINE QUEUE =====================
+    offlineQueue: JSON.parse(localStorage.getItem('isp_offline_queue') || '[]'),
+
+    addOfflineAction: (action: any) => {
+        set((state: any) => {
+            const newQueue = state.offlineQueue.filter((item: any) =>
+                !(item.collectionName === action.collectionName && item.id === action.id)
+            );
+            newQueue.push({ ...action, timestamp: Date.now() });
+            localStorage.setItem('isp_offline_queue', JSON.stringify(newQueue));
+            return { offlineQueue: newQueue };
+        });
+    },
+
+    removeOfflineAction: (id: string, col: string) => {
+        set((state: any) => {
+            const newQueue = state.offlineQueue.filter((item: any) =>
+                !(item.collectionName === col && item.id === id)
+            );
+            localStorage.setItem('isp_offline_queue', JSON.stringify(newQueue));
+            return { offlineQueue: newQueue };
+        });
+    },
+
+    processOfflineQueue: async () => {
+        const state = get();
+        if (state.offlineQueue.length === 0 || !navigator.onLine) return;
+
+        set({ isSyncing: true });
+
+        // Clonamos la cola para procesarla
+        const queueToProcess = [...state.offlineQueue];
+        for (const action of queueToProcess) {
+            try {
+                if (action.type === 'save') {
+                    await saveDocumentDirect(action.collectionName, action.data);
+                } else if (action.type === 'delete') {
+                    await deleteDocumentDirect(action.collectionName, action.id);
+                }
+                // Si tuvo éxito nativo (no lanzó error), lo removemos de la cola definitivamente
+                get().removeOfflineAction(action.id, action.collectionName);
+            } catch (err) {
+                console.error(`Error purgando elemento offline col:${action.collectionName} id:${action.id}`, err);
+                // Queda atrapado en localStorage para el próximo intento online
+            }
+        }
+
+        set({ isSyncing: false });
+    },
+
     setSyncMode: (mode) => set({ syncMode: mode }),
 
     // ===================== LIVE SYNC (NATIVO FIRESTORE) =====================
@@ -89,13 +145,17 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
 
         const unsubscribers: (() => void)[] = [];
 
-        // 1. Array de colecciones que queremos suscribir localmente
-        // El user pidió limitar consultas para no gastar lecturas infinitas
-        // Se aplicarán las suscripciones a través de hooks nativos o desde aquí.
-        // Dado que se pidió limitar las suscripciones: vamos a suscribir solo a tickets abiertos como ejemplo de ahorro.
-        // Por simplicidad arquitectónica temporal, mantendremos la carga desde IndexedDB como principal (ya en hydrateStore)
-        // y este liveSync atrapará deltas salientes. Las suscripciones entrantes reales de firestore las dejaremos para otro refactor 
-        // o implementaremos suscripciones simples mediante query builder posterior.
+        // 1. Suscripciones Híbridas (Lecturas Activas pero Controladas)
+        // Escuchamos SÓLO los tickets abiertos en Firestore.
+        // Cada vez que hay un nuevo ticket o se edita en la nube, entra silenciosamente aquí.
+        const unsubTickets = subscribeToOpenTickets((liveOpenTickets: any[]) => {
+            const storeState = useStore.getState();
+            if (storeState.applyDeltas && liveOpenTickets.length > 0) {
+                // Sobrescribe el store local con estos mini-cambios y los guarda en IndexedDB.
+                storeState.applyDeltas({ tickets: liveOpenTickets });
+            }
+        });
+        unsubscribers.push(unsubTickets as () => void);
 
         // 2. Suscribirse a cambios locales del store para auto-push NATIVO (Escritura delta)
         const storeUnsub = useStore.subscribe((state: any, prevState: any) => {
@@ -176,13 +236,23 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
     livePull: async () => {
         set({ isSyncing: true, syncError: null, syncProgress: { step: 0, totalSteps: 1, label: 'Iniciando conexión...', percent: 0 } });
         try {
-            const onProgress = (info) => set({ syncProgress: info });
-            const data = await pullLiveCollections(onProgress);
+            const onProgress = (info: any) => set({ syncProgress: info });
+
+            // Obtener el registro de la última sincronización
+            const lastSyncStr = get().lastSync; // ej. ISO string
+
+            // Descargar sólo las novedades (Deltas) si tenemos registro previo, sino descarga completa
+            const data = await pullLiveCollections(lastSyncStr, onProgress);
 
             // Inyectar a Zustand y persistir permanentemente en IndexedDB
-            const restoreSystem = useStore.getState().restoreSystem;
-            if (restoreSystem) {
-                restoreSystem(data);
+            const storeState = useStore.getState();
+
+            if (lastSyncStr && storeState.applyDeltas) {
+                // Fusión inteligente: Solo sobreescribir los items nuevos/modificados
+                storeState.applyDeltas(data);
+            } else if (storeState.restoreSystem) {
+                // Sincronización completa: Sobreescritura total
+                storeState.restoreSystem(data);
             } else {
                 useStore.setState(data);
             }
@@ -313,5 +383,20 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
         }
     },
 }));
+
+// ===================== OFFLINE GLUE =====================
+setOfflineQueueCallback((action: any) => {
+    useSyncStore.getState().addOfflineAction(action);
+});
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('online', () => {
+        const state = useSyncStore.getState();
+        if (state.offlineQueue.length > 0) {
+            console.log('🌐 Conexión recuperada. Aplicando retenciones offline...');
+            state.processOfflineQueue();
+        }
+    });
+}
 
 export default useSyncStore;

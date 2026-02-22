@@ -279,7 +279,73 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     deleteDocument('tecnicos', id);
   },
 
-  // ===================== RESTORE SYSTEM (para backups y live sync) =====================
+  // ===================== APPLY DELTAS (para live sync incremental) =====================
+  applyDeltas: (data: any) => {
+    const keysToRestore = [
+      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
+      'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
+      'columnPrefs', 'cleaningOptions', 'importHistory',
+      'branding', 'customRolePermissions', 'whatsappCategories',
+      'categorias', 'subcategorias', 'prioridadesSLA',
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+    ];
+
+    set((state: any) => {
+      const updates: any = {};
+      for (const key of keysToRestore) {
+        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+          const incomingItems = data[key];
+          const existingItems = state[key] || [];
+
+          if (!Array.isArray(existingItems)) {
+            updates[key] = incomingItems; // Fallback para objetos planos
+          } else {
+            // Fusionar arrays por ID, el incoming sobreescribe al local existente
+            const mergedMap = new Map(existingItems.map((item: any) => [item.id, item]));
+            for (const incoming of incomingItems) {
+              mergedMap.set(incoming.id, incoming);
+            }
+            updates[key] = Array.from(mergedMap.values());
+          }
+        }
+      }
+      return updates;
+    });
+
+    // Guardar en DB asíncronamente luego de setear
+    setTimeout(() => {
+      const state = get();
+      const dbKeyMap = {
+        clients: 'isp_clients', tickets: 'isp_tickets', averias: 'isp_averias',
+        equipos: 'isp_equipos', visitas: 'isp_visitas', instalaciones: 'isp_instalaciones',
+        derivaciones: 'isp_derivaciones', postVenta: 'isp_postVenta',
+        sesionesRemoto: 'isp_sesionesRemoto', movimientosEquipos: 'isp_movimientosEquipos',
+        whatsappLogs: 'isp_whatsappLogs', templates: 'isp_templates',
+        requerimientos: 'isp_requerimientos', columnPrefs: 'isp_col_prefs',
+        cleaningOptions: 'isp_cleaningOptions', importHistory: 'isp_importHistory',
+        branding: 'isp_branding', customRolePermissions: 'isp_customRolePermissions',
+        whatsappCategories: 'isp_whatsappCategories',
+        categorias: 'isp_categorias',
+        subcategorias: 'isp_subcategorias',
+        prioridadesSLA: 'isp_prioridadesSLA',
+        estadosCatalogo: 'isp_estadosCatalogo',
+        catalogoServicios: 'isp_catalogoServicios',
+        tiposRequerimiento: 'isp_tiposRequerimiento',
+      };
+
+      for (const key of keysToRestore) {
+        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+          const dbKey = (dbKeyMap as any)[key];
+          if (dbKey && state[key] !== undefined) {
+            db.set(dbKey, state[key]).catch(() => { });
+          }
+        }
+      }
+    }, 0);
+  },
+
+  // ===================== RESTORE SYSTEM (para backups y live sync full) =====================
   restoreSystem: (data: any) => {
     const keysToRestore = [
       'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',

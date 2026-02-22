@@ -1,4 +1,4 @@
-import { LogOut, Menu, Cloud, CloudOff, Loader2 } from 'lucide-react';
+import { LogOut, Menu, Cloud, CloudOff, Loader2, WifiOff } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
@@ -10,6 +10,8 @@ export default function Header({ onMenuClick }) {
   const branding = useStore(s => s.branding);
   const liveEnabled = useSyncStore(s => s.liveEnabled);
   const livePushing = useSyncStore(s => s.livePushing);
+  const offlineQueue = useSyncStore(s => s.offlineQueue);
+  const pendingCount = offlineQueue?.length || 0;
 
   const defaultSyncLabel = lastImport
     ? `Última: ${new Date(lastImport.date).toLocaleDateString('es-PE')}`
@@ -46,6 +48,14 @@ export default function Header({ onMenuClick }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Offline Queue Indicator */}
+        {pendingCount > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 border border-red-500/20 rounded-md text-red-500" title={`Reteniendo ${pendingCount} operaciones sin red`}>
+            <WifiOff size={14} className="animate-pulse" />
+            <span className="text-[10px] font-medium hidden sm:inline">{pendingCount} pdtes.</span>
+          </div>
+        )}
+
         {/* Live Sync Indicator */}
         <div className="flex items-center gap-1.5" title={liveEnabled ? (livePushing ? 'Sincronizando...' : 'Sync en vivo activo') : 'Sync desconectado'}>
           {livePushing ? (
