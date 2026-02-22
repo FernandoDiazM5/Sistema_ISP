@@ -133,8 +133,12 @@ export default function Sidebar({ isOpen, onClose }) {
                         : 'bg-transparent text-text-secondary hover:bg-text-secondary/5 hover:text-text-primary'
                       }`}
                   >
-                    <Icon size={18} className={({ isActive }) => isActive ? "text-accent-blue" : "text-text-muted"} />
-                    {item.label}
+                    {({ isActive }) => (
+                      <>
+                        <Icon size={18} className={isActive ? "text-accent-blue" : "text-text-muted"} />
+                        {item.label}
+                      </>
+                    )}
                   </NavLink>
                 );
               })}
