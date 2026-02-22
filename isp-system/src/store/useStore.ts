@@ -287,6 +287,8 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',
       'branding', 'customRolePermissions', 'whatsappCategories',
+      'categorias', 'subcategorias', 'prioridadesSLA',
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
     ];
     const updates: any = {};
     for (const key of keysToRestore) {

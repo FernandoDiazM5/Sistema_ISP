@@ -179,8 +179,13 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             const onProgress = (info) => set({ syncProgress: info });
             const data = await pullLiveCollections(onProgress);
 
-            // Inyectar datos directamente a Zustand (lo cual disparará guardados IndexedDB)
-            useStore.setState(data);
+            // Inyectar a Zustand y persistir permanentemente en IndexedDB
+            const restoreSystem = useStore.getState().restoreSystem;
+            if (restoreSystem) {
+                restoreSystem(data);
+            } else {
+                useStore.setState(data);
+            }
 
             const now = new Date().toISOString();
             localStorage.setItem('isp_last_sync', now);
