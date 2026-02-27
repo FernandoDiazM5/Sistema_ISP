@@ -251,7 +251,8 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'columnPrefs', 'cleaningOptions', 'importHistory',
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
-      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
+      'clientChanges'
     ];
 
     set((state: any) => {
@@ -297,7 +298,8 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'columnPrefs', 'cleaningOptions', 'importHistory',
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
-      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
+      'clientChanges'
     ];
     const updates: any = {};
     for (const key of keysToRestore) {

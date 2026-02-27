@@ -26,6 +26,16 @@ export const createClientsSlice = (set, get) => ({
         saveToDB('isp_dataSource', 'excel');
     },
 
+    // ===================== HISTORIAL DE CAMBIOS DEL CLIENTE =====================
+    clientChanges: [],
+
+    addClientChanges: (changesArray) => set(s => {
+        if (!changesArray || changesArray.length === 0) return s;
+        const newChanges = [...changesArray, ...(s.clientChanges || [])];
+        saveToDB('isp_client_changes', newChanges);
+        return { clientChanges: newChanges };
+    }),
+
     // ===================== COLUMN PREFERENCES =====================
     columnPrefs: {
         visible: ['id', 'nombre', 'tecnologia', 'plan', 'precio', 'estado_cuenta', 'status', 'deuda_monto'],

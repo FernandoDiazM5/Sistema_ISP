@@ -12,13 +12,7 @@ import ManualReviewTable from './ManualReviewTable';
 import SyncStatus from './SyncStatus';
 
 export default function ImportacionPage() {
-  const clients = useStore(s => s.clients);
-  const importClients = useStore(s => s.importClients);
-  const setLastImport = useStore(s => s.setLastImport);
-  const addImportRecord = useStore(s => s.addImportRecord);
-  const cleaningOptions = useStore(s => s.cleaningOptions);
-  const restoreSystem = useStore(s => s.restoreSystem);
-  const factoryReset = useStore(s => s.factoryReset);
+  const { clients, importClients, setLastImport, addImportRecord, cleaningOptions, restoreSystem, factoryReset, importHistory, setCleaningOptions, addClientChanges } = useStore();
 
   const [step, setStep] = useState('upload'); // upload | processing | preview | finished
   const [fileName, setFileName] = useState('');
@@ -142,6 +136,25 @@ export default function ImportacionPage() {
     }
 
     importClients(finalData);
+
+    // [NUEVO] Registrar auditoría de cambios para la Pestaña "Cambios"
+    if (importMode !== 'completa') {
+      const logsToSave = changes
+        .filter(c => c.type === 'MOD')
+        .map(c => ({
+          id: `CCH-${Date.now()}-${c.id}`,
+          clientId: c.id,
+          fecha: new Date().toISOString(),
+          origen: 'Importación Excel',
+          archivo: fileName,
+          cambios: c.diffs
+        }));
+
+      if (logsToSave.length > 0) {
+        addClientChanges(logsToSave);
+      }
+    }
+
     const importInfo = {
       date: new Date().toISOString(),
       fileName,

@@ -7,7 +7,7 @@ import NetworkDiagnostics from './historial/NetworkDiagnostics';
 import {
   ArrowLeft, Ticket, Monitor, Wrench, ShoppingBag, AlertTriangle,
   Clock, ChevronDown, ChevronUp, CheckCircle2, FileText, MapPin,
-  Gauge, Radio, Zap, Paperclip
+  Gauge, Radio, Zap, Paperclip, History
 } from 'lucide-react';
 
 // ========== Helpers ==========
@@ -404,6 +404,34 @@ function AveriaExpandedContent({ a }) {
   );
 }
 
+// ========== Cambio Card Content ==========
+function CambioExpandedContent({ c }) {
+  return (
+    <>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        <DetailField label="ID del Log" value={c.id} />
+        <DetailField label="Fecha de Modificación" value={formatDateTime(c.fecha)} />
+        <DetailField label="Origen" value={c.origen} />
+        <DetailField label="Archivo" value={c.archivo} />
+      </div>
+
+      <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
+        <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Columnas Modificadas</p>
+        <div className="flex flex-col gap-2">
+          {c.cambios?.map((d, j) => (
+            <div key={j} className="text-[12px] flex flex-wrap items-center gap-2 bg-bg-card p-2 rounded-md border border-border/50">
+              <span className="font-semibold text-text-secondary min-w-[120px]">{d.field}:</span>
+              <span className="line-through text-text-muted bg-red-500/10 px-1.5 rounded">{d.old}</span>
+              <span className="text-text-muted">→</span>
+              <span className="text-text-primary font-medium bg-green-500/10 px-1.5 rounded">{d.new}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ==================== MAIN COMPONENT ====================
 
 export default function ClienteDetalle() {
@@ -415,6 +443,7 @@ export default function ClienteDetalle() {
   const sesionesRemoto = useStore(s => s.sesionesRemoto);
   const postVenta = useStore(s => s.postVenta);
   const averias = useStore(s => s.averias);
+  const clientChangesDb = useStore(s => s.clientChanges) || [];
 
   const [activeTab, setActiveTab] = useState('tickets');
 
@@ -454,6 +483,11 @@ export default function ClienteDetalle() {
     [averias, clientTicketIds]
   );
 
+  const clientChangesLogs = useMemo(() =>
+    clientChangesDb.filter(change => change.clientId === id).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
+    [clientChangesDb, id]
+  );
+
   if (!c) return <div className="p-8 text-center text-text-muted">Cargando cliente o no encontrado...</div>;
 
   const tabs = [
@@ -462,9 +496,10 @@ export default function ClienteDetalle() {
     { key: 'visitas', label: 'Visitas Técnicas', icon: Wrench, count: clientVisitas.length, color: '#f97316' },
     { key: 'postventa', label: 'Post-Venta', icon: ShoppingBag, count: clientPostVenta.length, color: '#a855f7' },
     { key: 'averias', label: 'Averías', icon: AlertTriangle, count: clientAverias.length, color: '#ef4444' },
+    { key: 'cambios', label: 'Cambios', icon: History, count: clientChangesLogs.length, color: '#8b5cf6' },
   ];
 
-  const totalHistorial = clientTickets.length + clientSesiones.length + clientVisitas.length + clientPostVenta.length + clientAverias.length;
+  const totalHistorial = clientTickets.length + clientSesiones.length + clientVisitas.length + clientPostVenta.length + clientAverias.length + clientChangesLogs.length;
 
   return (
     <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
@@ -651,6 +686,21 @@ export default function ClienteDetalle() {
                     status={a.estado} date={a.fecha}
                   >
                     <AveriaExpandedContent a={a} />
+                  </HistoryCard>
+                ))
+            )}
+
+            {/* CAMBIOS */}
+            {activeTab === 'cambios' && (
+              clientChangesLogs.length === 0
+                ? <EmptyState icon={History} text="No hay un historial de importaciones para este cliente" />
+                : clientChangesLogs.map(changeLog => (
+                  <HistoryCard key={changeLog.id} color="#8b5cf6" icon={History}
+                    title={`${changeLog.origen} de Datos`}
+                    subtitle={`Archivo Analizado: "${changeLog.archivo}" • ${changeLog.cambios?.length || 0} campos actualizados`}
+                    status={null} date={changeLog.fecha}
+                  >
+                    <CambioExpandedContent c={changeLog} />
                   </HistoryCard>
                 ))
             )}
