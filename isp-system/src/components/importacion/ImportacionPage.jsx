@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { Wifi, Download, Database, RefreshCw, Plus, FileSpreadsheet, Archive, Upload, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import useStore from '../../store/useStore';
 import { transformClientData, compareClients, deepMergeClient } from '../../api/dataTransformer';
 import ExcelUploader from './ExcelUploader';
@@ -23,7 +25,8 @@ export default function ImportacionPage() {
   const [progress, setProgress] = useState({ current: 0, total: 0, stage: 'reading' });
   const [importMode, setImportMode] = useState('inteligente'); // completa | inteligente | nuevos
   const [showCleaningOptions, setShowCleaningOptions] = useState(false);
-  const fileInputRef = useRef(null);
+  const [exportTable, setExportTable] = useState('all');
+  const [exportFormat, setExportFormat] = useState('xlsx');
 
   const handleDataLoaded = (rawRows, name) => {
     setFileName(name);
@@ -249,67 +252,78 @@ export default function ImportacionPage() {
     XLSX.writeFile(wb, 'Lista_de_Usuarios_Actualizada.xlsx');
   };
 
-  const handleFullBackup = () => {
+  const handleCustomExport = () => {
     const state = useStore.getState();
-    const wb = XLSX.utils.book_new();
-
     const sheets = [
-      { name: "Clientes", data: state.clients },
-      { name: "Tickets", data: state.tickets },
-      { name: "Averias", data: state.averias },
-      { name: "Visitas", data: state.visitas },
-      { name: "Tecnicos", data: state.tecnicos },
-      { name: "Equipos", data: state.equipos },
-      { name: "Instalaciones", data: state.instalaciones },
-      { name: "PostVenta", data: state.postVenta },
-      { name: "SoporteRemoto", data: state.sesionesRemoto },
-      { name: "Derivaciones", data: state.derivaciones },
-      { name: "HistorialImport", data: state.importHistory },
-      { name: "LogsWhatsApp", data: state.whatsappLogs },
-      { name: "Plantillas", data: state.templates },
+      { id: 'clients', name: "Clientes", data: state.clients },
+      { id: 'tickets', name: "Tickets", data: state.tickets },
+      { id: 'averias', name: "Averias", data: state.averias },
+      { id: 'visitas', name: "Visitas", data: state.visitas },
+      { id: 'tecnicos', name: "Tecnicos", data: state.tecnicos },
+      { id: 'equipos', name: "Equipos", data: state.equipos },
+      { id: 'instalaciones', name: "Instalaciones", data: state.instalaciones },
+      { id: 'postVenta', name: "PostVenta", data: state.postVenta },
+      { id: 'sesionesRemoto', name: "SoporteRemoto", data: state.sesionesRemoto },
+      { id: 'derivaciones', name: "Derivaciones", data: state.derivaciones },
+      { id: 'importHistory', name: "HistorialImport", data: state.importHistory },
+      { id: 'whatsappLogs', name: "LogsWhatsApp", data: state.whatsappLogs },
+      { id: 'templates', name: "Plantillas", data: state.templates },
     ];
 
-    sheets.forEach(({ name, data }) => {
-      if (data && Array.isArray(data) && data.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, name);
-      }
-    });
+    const tablesToExport = exportTable === 'all' ? sheets : sheets.filter(s => s.id === exportTable);
 
-    XLSX.writeFile(wb, `ISP_Backup_Completo_${new Date().toISOString().slice(0, 10)}.xlsx`);
-  };
+    if (exportFormat === 'xlsx') {
+      const wb = XLSX.utils.book_new();
+      tablesToExport.forEach(({ name, data }) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(data);
+          XLSX.utils.book_append_sheet(wb, ws, name);
+        }
+      });
+      XLSX.writeFile(wb, `ISP_Export_${exportTable}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } else if (exportFormat === 'csv') {
+      tablesToExport.forEach(({ name, data }) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(data);
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement("a");
+          const url = URL.createObjectURL(blob);
+          link.setAttribute("href", url);
+          link.setAttribute("download", `ISP_Export_${name}_${new Date().toISOString().slice(0, 10)}.csv`);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+      });
+    } else if (exportFormat === 'pdf') {
+      const doc = new jsPDF('landscape');
 
-  const handleJsonBackup = () => {
-    const state = useStore.getState();
-    const backup = { ...state };
-    // Remove functions/actions from backup, keep only data
+      let startY = 14;
+      tablesToExport.forEach(({ name, data }, index) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          if (index > 0) doc.addPage();
+          doc.text(`Tabla: ${name}`, 14, startY);
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `ISP_System_Backup_${new Date().toISOString().slice(0, 10)}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-  };
+          const headers = Object.keys(data[0]);
+          const rows = data.map(obj => headers.map(h => {
+            const val = obj[h];
+            return typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+          }));
 
-  const handleRestoreJSON = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const json = JSON.parse(event.target.result);
-        await restoreSystem(json); // Esperar a que IndexedDB termine de escribir
-        alert('Sistema restaurado correctamente. La página se recargará para aplicar los cambios.');
-        window.location.reload();
-      } catch (err) {
-        alert('Error al leer el archivo de respaldo: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = ''; // Reset input
+          doc.autoTable({
+            head: [headers],
+            body: rows,
+            startY: startY + 5,
+            theme: 'grid',
+            styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+          });
+        }
+      });
+      doc.save(`ISP_Export_${exportTable}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
   };
 
   const handleFactoryReset = () => {
@@ -381,28 +395,46 @@ export default function ImportacionPage() {
             <p className="text-[11px] text-text-muted mb-4">
               Descarga una copia completa de toda la información del sistema (Clientes, Tickets, Visitas, etc.) para evitar pérdida de datos.
             </p>
-            <div className="flex gap-3 flex-wrap">
-              <button onClick={handleFullBackup}
-                className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-primary text-xs font-semibold cursor-pointer hover:border-accent-green transition-colors">
-                <FileSpreadsheet size={16} className="text-accent-green" />
-                Exportar Todo (Excel)
-              </button>
-              <button onClick={handleJsonBackup}
-                className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-primary text-xs font-semibold cursor-pointer hover:border-accent-blue transition-colors">
-                <Archive size={16} className="text-accent-blue" />
-                Exportar General
-              </button>
-
-              <input type="file" ref={fileInputRef} accept=".json" onChange={handleRestoreJSON} className="hidden" />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-primary text-xs font-semibold cursor-pointer hover:border-accent-purple transition-colors"
+            <div className="flex gap-3 flex-wrap items-center">
+              <select
+                value={exportTable}
+                onChange={(e) => setExportTable(e.target.value)}
+                className="bg-bg-secondary border border-border text-text-primary text-xs font-semibold rounded-lg px-3 py-2.5 outline-none focus:border-accent-blue"
               >
-                <Upload size={16} className="text-accent-purple" />
-                Importar General
+                <option value="all">Todas las tablas</option>
+                <option value="clients">Clientes</option>
+                <option value="tickets">Tickets</option>
+                <option value="averias">Averías</option>
+                <option value="visitas">Visitas Técnicas</option>
+                <option value="tecnicos">Técnicos</option>
+                <option value="equipos">Equipos</option>
+                <option value="instalaciones">Instalaciones</option>
+                <option value="postVenta">Post Venta</option>
+                <option value="sesionesRemoto">Soporte Remoto</option>
+                <option value="derivaciones">Derivaciones</option>
+                <option value="importHistory">Historial Importación</option>
+                <option value="whatsappLogs">Logs WhatsApp</option>
+                <option value="templates">Plantillas</option>
+              </select>
+
+              <select
+                value={exportFormat}
+                onChange={(e) => setExportFormat(e.target.value)}
+                className="bg-bg-secondary border border-border text-text-primary text-xs font-semibold rounded-lg px-3 py-2.5 outline-none focus:border-accent-blue"
+              >
+                <option value="xlsx">Excel (.xlsx)</option>
+                <option value="csv">CSV (.csv)</option>
+                <option value="pdf">PDF (.pdf)</option>
+              </select>
+
+              <button onClick={handleCustomExport}
+                className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-accent-blue text-white text-xs font-semibold cursor-pointer hover:bg-accent-blue/90 transition-colors shadow-md">
+                <Download size={16} />
+                Exportar ahora
               </button>
 
               <button onClick={handleFactoryReset}
+                title="Borrar toda la base de datos (Reset)"
                 className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-accent-red/10 border border-accent-red/30 text-accent-red text-xs font-semibold cursor-pointer hover:bg-accent-red/20 transition-colors ml-auto">
                 <Trash2 size={16} />
                 Factory Reset
