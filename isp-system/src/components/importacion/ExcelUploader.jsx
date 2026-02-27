@@ -18,10 +18,22 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
       });
       const ws = wb.Sheets[wb.SheetNames[0]];
 
-      // Headers en fila 2, datos desde fila 3 (range: 1 = skip fila 1 que es título)
-      // defval: '' asegura que celdas vacías sean strings vacíos, no undefined
+      // Convertir todo a array de arrays temporalmente para detectar dónde están las cabeceras
+      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+
+      let headerRowIndex = 0;
+      // Buscar en las primeras 10 filas alguna que parezca cabecera
+      for (let i = 0; i < Math.min(10, allRows.length); i++) {
+        const rowString = allRows[i].join('').toLowerCase();
+        if (rowString.includes('nombre') || rowString.includes('id') || rowString.includes('mac') || rowString.includes('ip') || rowString.includes('plan')) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+
+      // Procesar finalmente con el range correcto
       const rawData = XLSX.utils.sheet_to_json(ws, {
-        range: 1,
+        range: headerRowIndex,
         defval: '',
         raw: false  // Forzar lectura como texto formateado, no valores raw
       });

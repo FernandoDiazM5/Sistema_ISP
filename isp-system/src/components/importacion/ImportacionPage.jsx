@@ -35,10 +35,15 @@ export default function ImportacionPage() {
 
       // 1. Transformación ETL con reglas seleccionadas
       const manualReview = [];
-      const newData = rawRows.map((row, i) => {
+      const newData = [];
+
+      rawRows.forEach((row, i) => {
         if (i % 50 === 0) setProgress(p => ({ ...p, current: i, stage: 'transforming' }));
 
         const transformed = transformClientData(row);
+
+        // Evitar procesar basurillas del excel que son filas en blanco con solo comas
+        if (!transformed.id && !transformed.nombre) return;
 
         // Detectar registros que necesitan revisión manual
         if (cleaningOptions.splitMobile) {
@@ -51,7 +56,7 @@ export default function ImportacionPage() {
           manualReview.push({ id: transformed.id, nombre: transformed.nombre, tipo: 'tecnologia', campo: 'Tecnología', valorOriginal: transformed.nodo_router || '—' });
         }
 
-        return transformed;
+        newData.push(transformed);
       });
 
       setProgress({ current: rawRows.length, total: rawRows.length, stage: 'comparing' });

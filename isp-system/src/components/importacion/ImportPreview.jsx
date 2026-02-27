@@ -2,6 +2,9 @@ import { Users, Settings, Wifi, Box, CheckCircle } from 'lucide-react';
 import KPICard from '../common/KPICard';
 
 export default function ImportPreview({ stats, changes, onConfirm, onCancel }) {
+  const MAX_PREVIEW = 100;
+  const displayedChanges = changes.slice(0, MAX_PREVIEW);
+
   return (
     <div>
       {/* Stats Cards */}
@@ -39,7 +42,7 @@ export default function ImportPreview({ stats, changes, onConfirm, onCancel }) {
               </tr>
             </thead>
             <tbody>
-              {changes.map((c, i) => (
+              {displayedChanges.map((c, i) => (
                 <tr key={i} className="border-b border-border">
                   <td className="py-3 px-6">
                     <span className={`py-1 px-2 rounded text-[11px] font-bold
@@ -71,6 +74,14 @@ export default function ImportPreview({ stats, changes, onConfirm, onCancel }) {
                   </td>
                 </tr>
               ))}
+              {changes.length > MAX_PREVIEW && (
+                <tr>
+                  <td colSpan="3" className="py-5 text-center bg-bg-secondary/20">
+                    <span className="text-[12px] font-semibold text-text-primary">+{changes.length - MAX_PREVIEW} registros adicionales</span>
+                    <p className="text-[11px] text-text-muted mt-1">Se han omitido en la previsualización para mantener el rendimiento.</p>
+                  </td>
+                </tr>
+              )}
               {changes.length === 0 && (
                 <tr>
                   <td colSpan="3" className="py-6 text-center text-text-muted">
