@@ -28,6 +28,7 @@ export default function ImportacionPage() {
   const [exportTables, setExportTables] = useState(['clients']); // Default una seleccionada
   const [showTableSelect, setShowTableSelect] = useState(false);
   const [exportFormat, setExportFormat] = useState('xlsx');
+  const [isExporting, setIsExporting] = useState(false);
 
   const tablesList = [
     { id: 'clients', label: 'Clientes' },
@@ -283,7 +284,7 @@ export default function ImportacionPage() {
     XLSX.writeFile(wb, 'Lista_de_Usuarios_Actualizada.xlsx');
   };
 
-  const handleCustomExport = () => {
+  const handleCustomExport = async () => {
     const state = useStore.getState();
     const sheets = [
       { id: 'clients', name: "Clientes", data: state.clients },
@@ -307,58 +308,69 @@ export default function ImportacionPage() {
     }
 
     const tablesToExport = sheets.filter(s => exportTables.includes(s.id));
+    setIsExporting(true);
 
-    if (exportFormat === 'xlsx') {
-      const wb = XLSX.utils.book_new();
-      tablesToExport.forEach(({ name, data }) => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          const ws = XLSX.utils.json_to_sheet(data);
-          XLSX.utils.book_append_sheet(wb, ws, name);
-        }
-      });
-      XLSX.writeFile(wb, `ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    } else if (exportFormat === 'csv') {
-      tablesToExport.forEach(({ name, data }) => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          const ws = XLSX.utils.json_to_sheet(data);
-          const csv = XLSX.utils.sheet_to_csv(ws);
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const link = document.createElement("a");
-          const url = URL.createObjectURL(blob);
-          link.setAttribute("href", url);
-          link.setAttribute("download", `ISP_Export_${name}_${new Date().toISOString().slice(0, 10)}.csv`);
-          link.style.visibility = 'hidden';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
-      });
-    } else if (exportFormat === 'pdf') {
-      const doc = new jsPDF('landscape');
+    try {
+      // Usamos un pequeño delay para permitir que React renderice el estado "Exportando..."
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      let startY = 14;
-      tablesToExport.forEach(({ name, data }, index) => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          if (index > 0) doc.addPage();
-          doc.text(`Tabla: ${name}`, 14, startY);
+      if (exportFormat === 'xlsx') {
+        const wb = XLSX.utils.book_new();
+        tablesToExport.forEach(({ name, data }) => {
+          if (data && Array.isArray(data) && data.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(wb, ws, name);
+          }
+        });
+        XLSX.writeFile(wb, `ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      } else if (exportFormat === 'csv') {
+        tablesToExport.forEach(({ name, data }) => {
+          if (data && Array.isArray(data) && data.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const csv = XLSX.utils.sheet_to_csv(ws);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `ISP_Export_${name}_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+        });
+      } else if (exportFormat === 'pdf') {
+        const doc = new jsPDF('landscape');
 
-          const headers = Object.keys(data[0]);
-          const rows = data.map(obj => headers.map(h => {
-            const val = obj[h];
-            return typeof val === 'object' ? JSON.stringify(val) : String(val || '');
-          }));
+        tablesToExport.forEach(({ name, data }, index) => {
+          if (data && Array.isArray(data) && data.length > 0) {
+            if (index > 0) doc.addPage();
+            doc.text(`Tabla: ${name} (${data.length} registros)`, 14, 14);
 
-          doc.autoTable({
-            head: [headers],
-            body: rows,
-            startY: startY + 5,
-            theme: 'grid',
-            styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
-            headStyles: { fillColor: [41, 128, 185], textColor: 255 }
-          });
-        }
-      });
-      doc.save(`ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.pdf`);
+            const headers = Object.keys(data[0]);
+
+            const rows = data.map(obj => headers.map(h => {
+              const val = obj[h];
+              return typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+            }));
+
+            doc.autoTable({
+              head: [headers.map(h => h.toUpperCase().replace(/_/g, ' '))],
+              body: rows,
+              startY: 19,
+              theme: 'grid',
+              styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
+              headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+            });
+          }
+        });
+        doc.save(`ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.pdf`);
+      }
+    } catch (error) {
+      console.error("Error al exportar:", error);
+      alert("Hubo un error al generar el archivo. Si la base de datos es muy grande, intenta exportar en formato Excel o CSV.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -493,10 +505,23 @@ export default function ImportacionPage() {
                 <option value="pdf">PDF (.pdf)</option>
               </select>
 
-              <button onClick={handleCustomExport}
-                className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-accent-blue text-white text-xs font-semibold cursor-pointer hover:bg-accent-blue/90 transition-colors shadow-md">
-                <Download size={16} />
-                Exportar ahora
+              <button
+                onClick={handleCustomExport}
+                disabled={isExporting}
+                className={`flex items-center gap-2 py-2.5 px-4 rounded-lg text-white text-xs font-semibold shadow-md transition-colors ${isExporting ? 'bg-bg-secondary text-text-muted cursor-not-allowed' : 'bg-accent-blue hover:bg-accent-blue/90 cursor-pointer'
+                  }`}
+              >
+                {isExporting ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Download size={16} />
+                    Exportar ahora
+                  </>
+                )}
               </button>
 
               <button onClick={handleFactoryReset}
