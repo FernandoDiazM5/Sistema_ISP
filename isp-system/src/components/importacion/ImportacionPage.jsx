@@ -344,18 +344,17 @@ export default function ImportacionPage() {
           }
         });
       } else if (exportFormat === 'pdf') {
-        const doc = new jsPDF('landscape');
+        // En navegadores, jsPDF explota consumiendo +2GB de RAM si la tabla sobrepasa
+        // cierto límite combinando 2000 filas * 10 columnas. Solución industrial:
+        // Segmentar tablas masivas y generar PDFs en lotes seguros.
+        const CHUNK_SIZE = 1000; // Máximo de registros seguros por documento
 
-        for (let index = 0; index < tablesToExport.length; index++) {
-          const { name, data, cols } = tablesToExport[index];
+        for (let tIndex = 0; tIndex < tablesToExport.length; tIndex++) {
+          const { name, data, cols } = tablesToExport[tIndex];
+
           if (data && Array.isArray(data) && data.length > 0) {
 
-            // Pausa asíncrona para liberar el main thread del navegador
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            if (index > 0) doc.addPage();
-            doc.text(`Tabla: ${name} (${data.length} registros)`, 14, 14);
-
+            // Extracción de columnas óptimas
             let headers = Object.keys(data[0]);
             if (cols && cols.length > 0) {
               headers = cols.filter(c => headers.includes(c));
@@ -363,30 +362,39 @@ export default function ImportacionPage() {
               headers = headers.slice(0, 8);
             }
 
-            const rows = data.map(obj => headers.map(h => {
+            // Preparar todas las filas serializadas
+            const allRows = data.map(obj => headers.map(h => {
               const val = obj[h];
               return typeof val === 'object' ? JSON.stringify(val).substring(0, 30) : String(val ?? '').substring(0, 40);
             }));
 
-            // AutoTable renderizado de altísimo volumen
-            doc.autoTable({
-              head: [headers.map(h => h.toUpperCase().replace(/_/g, ' '))],
-              body: rows,
-              startY: 19,
-              theme: 'grid',
-              styles: {
-                fontSize: 6,
-                cellPadding: 1,
-                overflow: 'linebreak',
-              },
-              headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-            });
+            // Particionar los datos en chunks
+            const numChunks = Math.ceil(allRows.length / CHUNK_SIZE);
+
+            for (let i = 0; i < numChunks; i++) {
+              const doc = new jsPDF('landscape');
+              const chunkRows = allRows.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+
+              doc.text(`Tabla: ${name} (Parte ${i + 1}/${numChunks}) - ${chunkRows.length} registros`, 14, 14);
+
+              doc.autoTable({
+                head: [headers.map(h => h.toUpperCase().replace(/_/g, ' '))],
+                body: chunkRows,
+                startY: 19,
+                theme: 'grid',
+                styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+              });
+
+              // Pausar para vaciar el Garbage Collector de V8
+              await new Promise(resolve => setTimeout(resolve, 150));
+
+              const suffix = numChunks > 1 ? `_Parte_${i + 1}` : '';
+              doc.save(`ISP_${name}${suffix}.pdf`);
+              doc = null; // Sugerencia manual de limpieza al recolector de basura
+            }
           }
         }
-
-        // Pausa antes de guardar archivo final masivo
-        await new Promise(resolve => setTimeout(resolve, 100));
-        doc.save(`ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.pdf`);
       }
     } catch (error) {
       console.error("Error al exportar:", error);
