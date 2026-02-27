@@ -1,0 +1,5 @@
+import{n as b,j as e}from"./index-DBbpf6L9.js";const r={default:"bg-bg-secondary text-text-primary border-border",success:"bg-green-500/10 text-green-500 border-green-500/20",warning:"bg-yellow-500/10 text-yellow-500 border-yellow-500/20",danger:"bg-red-500/10 text-red-500 border-red-500/20",info:"bg-blue-500/10 text-blue-500 border-blue-500/20",purple:"bg-purple-500/10 text-purple-500 border-purple-500/20",orange:"bg-orange-500/10 text-orange-500 border-orange-500/20"},t={sm:"px-1.5 py-0.5 text-[10px]",md:"px-2.5 py-0.5 text-xs",lg:"px-3 py-1 text-sm"},c=b.memo(function({children:n,variant:o="default",size:s="md",className:a="",dot:l=!1,...d}){const p=r[o]||r.default,x=t[s]||t.md;return e.jsxs("span",{className:`
+        inline-flex items-center justify-center font-medium rounded-full border
+        whitespace-nowrap transition-colors
+        ${p} ${x} ${a}
+      `,...d,children:[l&&e.jsx("span",{className:"w-1.5 h-1.5 rounded-full mr-1.5 bg-current opacity-60"}),n]})});export{c as B};
