@@ -39,14 +39,17 @@ export function cleanNumericField(value) {
 
 // Motor ETL: 9 reglas de limpieza de datos del Excel ISP
 export function transformClientData(raw) {
+  // Helpers para buscar atributos ignorando Mayúsculas/Minúsculas en caso de CSV mal formateado
+  const getVal = (key) => raw[key] || raw[key.toLowerCase()] || raw[key.toUpperCase()];
+
   // Limpiar campos numéricos que pueden venir en notación científica
-  const idRaw = cleanNumericField(raw.Id || raw.B || '');
-  const telefonoRaw = cleanNumericField(raw.Telefono || raw.R || '');
-  const movilRaw = cleanNumericField(raw.Movil || raw.U || '');
-  const dniRaw = cleanNumericField(raw.Cedula || raw.Z || '');
-  
+  const idRaw = cleanNumericField(getVal('Id') || raw.B || '');
+  const telefonoRaw = cleanNumericField(getVal('Telefono') || raw.R || '');
+  const movilRaw = cleanNumericField(getVal('Movil') || raw.U || '');
+  const dniRaw = cleanNumericField(getVal('Cedula') || raw.Z || '');
+
   // Limpieza específica para Código: solo números y sin ceros a la izquierda
-  let codigoRaw = cleanNumericField(raw.Codigo || raw.AC || '');
+  let codigoRaw = cleanNumericField(getVal('Codigo') || raw.AC || '');
   codigoRaw = codigoRaw.replace(/\D/g, ''); // Eliminar todo lo que no sea número
   if (codigoRaw !== '') {
     codigoRaw = codigoRaw.replace(/^0+/, '') || '0'; // Eliminar ceros a la izquierda (si queda vacío es 0)
@@ -54,42 +57,42 @@ export function transformClientData(raw) {
 
   return {
     id: idRaw,
-    nombre: cleanNombre(raw.Nombre || raw.C || '').nombre,
-    estado_cuenta: cleanNombre(raw.Nombre || raw.C || '').estado,
-    mac: raw.Mac || raw.D || '',
-    ip: raw.Ip || raw.E || '',
-    ip_receptor: raw['IP Receptor'] || raw.F || '',
-    ultimo_vencimiento: raw['Ultimo vencimiento'] || raw.G || '',
-    ultimo_pago: raw['Ultimo pago'] || raw.H || '',
-    tipo_estrato: raw['Tipo estrato'] || raw.I || '',
-    direccion: raw['Dirección Principal'] || raw['Direccion Principal'] || raw.K || '',
-    fecha_suspendido: raw['Fecha suspendido'] || raw.L || '',
-    direccion_servicio: raw['Dirección Servicio'] || raw['Direccion Servicio'] || raw.N || '',
-    dia_pago: raw['Dia pago'] || raw.O || '',
-    deuda_raw: raw['Deuda actual'] || raw.P || '',
-    deuda_meses: parseDeuda(raw['Deuda actual'] || raw.P).meses,
-    deuda_monto: parseDeuda(raw['Deuda actual'] || raw.P).monto,
-    notas_tecnicas: isEmail(raw.Correo || raw.Q) ? '' : (raw.Correo || raw.Q || ''),
-    email: isEmail(raw.Correo || raw.Q) ? (raw.Correo || raw.Q) : '',
+    nombre: cleanNombre(getVal('Nombre') || raw.C || '').nombre,
+    estado_cuenta: cleanNombre(getVal('Nombre') || raw.C || '').estado,
+    mac: getVal('Mac') || raw.D || '',
+    ip: getVal('Ip') || raw.E || '',
+    ip_receptor: getVal('IP Receptor') || raw.F || '',
+    ultimo_vencimiento: getVal('Ultimo vencimiento') || raw.G || '',
+    ultimo_pago: getVal('Ultimo pago') || raw.H || '',
+    tipo_estrato: getVal('Tipo estrato') || raw.I || '',
+    direccion: getVal('Dirección Principal') || getVal('Direccion Principal') || raw.K || '',
+    fecha_suspendido: getVal('Fecha suspendido') || raw.L || '',
+    direccion_servicio: getVal('Dirección Servicio') || getVal('Direccion Servicio') || raw.N || '',
+    dia_pago: getVal('Dia pago') || raw.O || '',
+    deuda_raw: getVal('Deuda actual') || raw.P || '',
+    deuda_meses: parseDeuda(getVal('Deuda actual') || raw.P).meses,
+    deuda_monto: parseDeuda(getVal('Deuda actual') || raw.P).monto,
+    notas_tecnicas: isEmail(getVal('Correo') || raw.Q) ? '' : (getVal('Correo') || raw.Q || ''),
+    email: isEmail(getVal('Correo') || raw.Q) ? (getVal('Correo') || raw.Q) : '',
     telefono: telefonoRaw,
-    plan: cleanPlan(raw.Plan || raw.S || ''),
-    proximo_pago: raw['Proximo pago'] || raw.T || '',
+    plan: cleanPlan(getVal('Plan') || raw.S || ''),
+    proximo_pago: getVal('Proximo pago') || raw.T || '',
     movil_1: splitMovil(movilRaw).movil1,
     movil_2: splitMovil(movilRaw).movil2,
-    saldo: raw.Saldo || raw.V || 'S/. 0.00',
-    nodo_router: raw.Router || raw.X || '',
-    nodo: raw.Router || raw.X || '', // Alias para compatibilidad con componentes que buscan .nodo
-    fecha_instalacion: raw.Instalado || raw.Y || '',
+    saldo: getVal('Saldo') || raw.V || 'S/. 0.00',
+    nodo_router: getVal('Router') || raw.X || '',
+    nodo: getVal('Router') || raw.X || '', // Alias para compatibilidad con componentes que buscan .nodo
+    fecha_instalacion: getVal('Instalado') || raw.Y || '',
     dni: padDNI(dniRaw),
-    user_ppp: raw['User PPP/Hotspot'] || raw.AA || '',
+    user_ppp: getVal('User PPP/Hotspot') || raw.AA || '',
     codigo: codigoRaw,
-    total_cobrar: raw['Total cobrar'] || raw.AF || '',
-    precio: parseMoney(raw['Total cobrar'] || raw.AF),
-    zona: raw.Zona || raw.AG || '',
-    status: raw.Status || raw.AH || '',
-    servicios_adicionales: parseServiciosTV(raw['Servicios personalizados'] || raw.AI),
-    tecnologia: inferTecnologia(raw.Router || raw.X, raw.Plan || raw.S),
-    estado_servicio: getEstadoServicio(raw.Plan || raw.S, raw.Nombre || raw.C),
+    total_cobrar: getVal('Total cobrar') || raw.AF || '',
+    precio: parseMoney(getVal('Total cobrar') || raw.AF),
+    zona: getVal('Zona') || raw.AG || '',
+    status: getVal('Status') || raw.AH || '',
+    servicios_adicionales: parseServiciosTV(getVal('Servicios personalizados') || raw.AI),
+    tecnologia: inferTecnologia(getVal('Router') || raw.X, getVal('Plan') || raw.S),
+    estado_servicio: getEstadoServicio(getVal('Plan') || raw.S, getVal('Nombre') || raw.C),
   };
 }
 
@@ -190,17 +193,52 @@ export function compareClients(existing, incoming) {
     { key: 'precio', label: 'Precio', format: v => `S/. ${v}` },
     { key: 'ip', label: 'IP' },
     { key: 'nodo_router', label: 'Nodo/Router' },
-    { key: 'movil_1', label: 'Móvil' },
+    { key: 'movil_1', label: 'Móvil 1' },
+    { key: 'movil_2', label: 'Móvil 2' },
+    { key: 'ultimo_vencimiento', label: 'Último Vencimiento' },
     { key: 'ultimo_pago', label: 'Último Pago' },
+    { key: 'direccion', label: 'Dirección Ppal.' },
+    { key: 'direccion_servicio', label: 'Dirección Serv.' },
+    { key: 'mac', label: 'MAC' },
+    { key: 'dni', label: 'DNI/Cédula' },
   ];
 
   for (const f of fields) {
     const oldVal = existing[f.key];
     const newVal = incoming[f.key];
-    if (String(oldVal) !== String(newVal)) {
+    if (String(oldVal || '') !== String(newVal || '')) {
       const fmt = f.format || (v => v);
-      diffs.push({ field: f.label, old: fmt(oldVal), new: fmt(newVal) });
+      diffs.push({ field: f.label, old: fmt(oldVal || '-'), new: fmt(newVal || '-') });
     }
   }
   return diffs;
+}
+
+// Mezcla profunda de datos preservando información local
+// Sobrescribe todo lo que trae el Excel, pero si el Excel trae un campo vacío
+// y nosotros lo teníamos lleno, preservamos el nuestro.
+export function deepMergeClient(existing, incoming) {
+  const merged = { ...existing }; // Empezamos con la base de lo que ya tenemos
+
+  // Iterar por cada llave que nos trajo el transformador de excel
+  for (const key of Object.keys(incoming)) {
+    const incomingVal = incoming[key];
+    const existingVal = existing[key];
+
+    // Excepciones donde la BD local MANDA aunque el excel traiga algo
+    if (key === 'notas_tecnicas' && existingVal && String(existingVal).trim().length > 0) {
+      continue; // No aplastamos las notas técnicas locales
+    }
+
+    // Si el excel viene vacío, y nosotros lo tenemos lleno, NO APLASTAR
+    if ((incomingVal === null || incomingVal === undefined || incomingVal === '') &&
+      (existingVal !== null && existingVal !== undefined && existingVal !== '')) {
+      continue;
+    }
+
+    // De lo contrario, el Excel manda
+    merged[key] = incomingVal;
+  }
+
+  return merged;
 }

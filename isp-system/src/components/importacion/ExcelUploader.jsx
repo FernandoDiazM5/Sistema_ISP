@@ -20,13 +20,25 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
 
       // Headers en fila 2, datos desde fila 3 (range: 1 = skip fila 1 que es título)
       // defval: '' asegura que celdas vacías sean strings vacíos, no undefined
-      const data = XLSX.utils.sheet_to_json(ws, {
+      const rawData = XLSX.utils.sheet_to_json(ws, {
         range: 1,
         defval: '',
         raw: false  // Forzar lectura como texto formateado, no valores raw
       });
 
-      onDataLoaded(data, file.name);
+      // Mapeo defensivo: Los archivos CSV o Excel sucios pueden tener espacios
+      // en los headers (ej. "Nombre " o " Id"). Limpiamos las llaves.
+      const sanitizedData = rawData.map(row => {
+        const cleanRow = {};
+        for (const [key, value] of Object.entries(row)) {
+          // Removemos BOM character (\uFEFF) y espacios al inicio/final del header
+          const cleanKey = key.replace(/^\uFEFF/, '').trim();
+          cleanRow[cleanKey] = value;
+        }
+        return cleanRow;
+      });
+
+      onDataLoaded(sanitizedData, file.name);
     };
     reader.readAsArrayBuffer(file);
   };
@@ -35,7 +47,7 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
     e.preventDefault();
     e.stopPropagation();
     const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+    if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
       handleFile(file);
     }
   };
@@ -55,7 +67,7 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
       <input
         ref={fileRef}
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.csv"
         className="hidden"
         onChange={e => handleFile(e.target.files[0])}
       />
@@ -65,7 +77,7 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
       </div>
 
       <h3 className="text-lg font-semibold mb-2">
-        {loading ? 'Procesando archivo...' : 'Arrastra tu archivo Excel aquí'}
+        {loading ? 'Procesando archivo...' : 'Arrastra tu archivo Excel o CSV aquí'}
       </h3>
 
       <p className="text-text-muted text-[13px] mb-6 max-w-[400px] mx-auto">
@@ -75,11 +87,11 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
 
       <div className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-accent-blue text-white text-sm font-semibold">
         <FileSpreadsheet size={16} />
-        Seleccionar archivo Excel
+        Seleccionar archivo
       </div>
 
       <p className="mt-4 text-[11px] text-text-muted">
-        Soporta .xlsx, .xls — Formato estándar "Lista de Usuarios" del ISP externo
+        Soporta .xlsx, .xls, .csv — Formato estándar "Lista de Usuarios" del ISP externo
       </p>
     </div>
   );

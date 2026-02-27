@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Wifi, Download, Database, RefreshCw, Plus, FileSpreadsheet, Archive, Upload, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import useStore from '../../store/useStore';
-import { transformClientData, compareClients } from '../../api/dataTransformer';
+import { transformClientData, compareClients, deepMergeClient } from '../../api/dataTransformer';
 import ExcelUploader from './ExcelUploader';
 import ImportPreview from './ImportPreview';
 import ImportProgress from './ImportProgress';
@@ -115,13 +115,30 @@ export default function ImportacionPage() {
       const newIds = new Set(changes.filter(c => c.type === 'NEW').map(c => c.data.id));
       finalData = [...clients, ...processedData.filter(d => newIds.has(d.id))];
     } else {
-      // inteligente: merge existing with new/modified
-      const processed = new Map(processedData.map(d => [d.id, d]));
-      finalData = clients.map(c => processed.get(c.id) || c);
-      // Add new records not in existing
-      processedData.forEach(d => {
-        if (!clients.find(c => c.id === d.id)) finalData.push(d);
+      // INTELIGENTE 2.0: Optimizado y Seguro
+      const modifiedMap = new Map();
+      const newRecords = [];
+
+      // Solo guardamos en memoria los que realmente tienen diferencias o son nuevos
+      changes.forEach(change => {
+        if (change.type === 'MOD') {
+          modifiedMap.set(change.id, change.newData);
+        } else if (change.type === 'NEW') {
+          newRecords.push(change.data);
+        }
       });
+
+      // Iteramos la BD existente SOLO una vez y mergeamos seguro
+      finalData = clients.map(existingClient => {
+        if (modifiedMap.has(existingClient.id)) {
+          // DeepMerge: Aplican datos nuevos sin borrar los existentes que Excel no trajo
+          return deepMergeClient(existingClient, modifiedMap.get(existingClient.id));
+        }
+        return existingClient; // Sin tocar
+      });
+
+      // Añadimos los registros 100% nuevos
+      finalData = [...finalData, ...newRecords];
     }
 
     importClients(finalData);
@@ -175,7 +192,7 @@ export default function ImportacionPage() {
   const handleFullBackup = () => {
     const state = useStore.getState();
     const wb = XLSX.utils.book_new();
-    
+
     const sheets = [
       { name: "Clientes", data: state.clients },
       { name: "Tickets", data: state.tickets },
@@ -203,17 +220,17 @@ export default function ImportacionPage() {
   };
 
   const handleJsonBackup = () => {
-     const state = useStore.getState();
-     const backup = { ...state };
-     // Remove functions/actions from backup, keep only data
-     
-     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
-     const downloadAnchorNode = document.createElement('a');
-     downloadAnchorNode.setAttribute("href",     dataStr);
-     downloadAnchorNode.setAttribute("download", `ISP_System_Backup_${new Date().toISOString().slice(0,10)}.json`);
-     document.body.appendChild(downloadAnchorNode);
-     downloadAnchorNode.click();
-     downloadAnchorNode.remove();
+    const state = useStore.getState();
+    const backup = { ...state };
+    // Remove functions/actions from backup, keep only data
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `ISP_System_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   };
 
   const handleRestoreJSON = (e) => {
@@ -315,9 +332,9 @@ export default function ImportacionPage() {
                 <Archive size={16} className="text-accent-blue" />
                 Exportar General
               </button>
-              
+
               <input type="file" ref={fileInputRef} accept=".json" onChange={handleRestoreJSON} className="hidden" />
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 py-2.5 px-4 rounded-lg bg-bg-secondary border border-border text-text-primary text-xs font-semibold cursor-pointer hover:border-accent-purple transition-colors"
               >
