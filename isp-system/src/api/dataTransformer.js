@@ -43,7 +43,12 @@ export function transformClientData(raw) {
   const getVal = (key) => raw[key] || raw[key.toLowerCase()] || raw[key.toUpperCase()];
 
   // Limpiar campos numéricos que pueden venir en notación científica
-  const idRaw = cleanNumericField(getVal('Id') || raw.B || '');
+  let idRaw = cleanNumericField(getVal('Id') || raw.B || '');
+
+  // Normalizar IDs: Si viene como un número corto (ej. "1", "2918") en un CSV, rellenar ceros hasta 6 dígitos (ej. "000001", "002918")
+  if (idRaw && /^\d+$/.test(idRaw) && idRaw.length < 6) {
+    idRaw = idRaw.padStart(6, '0');
+  }
   const telefonoRaw = cleanNumericField(getVal('Telefono') || raw.R || '');
   const movilRaw = cleanNumericField(getVal('Movil') || raw.U || '');
   const dniRaw = cleanNumericField(getVal('Cedula') || raw.Z || '');

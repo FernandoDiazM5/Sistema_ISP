@@ -24,8 +24,18 @@ export default function ExcelUploader({ onDataLoaded, loading }) {
       let headerRowIndex = 0;
       // Buscar en las primeras 10 filas alguna que parezca cabecera
       for (let i = 0; i < Math.min(10, allRows.length); i++) {
-        const rowString = allRows[i].join('').toLowerCase();
-        if (rowString.includes('nombre') || rowString.includes('id') || rowString.includes('mac') || rowString.includes('ip') || rowString.includes('plan')) {
+        const rowArray = allRows[i].map(c => String(c).toLowerCase().trim());
+        let score = 0;
+
+        // Puntuación requerida para asumir que esto es la fila de encabezados
+        if (rowArray.includes('id') || rowArray.includes('cedula') || rowArray.includes('codigo')) score++;
+        if (rowArray.includes('nombre') || rowArray.includes('cliente')) score++;
+        if (rowArray.includes('mac') || rowArray.includes('ip')) score++;
+        if (rowArray.includes('plan')) score++;
+        if (rowArray.includes('estado') || rowArray.includes('status')) score++;
+
+        // Si hay al menos dos coincidencias, es altamente probable que sea cabecera
+        if (score >= 2) {
           headerRowIndex = i;
           break;
         }
