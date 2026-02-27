@@ -8,8 +8,16 @@ export function parseMoney(val) {
 export function parseDate(val) {
   if (!val) return null;
   if (typeof val === 'string' && val.includes('/')) {
-    const [d, m, y] = val.split('/');
-    return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    const parts = val.split('/');
+    if (parts.length !== 3) return null;
+    const [d, m, y] = parts;
+    if (!d || !m || !y) return null;
+    const day = d.padStart(2, '0');
+    const month = m.padStart(2, '0');
+    // Validar rangos básicos antes de devolver
+    if (parseInt(month, 10) < 1 || parseInt(month, 10) > 12) return null;
+    if (parseInt(day, 10) < 1 || parseInt(day, 10) > 31) return null;
+    return `${y}-${month}-${day}`;
   }
   return val;
 }

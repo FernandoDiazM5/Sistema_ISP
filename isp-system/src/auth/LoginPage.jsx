@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wifi, Mail, Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import { useAuth } from './GoogleAuthProvider';
 import { CONFIG } from '../utils/constants';
@@ -20,7 +20,7 @@ export default function LoginPage() {
   const googleInitialized = useRef(false);
   const googleButtonRef = useRef(null);
 
-  const handleGoogleCredential = async (response) => {
+  const handleGoogleCredential = useCallback(async (response) => {
     try {
       setLoading(true);
       setError('');
@@ -59,7 +59,7 @@ export default function LoginPage() {
       console.error('Error en login:', err);
       setLoading(false);
     }
-  };
+  }, [login, loadCurrentUserByEmail]);
 
   useEffect(() => {
     let checkInterval;
@@ -112,8 +112,12 @@ export default function LoginPage() {
 
     tryInit();
 
-    return () => clearTimeout(checkInterval);
-  }, [login, loadCurrentUserByEmail]);
+    return () => {
+      clearTimeout(checkInterval);
+      // Permitir re-inicialización si las dependencias cambian
+      googleInitialized.current = false;
+    };
+  }, [handleGoogleCredential]);
 
   // Renderizar el botón nativo de Google cuando la pestaña es 'google'
   useEffect(() => {

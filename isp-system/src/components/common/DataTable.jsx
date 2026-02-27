@@ -27,8 +27,8 @@ export default function DataTable({ columns, data, onRowClick, pageSize = 20 }) 
             </tr>
           </thead>
           <tbody>
-            {paged.map((row, i) => (
-              <tr key={row.id || i}
+            {paged.map((row) => (
+              <tr key={row.id ?? row._id ?? row.uid ?? JSON.stringify(row)}
                 onClick={() => onRowClick?.(row)}
                 className="border-b border-border cursor-pointer transition-colors hover:bg-bg-card-hover">
                 {columns.map(col => (

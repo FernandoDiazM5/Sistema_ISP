@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeToCollection, saveDocument, deleteDocument, migrateDataToCollections } from '../api/firebase';
 import * as db from '../utils/db'; // Legacy DB access for migration
+import { getNextId, ISP_KEY_MAP, STORE_TO_DB_KEY_MAP } from '../utils/helpers';
 
 // ===================== SLICE IMPORTS =====================
 import { createClientsSlice } from './slices/clientsSlice';
@@ -185,37 +186,8 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       // 2. Suscribirse a colecciones en tiempo real
       // Esto poblará el store automáticamente desde la caché local o la nube
       // Hidratar desde IndexedDB primero (datos locales rápidos)
-      const keyMap = {
-        isp_clients: 'clients',
-        isp_tickets: 'tickets',
-        isp_averias: 'averias',
-        isp_equipos: 'equipos',
-        isp_visitas: 'visitas',
-        isp_instalaciones: 'instalaciones',
-        isp_derivaciones: 'derivaciones',
-        isp_postVenta: 'postVenta',
-        isp_sesionesRemoto: 'sesionesRemoto',
-        isp_movimientosEquipos: 'movimientosEquipos',
-        isp_whatsappLogs: 'whatsappLogs',
-        isp_templates: 'templates',
-        isp_requerimientos: 'requerimientos',
-        isp_col_prefs: 'columnPrefs',
-        isp_cleaningOptions: 'cleaningOptions',
-        isp_importHistory: 'importHistory',
-        isp_branding: 'branding',
-        isp_customRolePermissions: 'customRolePermissions',
-        isp_whatsappCategories: 'whatsappCategories',
-        isp_theme: 'theme',
-        isp_categorias: 'categorias',
-        isp_subcategorias: 'subcategorias',
-        isp_prioridadesSLA: 'prioridadesSLA',
-        isp_estadosCatalogo: 'estadosCatalogo',
-        isp_catalogoServicios: 'catalogoServicios',
-        isp_tiposRequerimiento: 'tiposRequerimiento',
-      };
-
       const updates: any = {};
-      for (const [dbKey, stateKey] of Object.entries(keyMap)) {
+      for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
         try {
           const val = await db.get(dbKey);
           if (val !== undefined && val !== null) {
@@ -249,15 +221,6 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   addTecnico: (tecnico: Omit<ITecnico, 'id'>) => {
     const s = get();
-    const getNextId = (col, prefix) => {
-      if (!col || col.length === 0) return `${prefix}-001`;
-      const maxId = col.reduce((max, item) => {
-        const parts = item.id.split('-');
-        const num = parseInt(parts[parts.length - 1] || 0);
-        return !isNaN(num) && num > max ? num : max;
-      }, 0);
-      return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
-    };
     const newId = getNextId(s.tecnicos, 'TEC');
     const newTecnico = { ...tecnico, id: newId };
 
@@ -313,36 +276,16 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       return updates;
     });
 
-    // Guardar en DB asíncronamente luego de setear
-    setTimeout(() => {
-      const state = get();
-      const dbKeyMap = {
-        clients: 'isp_clients', tickets: 'isp_tickets', averias: 'isp_averias',
-        equipos: 'isp_equipos', visitas: 'isp_visitas', instalaciones: 'isp_instalaciones',
-        derivaciones: 'isp_derivaciones', postVenta: 'isp_postVenta',
-        sesionesRemoto: 'isp_sesionesRemoto', movimientosEquipos: 'isp_movimientosEquipos',
-        whatsappLogs: 'isp_whatsappLogs', templates: 'isp_templates',
-        requerimientos: 'isp_requerimientos', columnPrefs: 'isp_col_prefs',
-        cleaningOptions: 'isp_cleaningOptions', importHistory: 'isp_importHistory',
-        branding: 'isp_branding', customRolePermissions: 'isp_customRolePermissions',
-        whatsappCategories: 'isp_whatsappCategories',
-        categorias: 'isp_categorias',
-        subcategorias: 'isp_subcategorias',
-        prioridadesSLA: 'isp_prioridadesSLA',
-        estadosCatalogo: 'isp_estadosCatalogo',
-        catalogoServicios: 'isp_catalogoServicios',
-        tiposRequerimiento: 'isp_tiposRequerimiento',
-      };
-
-      for (const key of keysToRestore) {
-        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
-          const dbKey = (dbKeyMap as any)[key];
-          if (dbKey && state[key] !== undefined) {
-            db.set(dbKey, state[key]).catch(() => { });
-          }
+    // Guardar en DB de forma síncrona dentro del mismo ciclo de actualización
+    const state = get();
+    for (const key of keysToRestore) {
+      if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+        const dbKey = (STORE_TO_DB_KEY_MAP as any)[key];
+        if (dbKey && state[key] !== undefined) {
+          db.set(dbKey, state[key]).catch(() => { });
         }
       }
-    }, 0);
+    }
   },
 
   // ===================== RESTORE SYSTEM (para backups y live sync full) =====================
@@ -365,24 +308,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     if (Object.keys(updates).length > 0) {
       set(updates);
       // Persistir localmente en IndexedDB
-      const dbKeyMap = {
-        clients: 'isp_clients', tickets: 'isp_tickets', averias: 'isp_averias',
-        equipos: 'isp_equipos', visitas: 'isp_visitas', instalaciones: 'isp_instalaciones',
-        derivaciones: 'isp_derivaciones', postVenta: 'isp_postVenta',
-        sesionesRemoto: 'isp_sesionesRemoto', movimientosEquipos: 'isp_movimientosEquipos',
-        whatsappLogs: 'isp_whatsappLogs', templates: 'isp_templates',
-        requerimientos: 'isp_requerimientos', columnPrefs: 'isp_col_prefs',
-        cleaningOptions: 'isp_cleaningOptions', importHistory: 'isp_importHistory',
-        branding: 'isp_branding', customRolePermissions: 'isp_customRolePermissions',
-        whatsappCategories: 'isp_whatsappCategories',
-        categorias: 'isp_categorias',
-        subcategorias: 'isp_subcategorias',
-        prioridadesSLA: 'isp_prioridadesSLA',
-        estadosCatalogo: 'isp_estadosCatalogo',
-        catalogoServicios: 'isp_catalogoServicios',
-        tiposRequerimiento: 'isp_tiposRequerimiento',
-      };
-      for (const [stateKey, dbKey] of Object.entries(dbKeyMap)) {
+      for (const [stateKey, dbKey] of Object.entries(STORE_TO_DB_KEY_MAP)) {
         if (updates[stateKey] !== undefined) {
           db.set(dbKey, updates[stateKey]).catch(() => { });
         }

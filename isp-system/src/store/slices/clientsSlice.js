@@ -1,4 +1,5 @@
 import * as db from '../../utils/db';
+import { getNextId } from '../../utils/helpers';
 
 async function saveToDB(key, data) {
     try {
@@ -6,17 +7,6 @@ async function saveToDB(key, data) {
     } catch (e) {
         console.error(`Error saving to DB (${key}):`, e);
     }
-}
-
-function getNextId(collection, prefix, idField = 'id') {
-    if (!collection || collection.length === 0) return `${prefix}-001`;
-    const maxId = collection.reduce((max, item) => {
-        if (!item[idField]) return max;
-        const parts = item[idField].split('-');
-        const num = parseInt(parts[parts.length - 1] || 0);
-        return !isNaN(num) && num > max ? num : max;
-    }, 0);
-    return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
 }
 
 export const createClientsSlice = (set, get) => ({

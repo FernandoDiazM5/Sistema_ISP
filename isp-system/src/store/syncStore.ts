@@ -180,7 +180,10 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             dataKeys.forEach(key => {
                 const prevArray = prevState[key] || [];
                 const newArray = state[key] || [];
-                if (prevArray === newArray) return;
+                // Verificar por referencia Y tamaño: si son el mismo objeto con igual
+                // longitud no hay nada que procesar. La comparación profunda item a item
+                // se realiza abajo con JSON.stringify para detectar actualizaciones.
+                if (prevArray === newArray && prevArray.length === newArray.length) return;
 
                 const prevMap = new Map(prevArray.map((item: any) => [item.id, item]));
                 const newMap = new Map(newArray.map((item: any) => [item.id, item]));

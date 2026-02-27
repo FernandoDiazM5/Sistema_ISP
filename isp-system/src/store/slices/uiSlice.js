@@ -1,5 +1,6 @@
 import * as db from '../../utils/db';
 import { pushSettings, pullSettings } from '../../api/firebase';
+import { getNextId } from '../../utils/helpers';
 
 async function saveToDB(key, data) {
     try {
@@ -22,17 +23,6 @@ async function syncSettingsToCloud(get) {
     } catch (e) {
         console.warn('Error syncing settings to cloud:', e);
     }
-}
-
-function getNextId(collection, prefix, idField = 'id') {
-    if (!collection || collection.length === 0) return `${prefix}-001`;
-    const maxId = collection.reduce((max, item) => {
-        if (!item[idField]) return max;
-        const parts = item[idField].split('-');
-        const num = parseInt(parts[parts.length - 1] || 0);
-        return !isNaN(num) && num > max ? num : max;
-    }, 0);
-    return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
 }
 
 export const createUISlice = (set, get) => ({

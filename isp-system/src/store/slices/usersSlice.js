@@ -201,9 +201,7 @@ export const createUsersSlice = (set, get) => ({
 
     // Si no tiene permisos explícitos, usar los del rol
     if (!userPermission) {
-      // FIX: Asegurar que ROLES[role] existe
-      const roleDef = Object.values(ROLES).find(r => r === currentUser.rol) || ROLES.VIEWER;
-      // Verificar si hay permisos custom, sino usar defaults
+      // Verificar si hay permisos custom, sino usar defaults del rol
       const customPerms = get().customRolePermissions;
       const rolePermissions = customPerms?.[currentUser.rol] || DEFAULT_PERMISSIONS[currentUser.rol];
       if (rolePermissions) {
