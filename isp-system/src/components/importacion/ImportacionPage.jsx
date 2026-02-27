@@ -286,17 +286,21 @@ export default function ImportacionPage() {
 
   const handleCustomExport = async () => {
     const state = useStore.getState();
+
+    // NOTA VITAL: jsPDF-autoTable colapsa catastróficamente si se le pasan >15 columnas
+    // con texto moderadamente largo (calcula layout infinito/negativo).
+    // Para PDF ES OBLIGATORIO usar 'cols' limitados para que no explote. Excel/CSV exportarán todo.
     const sheets = [
-      { id: 'clients', name: "Clientes", data: state.clients, cols: ['id', 'nombre', 'estado_cuenta', 'movil_1', 'plan', 'precio', 'nodo_router', 'direccion'] },
-      { id: 'tickets', name: "Tickets", data: state.tickets, cols: ['id', 'cliente_nombre', 'tipo_falla', 'estado', 'fecha_creacion'] },
-      { id: 'averias', name: "Averias", data: state.averias, cols: ['id', 'cliente', 'problema', 'estado', 'fecha'] },
-      { id: 'visitas', name: "Visitas", data: state.visitas, cols: ['id', 'ticket_id', 'tecnico_id', 'fecha', 'estado'] },
-      { id: 'tecnicos', name: "Tecnicos", data: state.tecnicos, cols: ['id', 'nombre', 'rol', 'telefono'] },
-      { id: 'equipos', name: "Equipos", data: state.equipos, cols: ['id', 'mac', 'modelo', 'estado', 'cliente_id'] },
-      { id: 'instalaciones', name: "Instalaciones", data: state.instalaciones, cols: ['id', 'cliente_nombre', 'fecha_programada', 'estado'] },
-      { id: 'postVenta', name: "PostVenta", data: state.postVenta, cols: ['id', 'cliente', 'motivo', 'estado'] },
-      { id: 'sesionesRemoto', name: "SoporteRemoto", data: state.sesionesRemoto, cols: ['id', 'cliente', 'operador', 'duracion'] },
-      { id: 'derivaciones', name: "Derivaciones", data: state.derivaciones, cols: ['id', 'ticket_id', 'motivo', 'estado'] },
+      { id: 'clients', name: "Clientes", data: state.clients, cols: ['id', 'nombre', 'estado_cuenta', 'dni', 'movil_1', 'plan', 'precio', 'nodo_router', 'direccion', 'ip'] },
+      { id: 'tickets', name: "Tickets", data: state.tickets, cols: ['id', 'cliente_nombre', 'tipo_falla', 'estado', 'prioridad', 'fecha_creacion', 'fecha_cierre', 'tecnico_asignado'] },
+      { id: 'averias', name: "Averias", data: state.averias, cols: ['id', 'cliente', 'problema', 'estado', 'fecha', 'solucion'] },
+      { id: 'visitas', name: "Visitas", data: state.visitas, cols: ['id', 'ticket_id', 'tecnico_id', 'fecha', 'estado', 'motivo'] },
+      { id: 'tecnicos', name: "Tecnicos", data: state.tecnicos, cols: ['id', 'nombre', 'rol', 'telefono', 'estado'] },
+      { id: 'equipos', name: "Equipos", data: state.equipos, cols: ['id', 'mac', 'modelo', 'estado', 'cliente_id', 'tipo'] },
+      { id: 'instalaciones', name: "Instalaciones", data: state.instalaciones, cols: ['id', 'cliente_nombre', 'fecha_programada', 'estado', 'direccion'] },
+      { id: 'postVenta', name: "PostVenta", data: state.postVenta, cols: ['id', 'cliente', 'motivo', 'estado', 'fecha'] },
+      { id: 'sesionesRemoto', name: "SoporteRemoto", data: state.sesionesRemoto, cols: ['id', 'cliente', 'operador', 'duracion', 'fecha'] },
+      { id: 'derivaciones', name: "Derivaciones", data: state.derivaciones, cols: ['id', 'ticket_id', 'motivo', 'estado', 'tecnico_origen', 'tecnico_destino'] },
       { id: 'importHistory', name: "HistorialImport", data: state.importHistory, cols: ['id', 'date', 'fileName', 'total', 'mode'] },
       { id: 'whatsappLogs', name: "LogsWhatsApp", data: state.whatsappLogs, cols: ['id', 'numero', 'mensaje', 'fecha', 'estado'] },
       { id: 'templates', name: "Plantillas", data: state.templates, cols: ['id', 'nombre', 'tipo'] },
