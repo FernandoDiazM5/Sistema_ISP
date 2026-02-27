@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Wifi, Download, Database, RefreshCw, Plus, FileSpreadsheet, Archive, Upload, Trash2 } from 'lucide-react';
+import { Wifi, Download, Database, RefreshCw, Plus, FileSpreadsheet, Archive, Upload, Trash2, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -25,8 +25,39 @@ export default function ImportacionPage() {
   const [progress, setProgress] = useState({ current: 0, total: 0, stage: 'reading' });
   const [importMode, setImportMode] = useState('inteligente'); // completa | inteligente | nuevos
   const [showCleaningOptions, setShowCleaningOptions] = useState(false);
-  const [exportTable, setExportTable] = useState('all');
+  const [exportTables, setExportTables] = useState(['clients']); // Default una seleccionada
+  const [showTableSelect, setShowTableSelect] = useState(false);
   const [exportFormat, setExportFormat] = useState('xlsx');
+
+  const tablesList = [
+    { id: 'clients', label: 'Clientes' },
+    { id: 'tickets', label: 'Tickets' },
+    { id: 'averias', label: 'Averías' },
+    { id: 'visitas', label: 'Visitas Técnicas' },
+    { id: 'tecnicos', label: 'Técnicos' },
+    { id: 'equipos', label: 'Equipos' },
+    { id: 'instalaciones', label: 'Instalaciones' },
+    { id: 'postVenta', label: 'Post Venta' },
+    { id: 'sesionesRemoto', label: 'Soporte Remoto' },
+    { id: 'derivaciones', label: 'Derivaciones' },
+    { id: 'importHistory', label: 'Historial Importación' },
+    { id: 'whatsappLogs', label: 'Logs WhatsApp' },
+    { id: 'templates', label: 'Plantillas' }
+  ];
+
+  const handleToggleTable = (id) => {
+    setExportTables(prev =>
+      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllTables = () => {
+    if (exportTables.length === tablesList.length) {
+      setExportTables([]); // Deseleccionar todas
+    } else {
+      setExportTables(tablesList.map(t => t.id)); // Seleccionar todas
+    }
+  };
 
   const handleDataLoaded = (rawRows, name) => {
     setFileName(name);
@@ -270,7 +301,12 @@ export default function ImportacionPage() {
       { id: 'templates', name: "Plantillas", data: state.templates },
     ];
 
-    const tablesToExport = exportTable === 'all' ? sheets : sheets.filter(s => s.id === exportTable);
+    if (exportTables.length === 0) {
+      alert("Por favor selecciona al menos una tabla para exportar.");
+      return;
+    }
+
+    const tablesToExport = sheets.filter(s => exportTables.includes(s.id));
 
     if (exportFormat === 'xlsx') {
       const wb = XLSX.utils.book_new();
@@ -280,7 +316,7 @@ export default function ImportacionPage() {
           XLSX.utils.book_append_sheet(wb, ws, name);
         }
       });
-      XLSX.writeFile(wb, `ISP_Export_${exportTable}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      XLSX.writeFile(wb, `ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.xlsx`);
     } else if (exportFormat === 'csv') {
       tablesToExport.forEach(({ name, data }) => {
         if (data && Array.isArray(data) && data.length > 0) {
@@ -322,7 +358,7 @@ export default function ImportacionPage() {
           });
         }
       });
-      doc.save(`ISP_Export_${exportTable}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.save(`ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.pdf`);
     }
   };
 
@@ -396,26 +432,56 @@ export default function ImportacionPage() {
               Descarga una copia completa de toda la información del sistema (Clientes, Tickets, Visitas, etc.) para evitar pérdida de datos.
             </p>
             <div className="flex gap-3 flex-wrap items-center">
-              <select
-                value={exportTable}
-                onChange={(e) => setExportTable(e.target.value)}
-                className="bg-bg-secondary border border-border text-text-primary text-xs font-semibold rounded-lg px-3 py-2.5 outline-none focus:border-accent-blue"
-              >
-                <option value="all">Todas las tablas</option>
-                <option value="clients">Clientes</option>
-                <option value="tickets">Tickets</option>
-                <option value="averias">Averías</option>
-                <option value="visitas">Visitas Técnicas</option>
-                <option value="tecnicos">Técnicos</option>
-                <option value="equipos">Equipos</option>
-                <option value="instalaciones">Instalaciones</option>
-                <option value="postVenta">Post Venta</option>
-                <option value="sesionesRemoto">Soporte Remoto</option>
-                <option value="derivaciones">Derivaciones</option>
-                <option value="importHistory">Historial Importación</option>
-                <option value="whatsappLogs">Logs WhatsApp</option>
-                <option value="templates">Plantillas</option>
-              </select>
+              {/* Multi-Select Custom Dropdown para Tablas */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowTableSelect(!showTableSelect)}
+                  className="flex items-center justify-between gap-3 bg-bg-secondary border border-border text-text-primary text-xs font-semibold rounded-lg px-3 py-2.5 outline-none focus:border-accent-blue min-w-[180px] hover:border-text-muted transition-colors"
+                >
+                  <span className="truncate max-w-[130px]">
+                    {exportTables.length === 0 ? 'Ninguna seleccionada' :
+                      exportTables.length === tablesList.length ? 'Todas las tablas' :
+                        exportTables.length === 1 ? tablesList.find(t => t.id === exportTables[0])?.label :
+                          `${exportTables.length} tablas selecc.`}
+                  </span>
+                  <ChevronDown size={14} className={`text-text-muted transition-transform ${showTableSelect ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showTableSelect && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowTableSelect(false)}></div>
+                    <div className="absolute top-full left-0 mt-1 w-56 bg-bg-card border border-border rounded-xl shadow-xl z-20 overflow-hidden flex flex-col max-h-[300px]">
+                      <div className="p-2 border-b border-border bg-bg-secondary/50">
+                        <button
+                          onClick={handleSelectAllTables}
+                          className="w-full text-left px-2 py-1.5 text-[11px] font-semibold text-accent-blue hover:bg-accent-blue/10 rounded flex items-center gap-2 transition-colors"
+                        >
+                          {exportTables.length === tablesList.length ? <CheckSquare size={13} /> : <Square size={13} />}
+                          {exportTables.length === tablesList.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                        </button>
+                      </div>
+                      <div className="overflow-y-auto p-1 py-1.5 custom-scrollbar">
+                        {tablesList.map(table => (
+                          <div
+                            key={table.id}
+                            onClick={(e) => {
+                              e.preventDefault(); // Evitamos scroll to top u otros behaviors raros
+                              e.stopPropagation(); // Mantenemos el dropdown abierto
+                              handleToggleTable(table.id);
+                            }}
+                            className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-bg-secondary cursor-pointer rounded-lg transition-colors group"
+                          >
+                            <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors ${exportTables.includes(table.id) ? 'bg-accent-blue border-accent-blue text-white' : 'border-text-muted/50 group-hover:border-accent-blue/50'}`}>
+                              {exportTables.includes(table.id) && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-2.5 h-2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                            </div>
+                            <span className="text-[11px] text-text-primary group-hover:text-accent-blue transition-colors select-none">{table.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               <select
                 value={exportFormat}
