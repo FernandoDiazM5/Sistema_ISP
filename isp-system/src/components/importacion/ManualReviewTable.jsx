@@ -1,6 +1,9 @@
-import { AlertTriangle, Edit3 } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Edit3, X, Check, EyeOff } from 'lucide-react';
 
-export default function ManualReviewTable({ items, onFix }) {
+export default function ManualReviewTable({ items, onFix, onSkip }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState('');
   if (!items || items.length === 0) return null;
 
   return (
@@ -30,32 +33,79 @@ export default function ManualReviewTable({ items, onFix }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item, i) => (
-              <tr key={i} className="border-b border-border">
-                <td className="py-2 px-3 font-mono text-text-muted text-[11px]">{item.id}</td>
-                <td className="py-2 px-3 font-medium">{item.nombre}</td>
-                <td className="py-2 px-3">
-                  <span className={`py-0.5 px-2 rounded text-[10px] font-semibold
+            {items.map((item, i) => {
+              const isEditing = editingId === item.id;
+
+              return (
+                <tr key={i} className="border-b border-border">
+                  <td className="py-2 px-3 font-mono text-text-muted text-[11px]">{item.id}</td>
+                  <td className="py-2 px-3 font-medium">{item.nombre}</td>
+                  <td className="py-2 px-3">
+                    <span className={`py-0.5 px-2 rounded text-[10px] font-semibold
                     ${item.tipo === 'movil' ? 'bg-accent-red/15 text-accent-red' :
-                      item.tipo === 'tecnologia' ? 'bg-accent-yellow/15 text-accent-yellow' :
-                      'bg-accent-blue/15 text-accent-blue'}`}>
-                    {item.tipo === 'movil' ? 'Móvil inválido' :
-                     item.tipo === 'tecnologia' ? 'Tecnología no detectada' :
-                     item.tipo === 'deuda' ? 'Deuda no parseable' : item.tipo}
-                  </span>
-                </td>
-                <td className="py-2 px-3 text-text-secondary">{item.campo}</td>
-                <td className="py-2 px-3 font-mono text-[11px] text-accent-red">{item.valorOriginal}</td>
-                <td className="py-2 px-3 text-center">
-                  {onFix && (
-                    <button onClick={() => onFix(item)}
-                      className="p-1 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer hover:border-accent-blue hover:text-accent-blue transition-colors">
-                      <Edit3 size={12} />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                        item.tipo === 'tecnologia' ? 'bg-accent-yellow/15 text-accent-yellow' :
+                          'bg-accent-blue/15 text-accent-blue'}`}>
+                      {item.tipo === 'movil' ? 'Móvil inválido' :
+                        item.tipo === 'tecnologia' ? 'Tecnología no detectada' :
+                          item.tipo === 'deuda' ? 'Deuda no parseable' : item.tipo}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 text-text-secondary">{item.campo}</td>
+                  <td className="py-2 px-3 font-mono text-[11px]">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="w-full bg-bg-secondary border border-accent-blue/50 rounded px-2 py-1 text-text-primary text-[11px] outline-none"
+                        autoFocus
+                      />
+                    ) : (
+                      <span className="text-accent-red">{item.valorOriginal}</span>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      {isEditing ? (
+                        <>
+                          <button onClick={() => {
+                            if (onFix) onFix(item.id, editValue, item.tipo);
+                            setEditingId(null);
+                          }}
+                            title="Guardar"
+                            className="p-1.5 rounded-lg bg-accent-green/20 text-accent-green cursor-pointer hover:bg-accent-green hover:text-white transition-colors">
+                            <Check size={12} />
+                          </button>
+                          <button onClick={() => setEditingId(null)}
+                            title="Cancelar edición"
+                            className="p-1.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer hover:border-accent-red hover:text-accent-red transition-colors">
+                            <X size={12} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => {
+                            setEditingId(item.id);
+                            setEditValue(item.valorOriginal || '');
+                          }}
+                            title="Editar valor"
+                            className="p-1.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer hover:border-accent-blue hover:text-accent-blue transition-colors">
+                            <Edit3 size={12} />
+                          </button>
+                          {onSkip && (
+                            <button onClick={() => onSkip(item.id)}
+                              title="Omitir (dejar tal cual)"
+                              className="p-1.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer hover:border-accent-yellow hover:text-accent-yellow transition-colors">
+                              <EyeOff size={12} />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

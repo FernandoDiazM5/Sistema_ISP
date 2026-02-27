@@ -106,6 +106,48 @@ export default function ImportacionPage() {
     }, 100);
   };
 
+  const handleFixReviewItem = (clientId, newValue, tipo) => {
+    // 1. Quitar de la lista de revisión
+    setReviewItems(prev => prev.filter(item => !(item.id === clientId && item.tipo === tipo)));
+
+    // 2. Determinar campo de la tabla a actualizar
+    const fieldMap = {
+      'movil': 'movil_1',
+      'tecnologia': 'nodo_router'
+    };
+    const targetField = fieldMap[tipo];
+    if (!targetField) return;
+
+    // 3. Actualizar la data procesada globalmente
+    const newProcessedData = processedData.map(client => {
+      if (client.id === clientId) return { ...client, [targetField]: newValue };
+      return client;
+    });
+    setProcessedData(newProcessedData);
+
+    // 4. Actualizar estado intermedio del render visual (Nuevos o Modificados)
+    const newChanges = changes.map(change => {
+      const isMatch = change.type === 'NEW' ? change.data.id === clientId : change.id === clientId;
+      if (isMatch) {
+        if (change.type === 'NEW') {
+          return { ...change, data: { ...change.data, [targetField]: newValue } };
+        } else {
+          const existing = clients.find(c => c.id === clientId);
+          const newData = { ...change.newData, [targetField]: newValue };
+          const diffs = compareClients(existing, newData);
+          return { ...change, newData, diffs };
+        }
+      }
+      return change;
+    });
+    setChanges(newChanges);
+  };
+
+  const handleSkipReviewItem = (clientId, tipo) => {
+    // Solo ignorar la advertencia, se aplicarán los datos defectuosos del excel.
+    setReviewItems(prev => prev.filter(item => !(item.id === clientId && item.tipo === tipo)));
+  };
+
   const confirmImport = () => {
     let finalData;
     if (importMode === 'completa') {
@@ -427,7 +469,7 @@ export default function ImportacionPage() {
 
       {step === 'preview' && (
         <>
-          {reviewItems.length > 0 && <ManualReviewTable items={reviewItems} />}
+          {reviewItems.length > 0 && <ManualReviewTable items={reviewItems} onFix={handleFixReviewItem} onSkip={(id) => handleSkipReviewItem(id, reviewItems.find(t => t.id === id).tipo)} />}
           <ImportPreview
             stats={stats}
             changes={changes}
