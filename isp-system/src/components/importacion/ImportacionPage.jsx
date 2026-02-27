@@ -287,19 +287,19 @@ export default function ImportacionPage() {
   const handleCustomExport = async () => {
     const state = useStore.getState();
     const sheets = [
-      { id: 'clients', name: "Clientes", data: state.clients },
-      { id: 'tickets', name: "Tickets", data: state.tickets },
-      { id: 'averias', name: "Averias", data: state.averias },
-      { id: 'visitas', name: "Visitas", data: state.visitas },
-      { id: 'tecnicos', name: "Tecnicos", data: state.tecnicos },
-      { id: 'equipos', name: "Equipos", data: state.equipos },
-      { id: 'instalaciones', name: "Instalaciones", data: state.instalaciones },
-      { id: 'postVenta', name: "PostVenta", data: state.postVenta },
-      { id: 'sesionesRemoto', name: "SoporteRemoto", data: state.sesionesRemoto },
-      { id: 'derivaciones', name: "Derivaciones", data: state.derivaciones },
-      { id: 'importHistory', name: "HistorialImport", data: state.importHistory },
-      { id: 'whatsappLogs', name: "LogsWhatsApp", data: state.whatsappLogs },
-      { id: 'templates', name: "Plantillas", data: state.templates },
+      { id: 'clients', name: "Clientes", data: state.clients, cols: ['id', 'nombre', 'estado_cuenta', 'movil_1', 'plan', 'precio', 'nodo_router', 'direccion'] },
+      { id: 'tickets', name: "Tickets", data: state.tickets, cols: ['id', 'cliente_nombre', 'tipo_falla', 'estado', 'fecha_creacion'] },
+      { id: 'averias', name: "Averias", data: state.averias, cols: ['id', 'cliente', 'problema', 'estado', 'fecha'] },
+      { id: 'visitas', name: "Visitas", data: state.visitas, cols: ['id', 'ticket_id', 'tecnico_id', 'fecha', 'estado'] },
+      { id: 'tecnicos', name: "Tecnicos", data: state.tecnicos, cols: ['id', 'nombre', 'rol', 'telefono'] },
+      { id: 'equipos', name: "Equipos", data: state.equipos, cols: ['id', 'mac', 'modelo', 'estado', 'cliente_id'] },
+      { id: 'instalaciones', name: "Instalaciones", data: state.instalaciones, cols: ['id', 'cliente_nombre', 'fecha_programada', 'estado'] },
+      { id: 'postVenta', name: "PostVenta", data: state.postVenta, cols: ['id', 'cliente', 'motivo', 'estado'] },
+      { id: 'sesionesRemoto', name: "SoporteRemoto", data: state.sesionesRemoto, cols: ['id', 'cliente', 'operador', 'duracion'] },
+      { id: 'derivaciones', name: "Derivaciones", data: state.derivaciones, cols: ['id', 'ticket_id', 'motivo', 'estado'] },
+      { id: 'importHistory', name: "HistorialImport", data: state.importHistory, cols: ['id', 'date', 'fileName', 'total', 'mode'] },
+      { id: 'whatsappLogs', name: "LogsWhatsApp", data: state.whatsappLogs, cols: ['id', 'numero', 'mensaje', 'fecha', 'estado'] },
+      { id: 'templates', name: "Plantillas", data: state.templates, cols: ['id', 'nombre', 'tipo'] },
     ];
 
     if (exportTables.length === 0) {
@@ -342,28 +342,46 @@ export default function ImportacionPage() {
       } else if (exportFormat === 'pdf') {
         const doc = new jsPDF('landscape');
 
-        tablesToExport.forEach(({ name, data }, index) => {
+        for (let index = 0; index < tablesToExport.length; index++) {
+          const { name, data, cols } = tablesToExport[index];
           if (data && Array.isArray(data) && data.length > 0) {
+
+            // Pausa asíncrona para liberar el main thread del navegador
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             if (index > 0) doc.addPage();
             doc.text(`Tabla: ${name} (${data.length} registros)`, 14, 14);
 
-            const headers = Object.keys(data[0]);
+            let headers = Object.keys(data[0]);
+            if (cols && cols.length > 0) {
+              headers = cols.filter(c => headers.includes(c));
+            } else {
+              headers = headers.slice(0, 8);
+            }
 
             const rows = data.map(obj => headers.map(h => {
               const val = obj[h];
-              return typeof val === 'object' ? JSON.stringify(val) : String(val ?? '');
+              return typeof val === 'object' ? JSON.stringify(val).substring(0, 30) : String(val ?? '').substring(0, 40);
             }));
 
+            // AutoTable renderizado de altísimo volumen
             doc.autoTable({
               head: [headers.map(h => h.toUpperCase().replace(/_/g, ' '))],
               body: rows,
               startY: 19,
               theme: 'grid',
-              styles: { fontSize: 6, cellPadding: 1, overflow: 'linebreak' },
-              headStyles: { fillColor: [41, 128, 185], textColor: 255 }
+              styles: {
+                fontSize: 6,
+                cellPadding: 1,
+                overflow: 'linebreak',
+              },
+              headStyles: { fillColor: [41, 128, 185], textColor: 255 },
             });
           }
-        });
+        }
+
+        // Pausa antes de guardar archivo final masivo
+        await new Promise(resolve => setTimeout(resolve, 100));
         doc.save(`ISP_Export_Multiple_${new Date().toISOString().slice(0, 10)}.pdf`);
       }
     } catch (error) {
