@@ -85,7 +85,12 @@ export default function Sidebar({ isOpen, onClose }) {
         return user?.rol === USER_ROLES.SUPER_ADMIN;
       }
 
-      // 2. Verificar permiso del módulo correspondiente
+      // 2. Caso especial: Mantenimiento solo para roles con acceso total (permissions: ['*'])
+      if (item.to === '/mantenimiento') {
+        return role?.permissions?.includes('*') === true;
+      }
+
+      // 3. Verificar permiso del módulo correspondiente
       const module = ROUTE_TO_MODULE[item.to];
       if (module) {
         // Si el usuario es SUPER_ADMIN, siempre mostrar (seguridad extra)
