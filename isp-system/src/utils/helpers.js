@@ -66,6 +66,13 @@ export const ISP_KEY_MAP = {
     isp_tiposRequerimiento: 'tiposRequerimiento',
     isp_client_changes: 'clientChanges',
     isp_averiasTipos: 'averiasTipos',
+    isp_tiposVisita: 'tiposVisita',
+    isp_tiposSesionSoporte: 'tiposSesionSoporte',
+    isp_tiposDerivacion: 'tiposDerivacion',
+    isp_tiposEquipo: 'tiposEquipo',
+    isp_marcasEquipo: 'marcasEquipo',
+    isp_planesInstalacion: 'planesInstalacion',
+    isp_tecnologiasInstalacion: 'tecnologiasInstalacion',
 };
 
 /**

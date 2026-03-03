@@ -192,6 +192,8 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
                 'categorias', 'subcategorias', 'prioridadesSLA',
                 'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
                 'averiasTipos',
+                'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+                'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
             ];
 
             const deltas: any[] = [];

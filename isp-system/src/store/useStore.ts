@@ -131,6 +131,67 @@ const AVERIAS_TIPOS = [
   { id: 'AVTP-06', nombre: 'Otra' },
 ];
 
+const TIPOS_VISITA = [
+  { id: 'TVIS-01', nombre: 'Reparacion' },
+  { id: 'TVIS-02', nombre: 'Diagnostico' },
+  { id: 'TVIS-03', nombre: 'Instalacion' },
+  { id: 'TVIS-04', nombre: 'Cambio de plan' },
+  { id: 'TVIS-05', nombre: 'Mantenimiento' },
+];
+
+const TIPOS_SESION_SOPORTE = [
+  { id: 'TSS-01', nombre: 'Diagnóstico' },
+  { id: 'TSS-02', nombre: 'Configuración' },
+  { id: 'TSS-03', nombre: 'Monitoreo' },
+  { id: 'TSS-04', nombre: 'Reinicio remoto' },
+];
+
+const TIPOS_DERIVACION = [
+  { id: 'TDER-01', nombre: 'Tendido de fibra' },
+  { id: 'TDER-02', nombre: 'Reparación de poste' },
+  { id: 'TDER-03', nombre: 'AP Saturado' },
+  { id: 'TDER-04', nombre: 'Corte de fibra' },
+  { id: 'TDER-05', nombre: 'Atenuación excesiva' },
+  { id: 'TDER-06', nombre: 'Mantenimiento NAP' },
+  { id: 'TDER-07', nombre: 'Extensión de red' },
+];
+
+const TIPOS_EQUIPO = [
+  { id: 'TEQ-01', nombre: 'ONU' },
+  { id: 'TEQ-02', nombre: 'Router' },
+  { id: 'TEQ-03', nombre: 'Antena CPE' },
+  { id: 'TEQ-04', nombre: 'Antena AP' },
+  { id: 'TEQ-05', nombre: 'Switch' },
+  { id: 'TEQ-06', nombre: 'OLT' },
+  { id: 'TEQ-07', nombre: 'Media Converter' },
+];
+
+const MARCAS_EQUIPO = [
+  { id: 'MEQ-01', nombre: 'Huawei' },
+  { id: 'MEQ-02', nombre: 'VSOL' },
+  { id: 'MEQ-03', nombre: 'Mikrotik' },
+  { id: 'MEQ-04', nombre: 'Ubiquiti' },
+  { id: 'MEQ-05', nombre: 'TP-Link' },
+  { id: 'MEQ-06', nombre: 'Tenda' },
+  { id: 'MEQ-07', nombre: 'ZTE' },
+  { id: 'MEQ-08', nombre: 'Nokia' },
+];
+
+const PLANES_INSTALACION = [
+  { id: 'PLAN-01', nombre: 'INTERNET FIBRA 100MB', velocidad: '100MB', tecnologia: 'Fibra Óptica' },
+  { id: 'PLAN-02', nombre: 'INTERNET FIBRA 200MB', velocidad: '200MB', tecnologia: 'Fibra Óptica' },
+  { id: 'PLAN-03', nombre: 'INTERNET FIBRA 300MB', velocidad: '300MB', tecnologia: 'Fibra Óptica' },
+  { id: 'PLAN-04', nombre: 'INTERNET RADIO 30MB', velocidad: '30MB', tecnologia: 'Radio Enlace' },
+  { id: 'PLAN-05', nombre: 'INTERNET RADIO 50MB', velocidad: '50MB', tecnologia: 'Radio Enlace' },
+  { id: 'PLAN-06', nombre: 'INTERNET RADIO 65MB', velocidad: '65MB', tecnologia: 'Radio Enlace' },
+  { id: 'PLAN-07', nombre: 'INTERNET RADIO 100MB', velocidad: '100MB', tecnologia: 'Radio Enlace' },
+];
+
+const TECNOLOGIAS_INSTALACION = [
+  { id: 'TEC-01', nombre: 'Radio Enlace' },
+  { id: 'TEC-02', nombre: 'Fibra Óptica' },
+];
+
 // ===================== STORE COMPOSITION =====================
 export interface StoreState {
   storeReady: boolean;
@@ -182,6 +243,48 @@ export interface StoreState {
   addAveriaTipo: (nombre: string) => void;
   updateAveriaTipo: (id: string, nombre: string) => void;
   deleteAveriaTipo: (id: string) => void;
+
+  // CRUD Tipos de Visita
+  tiposVisita: any[];
+  addTipoVisita: (nombre: string) => void;
+  updateTipoVisita: (id: string, nombre: string) => void;
+  deleteTipoVisita: (id: string) => void;
+
+  // CRUD Tipos de Sesión Soporte Remoto
+  tiposSesionSoporte: any[];
+  addTipoSesionSoporte: (nombre: string) => void;
+  updateTipoSesionSoporte: (id: string, nombre: string) => void;
+  deleteTipoSesionSoporte: (id: string) => void;
+
+  // CRUD Tipos de Derivación Planta Externa
+  tiposDerivacion: any[];
+  addTipoDerivacion: (nombre: string) => void;
+  updateTipoDerivacion: (id: string, nombre: string) => void;
+  deleteTipoDerivacion: (id: string) => void;
+
+  // CRUD Tipos de Equipo
+  tiposEquipo: any[];
+  addTipoEquipo: (nombre: string) => void;
+  updateTipoEquipo: (id: string, nombre: string) => void;
+  deleteTipoEquipo: (id: string) => void;
+
+  // CRUD Marcas de Equipo
+  marcasEquipo: any[];
+  addMarcaEquipo: (nombre: string) => void;
+  updateMarcaEquipo: (id: string, nombre: string) => void;
+  deleteMarcaEquipo: (id: string) => void;
+
+  // CRUD Planes de Instalación
+  planesInstalacion: any[];
+  addPlanInstalacion: (data: { nombre: string; velocidad: string; tecnologia: string }) => void;
+  updatePlanInstalacion: (id: string, updates: any) => void;
+  deletePlanInstalacion: (id: string) => void;
+
+  // CRUD Tecnologías de Instalación
+  tecnologiasInstalacion: any[];
+  addTecnologiaInstalacion: (nombre: string) => void;
+  updateTecnologiaInstalacion: (id: string, nombre: string) => void;
+  deleteTecnologiaInstalacion: (id: string) => void;
 
   getSubcategoriasByCategoria: (catId: string) => any[];
   getEstadosByEntidad: (entidad: string) => any[];
@@ -255,7 +358,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       // Lista de colecciones maestras que NO deben ser reemplazadas por arrays vacíos.
       const catalogKeysToProtect = [
         'categorias', 'subcategorias', 'prioridadesSLA',
-        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos'
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+        'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+        'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
       ];
 
       for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
@@ -327,7 +432,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
-      'averiasTipos', 'clientChanges'
+      'averiasTipos', 'clientChanges',
+      'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+      'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
     ];
 
     set((state: any) => {
@@ -387,7 +494,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
     const catalogKeysToProtect = [
       'categorias', 'subcategorias', 'prioridadesSLA',
-      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos'
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+      'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+      'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
     ];
 
     const updates: any = {};
@@ -420,6 +529,168 @@ const useStore = create<StoreState>((set: any, get: any) => ({
         document.documentElement.setAttribute('data-theme', data.theme);
       }
     }
+  },
+
+  // ===================== CATÁLOGOS OPERATIVOS =====================
+  tiposVisita: TIPOS_VISITA,
+  addTipoVisita: (nombre: string) => {
+    const s = get();
+    const max = s.tiposVisita.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `TVIS-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.tiposVisita, newItem];
+    set({ tiposVisita: updated });
+    db.set('isp_tiposVisita', updated).catch((e: any) => console.error('[IndexedDB] tiposVisita:', e));
+    saveDocument('tiposVisita', newItem);
+  },
+  updateTipoVisita: (id: string, nombre: string) => {
+    const updated = get().tiposVisita.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ tiposVisita: updated });
+    db.set('isp_tiposVisita', updated).catch((e: any) => console.error('[IndexedDB] tiposVisita:', e));
+    saveDocument('tiposVisita', { id, nombre });
+  },
+  deleteTipoVisita: (id: string) => {
+    const updated = get().tiposVisita.filter((t: any) => t.id !== id);
+    set({ tiposVisita: updated });
+    db.set('isp_tiposVisita', updated).catch((e: any) => console.error('[IndexedDB] tiposVisita:', e));
+    deleteDocument('tiposVisita', id);
+  },
+
+  tiposSesionSoporte: TIPOS_SESION_SOPORTE,
+  addTipoSesionSoporte: (nombre: string) => {
+    const s = get();
+    const max = s.tiposSesionSoporte.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `TSS-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.tiposSesionSoporte, newItem];
+    set({ tiposSesionSoporte: updated });
+    db.set('isp_tiposSesionSoporte', updated).catch((e: any) => console.error('[IndexedDB] tiposSesionSoporte:', e));
+    saveDocument('tiposSesionSoporte', newItem);
+  },
+  updateTipoSesionSoporte: (id: string, nombre: string) => {
+    const updated = get().tiposSesionSoporte.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ tiposSesionSoporte: updated });
+    db.set('isp_tiposSesionSoporte', updated).catch((e: any) => console.error('[IndexedDB] tiposSesionSoporte:', e));
+    saveDocument('tiposSesionSoporte', { id, nombre });
+  },
+  deleteTipoSesionSoporte: (id: string) => {
+    const updated = get().tiposSesionSoporte.filter((t: any) => t.id !== id);
+    set({ tiposSesionSoporte: updated });
+    db.set('isp_tiposSesionSoporte', updated).catch((e: any) => console.error('[IndexedDB] tiposSesionSoporte:', e));
+    deleteDocument('tiposSesionSoporte', id);
+  },
+
+  tiposDerivacion: TIPOS_DERIVACION,
+  addTipoDerivacion: (nombre: string) => {
+    const s = get();
+    const max = s.tiposDerivacion.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `TDER-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.tiposDerivacion, newItem];
+    set({ tiposDerivacion: updated });
+    db.set('isp_tiposDerivacion', updated).catch((e: any) => console.error('[IndexedDB] tiposDerivacion:', e));
+    saveDocument('tiposDerivacion', newItem);
+  },
+  updateTipoDerivacion: (id: string, nombre: string) => {
+    const updated = get().tiposDerivacion.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ tiposDerivacion: updated });
+    db.set('isp_tiposDerivacion', updated).catch((e: any) => console.error('[IndexedDB] tiposDerivacion:', e));
+    saveDocument('tiposDerivacion', { id, nombre });
+  },
+  deleteTipoDerivacion: (id: string) => {
+    const updated = get().tiposDerivacion.filter((t: any) => t.id !== id);
+    set({ tiposDerivacion: updated });
+    db.set('isp_tiposDerivacion', updated).catch((e: any) => console.error('[IndexedDB] tiposDerivacion:', e));
+    deleteDocument('tiposDerivacion', id);
+  },
+
+  tiposEquipo: TIPOS_EQUIPO,
+  addTipoEquipo: (nombre: string) => {
+    const s = get();
+    const max = s.tiposEquipo.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `TEQ-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.tiposEquipo, newItem];
+    set({ tiposEquipo: updated });
+    db.set('isp_tiposEquipo', updated).catch((e: any) => console.error('[IndexedDB] tiposEquipo:', e));
+    saveDocument('tiposEquipo', newItem);
+  },
+  updateTipoEquipo: (id: string, nombre: string) => {
+    const updated = get().tiposEquipo.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ tiposEquipo: updated });
+    db.set('isp_tiposEquipo', updated).catch((e: any) => console.error('[IndexedDB] tiposEquipo:', e));
+    saveDocument('tiposEquipo', { id, nombre });
+  },
+  deleteTipoEquipo: (id: string) => {
+    const updated = get().tiposEquipo.filter((t: any) => t.id !== id);
+    set({ tiposEquipo: updated });
+    db.set('isp_tiposEquipo', updated).catch((e: any) => console.error('[IndexedDB] tiposEquipo:', e));
+    deleteDocument('tiposEquipo', id);
+  },
+
+  marcasEquipo: MARCAS_EQUIPO,
+  addMarcaEquipo: (nombre: string) => {
+    const s = get();
+    const max = s.marcasEquipo.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `MEQ-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.marcasEquipo, newItem];
+    set({ marcasEquipo: updated });
+    db.set('isp_marcasEquipo', updated).catch((e: any) => console.error('[IndexedDB] marcasEquipo:', e));
+    saveDocument('marcasEquipo', newItem);
+  },
+  updateMarcaEquipo: (id: string, nombre: string) => {
+    const updated = get().marcasEquipo.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ marcasEquipo: updated });
+    db.set('isp_marcasEquipo', updated).catch((e: any) => console.error('[IndexedDB] marcasEquipo:', e));
+    saveDocument('marcasEquipo', { id, nombre });
+  },
+  deleteMarcaEquipo: (id: string) => {
+    const updated = get().marcasEquipo.filter((t: any) => t.id !== id);
+    set({ marcasEquipo: updated });
+    db.set('isp_marcasEquipo', updated).catch((e: any) => console.error('[IndexedDB] marcasEquipo:', e));
+    deleteDocument('marcasEquipo', id);
+  },
+
+  planesInstalacion: PLANES_INSTALACION,
+  addPlanInstalacion: (data: { nombre: string; velocidad: string; tecnologia: string }) => {
+    const s = get();
+    const max = s.planesInstalacion.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `PLAN-${String(max + 1).padStart(2, '0')}`, ...data };
+    const updated = [...s.planesInstalacion, newItem];
+    set({ planesInstalacion: updated });
+    db.set('isp_planesInstalacion', updated).catch((e: any) => console.error('[IndexedDB] planesInstalacion:', e));
+    saveDocument('planesInstalacion', newItem);
+  },
+  updatePlanInstalacion: (id: string, updates: any) => {
+    const updated = get().planesInstalacion.map((t: any) => t.id === id ? { ...t, ...updates } : t);
+    set({ planesInstalacion: updated });
+    db.set('isp_planesInstalacion', updated).catch((e: any) => console.error('[IndexedDB] planesInstalacion:', e));
+    saveDocument('planesInstalacion', { id, ...updates });
+  },
+  deletePlanInstalacion: (id: string) => {
+    const updated = get().planesInstalacion.filter((t: any) => t.id !== id);
+    set({ planesInstalacion: updated });
+    db.set('isp_planesInstalacion', updated).catch((e: any) => console.error('[IndexedDB] planesInstalacion:', e));
+    deleteDocument('planesInstalacion', id);
+  },
+
+  tecnologiasInstalacion: TECNOLOGIAS_INSTALACION,
+  addTecnologiaInstalacion: (nombre: string) => {
+    const s = get();
+    const max = s.tecnologiasInstalacion.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `TEC-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.tecnologiasInstalacion, newItem];
+    set({ tecnologiasInstalacion: updated });
+    db.set('isp_tecnologiasInstalacion', updated).catch((e: any) => console.error('[IndexedDB] tecnologiasInstalacion:', e));
+    saveDocument('tecnologiasInstalacion', newItem);
+  },
+  updateTecnologiaInstalacion: (id: string, nombre: string) => {
+    const updated = get().tecnologiasInstalacion.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ tecnologiasInstalacion: updated });
+    db.set('isp_tecnologiasInstalacion', updated).catch((e: any) => console.error('[IndexedDB] tecnologiasInstalacion:', e));
+    saveDocument('tecnologiasInstalacion', { id, nombre });
+  },
+  deleteTecnologiaInstalacion: (id: string) => {
+    const updated = get().tecnologiasInstalacion.filter((t: any) => t.id !== id);
+    set({ tecnologiasInstalacion: updated });
+    db.set('isp_tecnologiasInstalacion', updated).catch((e: any) => console.error('[IndexedDB] tecnologiasInstalacion:', e));
+    deleteDocument('tecnologiasInstalacion', id);
   },
 
   // ===================== CATÁLOGOS =====================
