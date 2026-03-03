@@ -2,7 +2,7 @@ import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOu
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
-import { ROLES as USER_ROLES, MODULES } from '../../types/user';
+import { ROLES as USER_ROLES, MODULES, PERMISSION_LEVELS } from '../../types/user';
 import useStore from '../../store/useStore';
 import useSyncStore from '../../store/syncStore';
 
@@ -86,15 +86,18 @@ export default function Sidebar({ isOpen, onClose }) {
       }
 
       // 2. Caso especial: Mantenimiento — visible para ADMIN y SUPER_ADMIN
-      // Usa múltiples verificaciones en paralelo para mayor robustez
       if (item.to === '/mantenimiento') {
         const rol = user?.rol;
-        // Verificación directa por string
+        // a) Verificación directa por string del rol
         if (rol === 'SUPER_ADMIN' || rol === 'ADMIN') return true;
-        // Verificación por objeto ROLES (cubre variantes de casing)
+        // b) Verificación por objeto ROLES (cubre variantes de casing)
         if (role?.permissions?.includes('*')) return true;
-        // Verificación por permisos del módulo en store
-        return hasPermission(MODULES.MANTENIMIENTO, 'read');
+        // c) Verificación por permisos explícitos en el documento del usuario
+        //    (más robusto: no depende de user.rol, usa el objeto permisos de Firestore)
+        const permDirecto = user?.permisos?.[MODULES.MANTENIMIENTO];
+        if (permDirecto && permDirecto !== PERMISSION_LEVELS.NONE) return true;
+        // d) Fallback: verificar via store hasPermission (usa currentUser + defaults)
+        return hasPermission(MODULES.MANTENIMIENTO, PERMISSION_LEVELS.READ);
       }
 
       // 3. Verificar permiso del módulo correspondiente
@@ -133,7 +136,7 @@ export default function Sidebar({ isOpen, onClose }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 min-h-0 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
         {navSections.map((section, idx) => {
           const filteredItems = getFilteredItems(section.items);
 

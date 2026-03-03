@@ -241,6 +241,76 @@ export async function fixSuperAdmin(email = FIRST_SUPER_ADMIN.email) {
   }
 }
 
+/**
+ * Diagnóstico completo: muestra el estado exacto del usuario actual en
+ * localStorage, Zustand y Firestore para identificar por qué el módulo
+ * de Mantenimiento no aparece en el sidebar.
+ */
+export async function diagnoseSidebar() {
+  console.log('');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('🔍 DIAGNÓSTICO DEL SIDEBAR — MÓDULO MANTENIMIENTO');
+  console.log('═══════════════════════════════════════════════════════');
+
+  // 1. Estado en localStorage
+  const cached = localStorage.getItem('isp_user');
+  let cachedUser = null;
+  try { cachedUser = cached ? JSON.parse(cached) : null; } catch { /* ignore */ }
+  console.log('\n📦 localStorage (isp_user):');
+  if (cachedUser) {
+    console.log('   email:', cachedUser.email);
+    console.log('   rol:', cachedUser.rol, cachedUser.rol === 'SUPER_ADMIN' ? '✅' : '❌ NO ES SUPER_ADMIN');
+    console.log('   permisos.mantenimiento:', cachedUser.permisos?.mantenimiento || 'undefined');
+    console.log('   activo:', cachedUser.activo);
+  } else {
+    console.log('   ⚠️  No hay sesión en localStorage');
+  }
+
+  // 2. Estado en Zustand (store)
+  if (window.__zustand_store__ || window.useStore) {
+    console.log('\n🏪 Store Zustand (no accesible desde consola directamente)');
+    console.log('   Ejecuta: checkCurrentUser() para ver estado del store');
+  }
+
+  // 3. Estado en Firestore
+  if (cachedUser?.email) {
+    console.log('\n☁️  Verificando Firestore para:', cachedUser.email);
+    try {
+      const db = initFirebase();
+      if (db) {
+        const q = query(collection(db, 'users'), where('email', '==', cachedUser.email.toLowerCase()));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          console.log('   ❌ NO se encontró documento en Firestore con ese email');
+          console.log('   👉 Ejecuta: fixSuperAdmin() para crear/reparar el documento');
+        } else {
+          snap.docs.forEach((d, i) => {
+            const data = d.data();
+            console.log(`\n   📄 Documento #${i + 1} — UID: ${d.id}`);
+            console.log('   rol:', data.rol, data.rol === 'SUPER_ADMIN' ? '✅' : '❌ INCORRECTO — ejecuta fixSuperAdmin()');
+            console.log('   activo:', data.activo);
+            console.log('   permisos.mantenimiento:', data.permisos?.mantenimiento || '❌ no definido');
+          });
+          if (snap.docs.length > 1) {
+            console.log('\n   ⚠️  HAY DOCUMENTOS DUPLICADOS. Esto puede causar comportamientos inesperados.');
+          }
+        }
+      }
+    } catch (e) {
+      console.error('   Error consultando Firestore:', e.message);
+    }
+  } else {
+    console.log('\n☁️  No se puede consultar Firestore: no hay email en localStorage');
+    console.log('   👉 Inicia sesión primero, luego ejecuta diagnoseSidebar() de nuevo');
+  }
+
+  console.log('\n💡 Acciones disponibles:');
+  console.log('   • fixSuperAdmin()  → corrige el rol en Firestore + limpia localStorage');
+  console.log('   • checkUsers()     → lista todos los usuarios en Firestore');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('');
+}
+
 // ==================== AUTO-INICIALIZACIÓN ====================
 // Ejecutar automáticamente en desarrollo
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
@@ -248,6 +318,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   window.initSuperAdmin = initSuperAdmin;
   window.checkUsers = checkUsers;
   window.fixSuperAdmin = fixSuperAdmin;
+  window.diagnoseSidebar = diagnoseSidebar;
 
   // Esperar a que Firebase esté listo y ejecutar auto-creación
   setTimeout(() => {
@@ -262,4 +333,5 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('   • initSuperAdmin("email@gmail.com", "Nombre") - Crear usuario manualmente');
   console.log('   • fixSuperAdmin() - Reparar rol de fernandodiazm.5@gmail.com → SUPER_ADMIN');
   console.log('   • fixSuperAdmin("otro@email.com") - Reparar rol de otro email');
+  console.log('   • diagnoseSidebar() - Diagnóstico completo del módulo Mantenimiento');
 }
