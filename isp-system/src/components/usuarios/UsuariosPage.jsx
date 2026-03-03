@@ -266,7 +266,11 @@ export default function UsuariosPage() {
 
   const openPermissions = (user) => {
     setSelectedUser(user);
-    setCustomPermissions({ ...user.permisos });
+    // Merge role defaults + user's stored permissions.
+    // Users created before a module was added won't have that key in permisos,
+    // so we fall back to the role's default instead of showing "Sin Acceso".
+    const roleDefaults = DEFAULT_PERMISSIONS[user.rol] || {};
+    setCustomPermissions({ ...roleDefaults, ...(user.permisos || {}) });
     setShowPermissionsModal(true);
   };
 

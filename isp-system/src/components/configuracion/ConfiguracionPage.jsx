@@ -318,7 +318,10 @@ export default function ConfiguracionPage() {
   const [rolePerms, setRolePerms] = useState(() => {
     const base = {};
     EDITABLE_ROLES.forEach(role => {
-      base[role] = { ...(customRolePermissions?.[role] || DEFAULT_PERMISSIONS[role]) };
+      // Merge: defaults first, then custom overrides.
+      // This ensures new modules (e.g. MANTENIMIENTO) always get their default
+      // value even if customRolePermissions was saved before the module existed.
+      base[role] = { ...DEFAULT_PERMISSIONS[role], ...(customRolePermissions?.[role] || {}) };
     });
     return base;
   });
