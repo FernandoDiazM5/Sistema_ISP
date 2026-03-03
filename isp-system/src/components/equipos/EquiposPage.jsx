@@ -12,9 +12,7 @@ import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import Card from '../ui/Card';
 
-const TIPOS_EQUIPO = ['ONU', 'Router', 'Antena CPE', 'Antena AP', 'Switch', 'OLT', 'Media Converter'];
-const MARCAS = ['Huawei', 'VSOL', 'Mikrotik', 'Ubiquiti', 'TP-Link', 'Tenda', 'ZTE', 'Nokia'];
-const ESTADOS_EQUIPO = ['Disponible', 'En uso', 'En reparación', 'Dado de baja'];
+// TIPOS_EQUIPO, MARCAS y ESTADOS_EQUIPO ahora vienen del store
 
 const tipoIconMap = {
   'ONU': Monitor,
@@ -38,6 +36,9 @@ export default function EquiposPage() {
   const addEquipo = useStore(s => s.addEquipo);
   const updateEquipo = useStore(s => s.updateEquipo);
   const clients = useStore(s => s.clients);
+  const tiposEquipo = useStore(s => s.tiposEquipo);
+  const marcasEquipo = useStore(s => s.marcasEquipo);
+  const ESTADOS_EQUIPO = ['Disponible', 'En uso', 'En reparación', 'Dado de baja'];
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -144,7 +145,7 @@ export default function EquiposPage() {
             className="w-full h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary focus:border-accent-blue outline-none cursor-pointer"
           >
             <option value="all">Todos los tipos</option>
-            {TIPOS_EQUIPO.map(t => <option key={t} value={t}>{t}</option>)}
+            {tiposEquipo.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}
           </select>
         </div>
         <div className="w-full sm:w-[180px]">
@@ -289,14 +290,14 @@ export default function EquiposPage() {
                   <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Tipo *</label>
                   <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}
                     className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
-                    {TIPOS_EQUIPO.map(t => <option key={t}>{t}</option>)}
+                    {tiposEquipo.map(t => <option key={t.id}>{t.nombre}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] text-text-secondary uppercase font-bold tracking-wider">Marca</label>
                   <select value={form.marca} onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}
                     className="w-full py-2.5 px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-blue transition-colors">
-                    {MARCAS.map(m => <option key={m}>{m}</option>)}
+                    {marcasEquipo.map(m => <option key={m.id}>{m.nombre}</option>)}
                   </select>
                 </div>
               </div>

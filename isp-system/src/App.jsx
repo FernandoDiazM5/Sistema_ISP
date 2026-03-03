@@ -37,6 +37,7 @@ const PlantaExternaPage = lazy(() => import('./components/planta-externa/PlantaE
 const PostVentaPage = lazy(() => import('./components/post-venta/PostVentaPage'));
 const RequerimientosPage = lazy(() => import('./components/requerimientos/RequerimientosPage'));
 const UsuariosPage = lazy(() => import('./components/usuarios/UsuariosPage'));
+const MantenimientoPage = lazy(() => import('./components/mantenimiento/MantenimientoPage'));
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -111,6 +112,7 @@ function AppContent() {
           {/* Módulos Administrativos */}
           <Route path="/reportes" element={<ReportesPage />} />
           <Route path="/importar" element={<ImportacionPage />} />
+          <Route path="/mantenimiento" element={<MantenimientoPage />} />
 
           {/* Módulos Críticos (Solo SUPER_ADMIN) */}
           <Route path="/usuarios" element={

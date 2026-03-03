@@ -21,7 +21,7 @@ const TIPO_STYLE = {
   'Reinicio remoto': { bg: 'bg-accent-orange/15', text: 'text-accent-orange' },
 };
 
-const TIPOS_SESION = ['Diagnóstico', 'Configuración', 'Monitoreo', 'Reinicio remoto'];
+// TIPOS_SESION ahora viene del store (ver tiposSesionSoporte)
 
 const FRECUENCIAS = ['2.4', '5.8'];
 const ANCHOS_BANDA = ['20MHz', '40MHz'];
@@ -107,6 +107,7 @@ export default function SoporteRemotoPage() {
   const sesiones = useStore(s => s.sesionesRemoto);
   const addSesion = useStore(s => s.addSesionRemoto);
   const updateSesion = useStore(s => s.updateSesionRemoto);
+  const tiposSesionSoporte = useStore(s => s.tiposSesionSoporte);
   const clients = useStore(s => s.clients);
   const tickets = useStore(s => s.tickets);
   const updateTicket = useStore(s => s.updateTicket);
@@ -497,7 +498,7 @@ export default function SoporteRemotoPage() {
           className="min-w-[150px] bg-bg-secondary border border-border text-text-primary rounded-lg py-2.5 px-3 text-sm outline-none focus:border-accent-cyan"
         >
           <option value="all">Todos los tipos</option>
-          {TIPOS_SESION.map(t => <option key={t} value={t}>{t}</option>)}
+          {tiposSesionSoporte.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}
         </select>
       </div>
 
@@ -667,7 +668,7 @@ export default function SoporteRemotoPage() {
                   <label className="text-xs text-text-secondary font-medium mb-1.5 block">Tipo de sesión</label>
                   <select value={tipoSesion} onChange={(e) => setTipoSesion(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-cyan/50">
-                    {TIPOS_SESION.map(t => <option key={t} value={t}>{t}</option>)}
+                    {tiposSesionSoporte.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}
                   </select>
                 </div>
                 <div>

@@ -12,16 +12,7 @@ const PRIORIDAD_STYLE = {
   'Baja': 'text-accent-green',
 };
 
-const TIPOS_DERIVACION = [
-  'Tendido de fibra',
-  'Reparación de poste',
-  'AP Saturado',
-  'Corte de fibra',
-  'Atenuación excesiva',
-  'Mantenimiento NAP',
-  'Extensión de red',
-];
-
+// TIPOS_DERIVACION ahora viene del store (ver tiposDerivacion)
 const FIBRA_TIPOS = ['Tendido de fibra', 'Corte de fibra', 'Atenuación excesiva', 'Mantenimiento NAP', 'Extensión de red'];
 const RADIO_TIPOS = ['AP Saturado'];
 
@@ -36,6 +27,7 @@ export default function PlantaExternaPage() {
   const addDerivacion = useStore(s => s.addDerivacion);
   const updateDerivacion = useStore(s => s.updateDerivacion);
   const tecnicos = useStore(s => s.tecnicos);
+  const tiposDerivacion = useStore(s => s.tiposDerivacion);
   const instalaciones = useStore(s => s.instalaciones);
   const updateTicket = useStore(s => s.updateTicket);
   const resolveTicketChain = useStore(s => s.resolveTicketChain);
@@ -421,8 +413,8 @@ export default function PlantaExternaPage() {
                 <label className="text-xs text-text-muted block mb-1">Tipo de trabajo</label>
                 <select name="tipo" required className="w-full">
                   <option value="">Seleccionar tipo...</option>
-                  {TIPOS_DERIVACION.map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  {tiposDerivacion.map(t => (
+                    <option key={t.id} value={t.nombre}>{t.nombre}</option>
                   ))}
                 </select>
               </div>

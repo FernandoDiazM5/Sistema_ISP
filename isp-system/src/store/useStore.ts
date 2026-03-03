@@ -489,7 +489,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
-      'averiasTipos', 'clientChanges'
+      'averiasTipos', 'clientChanges',
+      'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+      'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
     ];
 
     const catalogKeysToProtect = [

@@ -46,7 +46,7 @@ const TECNICO_COLORS = [
   { bg: '#ef444420', border: '#ef4444', text: '#fca5a5' },
 ];
 
-const TIPOS_VISITA = ['Reparacion', 'Diagnostico', 'Instalacion', 'Cambio de plan', 'Mantenimiento'];
+// TIPOS_VISITA ahora viene del store (ver tiposVisita)
 const TIPOS_VISITA_DISPLAY = {
   'Reparacion': 'Reparacion',
   'Diagnostico': 'Diagnostico',
@@ -100,6 +100,7 @@ export default function VisitasTecnicasPage() {
   const visitas = useStore(s => s.visitas);
   const addVisita = useStore(s => s.addVisita);
   const updateVisita = useStore(s => s.updateVisita);
+  const tiposVisita = useStore(s => s.tiposVisita);
   const clients = useStore(s => s.clients);
   const tecnicos = useStore(s => s.tecnicos);
   const tickets = useStore(s => s.tickets);
@@ -626,11 +627,7 @@ export default function VisitasTecnicasPage() {
           className="min-w-[150px] bg-bg-secondary border border-border text-text-primary rounded-lg py-2.5 px-3 text-sm outline-none focus:border-accent-blue"
         >
           <option value="all">Todos los tipos</option>
-          <option value="Reparación">Reparación</option>
-          <option value="Diagnóstico">Diagnóstico</option>
-          <option value="Instalación">Instalación</option>
-          <option value="Cambio de plan">Cambio de plan</option>
-          <option value="Mantenimiento">Mantenimiento</option>
+          {tiposVisita.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}
         </select>
         <select
           value={filterTecnico}
@@ -966,11 +963,7 @@ export default function VisitasTecnicasPage() {
                     className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-2.5 px-3 text-sm outline-none focus:border-accent-blue"
                     required
                   >
-                    <option value="Reparación">Reparación</option>
-                    <option value="Diagnóstico">Diagnóstico</option>
-                    <option value="Instalación">Instalación</option>
-                    <option value="Cambio de plan">Cambio de plan</option>
-                    <option value="Mantenimiento">Mantenimiento</option>
+                    {tiposVisita.map(t => <option key={t.id} value={t.nombre}>{t.nombre}</option>)}
                   </select>
                 </div>
                 <div>

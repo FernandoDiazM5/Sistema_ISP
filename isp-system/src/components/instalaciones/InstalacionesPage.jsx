@@ -19,17 +19,7 @@ const ESTADO_COLOR = {
 
 const PIPELINE_STAGES = ['Pendiente', 'Aprobada', 'Programada', 'En Instalación', 'Completada'];
 
-const PLANES = [
-  'INTERNET FIBRA 100MB',
-  'INTERNET FIBRA 200MB',
-  'INTERNET FIBRA 300MB',
-  'INTERNET RADIO 30MB',
-  'INTERNET RADIO 50MB',
-  'INTERNET RADIO 65MB',
-  'INTERNET RADIO 100MB',
-];
-
-const TECNOLOGIAS = ['Radio Enlace', 'Fibra Óptica'];
+// PLANES y TECNOLOGIAS ahora vienen del store (planesInstalacion, tecnologiasInstalacion)
 
 const ESTADO_TRANSITIONS = {
   'Pendiente': ['Aprobada', 'Cancelada'],
@@ -60,6 +50,8 @@ export default function InstalacionesPage() {
   const derivaciones = useStore(s => s.derivaciones);
   const equipos = useStore(s => s.equipos);
   const updateEquipo = useStore(s => s.updateEquipo);
+  const planesInstalacion = useStore(s => s.planesInstalacion);
+  const tecnologiasInstalacion = useStore(s => s.tecnologiasInstalacion);
 
   const [search, setSearch] = useState('');
   const [filterEstado, setFilterEstado] = useState('all');
@@ -318,8 +310,8 @@ export default function InstalacionesPage() {
           </select>
           <select value={filterTecnologia} onChange={e => setFilterTecnologia(e.target.value)} className="flex-1 sm:flex-none sm:min-w-[150px]">
             <option value="all">Toda tecnología</option>
-            {TECNOLOGIAS.map(t => (
-              <option key={t} value={t}>{t}</option>
+            {tecnologiasInstalacion.map(t => (
+              <option key={t.id} value={t.nombre}>{t.nombre}</option>
             ))}
           </select>
         </div>
@@ -538,8 +530,8 @@ export default function InstalacionesPage() {
                   required
                 >
                   <option value="">Seleccionar plan...</option>
-                  {PLANES.map(p => (
-                    <option key={p} value={p}>{p}</option>
+                  {planesInstalacion.map(p => (
+                    <option key={p.id} value={p.nombre}>{p.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -553,8 +545,8 @@ export default function InstalacionesPage() {
                   required
                 >
                   <option value="">Seleccionar tecnología...</option>
-                  {TECNOLOGIAS.map(t => (
-                    <option key={t} value={t}>{t}</option>
+                  {tecnologiasInstalacion.map(t => (
+                    <option key={t.id} value={t.nombre}>{t.nombre}</option>
                   ))}
                 </select>
               </div>

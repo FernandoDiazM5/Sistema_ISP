@@ -1,4 +1,4 @@
-import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog, RefreshCw } from 'lucide-react';
+import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog, RefreshCw, Settings2 } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
@@ -37,6 +37,7 @@ const navSections = [
       { to: '/reportes', label: 'Reportes', icon: BarChart3 },
       { to: '/usuarios', label: 'Usuarios', icon: UserCog },
       { to: '/importar', label: 'Importar Datos', icon: CloudUpload },
+      { to: '/mantenimiento', label: 'Mantenimiento', icon: Settings2 },
       { to: '/config', label: 'Configuración', icon: Settings },
     ]
   },
@@ -60,6 +61,7 @@ const ROUTE_TO_MODULE = {
   '/usuarios': MODULES.USUARIOS,
   '/config': MODULES.CONFIGURACION,
   '/importar': MODULES.CLIENTES, // Asumimos permiso de clientes o config
+  '/mantenimiento': MODULES.MANTENIMIENTO,
 };
 
 export default function Sidebar({ isOpen, onClose }) {
