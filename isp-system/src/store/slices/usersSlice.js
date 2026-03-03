@@ -201,12 +201,13 @@ export const createUsersSlice = (set, get) => ({
 
     // Si no tiene permisos explícitos, usar los del rol
     if (!userPermission) {
-      // Verificar si hay permisos custom, sino usar defaults del rol
+      // Fusionar defaults con custom permissions: los custom sobreescriben los defaults
+      // pero para módulos nuevos no presentes en custom, el default actúa como fallback.
       const customPerms = get().customRolePermissions;
-      const rolePermissions = customPerms?.[currentUser.rol] || DEFAULT_PERMISSIONS[currentUser.rol];
-      if (rolePermissions) {
-        userPermission = rolePermissions[module];
-      }
+      const defaultRolePerms = DEFAULT_PERMISSIONS[currentUser.rol] || {};
+      const customRolePerms = customPerms?.[currentUser.rol] || {};
+      const rolePermissions = { ...defaultRolePerms, ...customRolePerms };
+      userPermission = rolePermissions[module];
     }
 
     if (!userPermission) return false;

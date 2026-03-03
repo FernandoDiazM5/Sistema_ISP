@@ -225,7 +225,9 @@ export const pullLiveCollections = async (lastSyncTimestamp = null, onProgress =
         'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
         'whatsappLogs', 'templates', 'whatsappCategories',
         'categorias', 'subcategorias', 'prioridadesSLA',
-        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+        'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+        'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
     ];
 
     const data = {};

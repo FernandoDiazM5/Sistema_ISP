@@ -112,17 +112,27 @@ export const createTicketsSlice = (set, get) => ({
             return d;
         }) : [];
 
+        // 5. Completar Requerimientos vinculados al ticket
+        const newRequerimientos = s.requerimientos ? s.requerimientos.map(r => {
+            if (r.ticketOrigen === ticketId && r.estado !== 'Completado' && r.estado !== 'Cancelado') {
+                const historyItem = { fecha: now, estadoAnterior: r.estado, estadoNuevo: 'Completado', motivo: motivoResolucion || 'Cierre automático ascendente' };
+                return { ...r, estado: 'Completado', historial: [historyItem, ...(r.historial || [])] };
+            }
+            return r;
+        }) : [];
+
         saveToDB('isp_tickets', newTickets);
         saveToDB('isp_sesionesRemoto', newSesiones);
         saveToDB('isp_visitas', newVisitas);
-        // Only save derivaciones if it exists to avoid corrupting db
         if (s.derivaciones) saveToDB('isp_derivaciones', newDerivaciones);
+        if (s.requerimientos) saveToDB('isp_requerimientos', newRequerimientos);
 
         return {
             tickets: newTickets,
             sesionesRemoto: newSesiones,
             visitas: newVisitas,
-            ...(s.derivaciones && { derivaciones: newDerivaciones })
+            ...(s.derivaciones && { derivaciones: newDerivaciones }),
+            ...(s.requerimientos && { requerimientos: newRequerimientos }),
         };
     }),
 

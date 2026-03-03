@@ -45,7 +45,11 @@ export const createClientsSlice = (set, get) => ({
         // 3. Cancelar Instalaciones Programadas (si tuvieran link al ID)
         // Usualmente las instalaciones pueden no estar linkeadas a un cliente existitente sino a un nuevo prospecto.
         // Pero si coincide el nombre exacto o cedula, quizás deberíamos anularlo.
-        const pendingInst = state.instalaciones.filter(i => (i.clienteNombre === state.clients.find(c => c.id === clientId)?.nombre) && (i.estado === 'Pendiente' || i.estado === 'Programada'));
+        const clientForInst = state.clients.find(c => c.id === clientId);
+        const clientNameForInst = clientForInst?.nombre;
+        const pendingInst = clientNameForInst
+            ? state.instalaciones.filter(i => i.clienteNombre === clientNameForInst && (i.estado === 'Pendiente' || i.estado === 'Programada'))
+            : [];
         pendingInst.forEach(i => {
             state.updateInstalacion(i.id, { estado: 'Cancelada' });
             // Agregar historial interno si la app lo soporta
