@@ -5,18 +5,22 @@ import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
 import CopyButton from '../common/CopyButton';
 import { formatAveria } from '../../utils/whatsappFormats';
+import StatusBadge from '../ui/StatusBadge';
 
-const ESTADO_STYLE = {
-  'Activa': { bg: 'bg-accent-red/20', text: 'text-accent-red', dot: 'bg-accent-red' },
-  'En reparación': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
-  'Coordinando': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
-  'Resuelta': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
+const DOT_COLORS = {
+  'Activa': 'bg-accent-red',
+  'En reparación': 'bg-accent-yellow',
+  'Coordinando': 'bg-accent-blue',
+  'Resuelta': 'bg-accent-green',
 };
 
 export default function AveriasPage() {
   const averias = useStore(s => s.averias);
   const addAveria = useStore(s => s.addAveria);
   const updateAveria = useStore(s => s.updateAveria);
+  const tickets = useStore(s => s.tickets);
+  const clients = useStore(s => s.clients);
+  const updateTicket = useStore(s => s.updateTicket);
 
   const [showForm, setShowForm] = useState(false);
   const [editingAveria, setEditingAveria] = useState(null);
@@ -114,6 +118,8 @@ export default function AveriasPage() {
 
   const handleResolutionConfirm = ({ solucion, accionesRealizadas, adjuntosResolucion }) => {
     if (resolutionTargetId) {
+      // 1. Resolvemos la avería en cuestión
+      const averia = averias.find(a => a.id === resolutionTargetId);
       updateAveria(resolutionTargetId, {
         estado: 'Resuelta',
         fechaResolucion: new Date().toISOString().split('T')[0],
@@ -122,6 +128,30 @@ export default function AveriasPage() {
         adjuntosResolucion,
         _historyComment: 'Avería resuelta con informe de solución'
       });
+
+      // 2. Proponer auto-cierre de tickets hermanos (Smart Resolve)
+      if (averia && window.confirm(`¿Deseas marcar como RESUELTOS automáticamente todos los tickets vinculados a los clientes de la zona ${averia.zona} y nodo ${averia.nodo}?`)) {
+        const affectedClients = clients.filter(c =>
+          c.zona?.toLowerCase() === averia.zona?.toLowerCase() &&
+          c.nodo?.toLowerCase() === averia.nodo?.toLowerCase()
+        ).map(c => c.id);
+
+        const affectedTickets = tickets.filter(t =>
+          (t.estado === 'Abierto' || t.estado === 'En Proceso' || t.estado === 'Escalado') &&
+          affectedClients.includes(t.clienteId)
+        );
+
+        affectedTickets.forEach(t => {
+          updateTicket(t.id, {
+            estado: 'Resuelto',
+            _historyComment: `Autocierre corporativo por solución de Avería Masiva (${averia.id})`
+          });
+        });
+
+        if (affectedTickets.length > 0) alert(`¡Éxito! Se resolvieron automáticamente ${affectedTickets.length} tickets en masa correspondientes a la zona afectada.`);
+        else alert('No se encontraron tickets en estado Abierto/En proceso para dichos clientes en este Nodo.');
+      }
+
       setShowResolutionModal(false);
       setResolutionTargetId(null);
     }
@@ -186,7 +216,6 @@ export default function AveriasPage() {
       {/* Averias List */}
       <div className="flex flex-col gap-3">
         {filtered.map(a => {
-          const es = ESTADO_STYLE[a.estado] || ESTADO_STYLE['Activa'];
           return (
             <div
               key={a.id}
@@ -201,7 +230,7 @@ export default function AveriasPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-text-muted">{a.id}</span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${es.bg} ${es.text}`}>{a.estado}</span>
+                      <StatusBadge status={a.estado} />
                       <span className={`text-[11px] font-bold ${a.prioridad === 'Crítica' ? 'text-accent-red' : 'text-accent-yellow'}`}>{a.prioridad}</span>
                     </div>
                     <p className="text-sm font-semibold mt-0.5">{a.tipo}</p>
@@ -241,17 +270,31 @@ export default function AveriasPage() {
                 <option value="Daño de equipo">Daño de equipo</option>
                 <option value="Otra">Otra</option>
               </select>
-              <input name="zona" defaultValue={editingAveria?.zona || ''} placeholder="Zona afectada (ej: PLANICIE 1)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="nodo" defaultValue={editingAveria?.nodo || ''} placeholder="Nodo/Torre afectado (ej: PLA1/ND2)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="afectados" defaultValue={editingAveria?.clientesAfectados || ''} type="number" placeholder="Clientes afectados (estimado)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <select name="prioridad" defaultValue={editingAveria?.prioridad || 'Crítica'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
-                <option value="Crítica">Crítica</option>
-                <option value="Alta">Alta</option>
-                <option value="Media">Media</option>
-              </select>
-              <input name="reportado" defaultValue={editingAveria?.reportadoPor || ''} placeholder="Reportado por" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <input name="tecnico" defaultValue={editingAveria?.tecnicoAsignado || ''} placeholder="Técnico asignado" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
-              <textarea name="descripcion" defaultValue={editingAveria?.descripcion || ''} placeholder="Descripción de la avería..."
+
+              <div className="grid grid-cols-2 gap-3">
+                <input name="zona" defaultValue={editingAveria?.zona || ''} placeholder="Zona afectada (Mínimo 3 letras)" minLength={3} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+                <input name="nodo" defaultValue={editingAveria?.nodo || ''} placeholder="Nodo/Torre (ej: PLA1)" minLength={2} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              </div>
+
+              <input name="afectados" defaultValue={editingAveria?.clientesAfectados || ''} type="number" min="0" step="1" placeholder="Clientes afectados (estimado)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+
+              <div className="grid grid-cols-2 gap-3">
+                <select name="prioridad" defaultValue={editingAveria?.prioridad || 'Crítica'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
+                  <option value="Crítica">Crítica</option>
+                  <option value="Alta">Alta</option>
+                  <option value="Media">Media</option>
+                </select>
+                <select name="tecnico" defaultValue={editingAveria?.tecnicoAsignado || ''} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
+                  <option value="" disabled>Asignar Técnico...</option>
+                  {useStore.getState().tecnicos.filter(t => t.estado === 'Activo').map((t, idx) => (
+                    <option key={idx} value={t.nombre}>{t.nombre}</option>
+                  ))}
+                  <option value="Sin asignar">Sin asignar (Pendiente)</option>
+                </select>
+              </div>
+
+              <input name="reportado" defaultValue={editingAveria?.reportadoPor || ''} placeholder="Reportado por" minLength={3} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+              <textarea name="descripcion" defaultValue={editingAveria?.descripcion || ''} placeholder="Descripción de la avería..." minLength={10}
                 className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full" required />
 
               <Adjuntos value={newAdjuntos} onChange={setNewAdjuntos} max={5} />
@@ -283,9 +326,7 @@ export default function AveriasPage() {
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-lg text-xs font-bold ${ESTADO_STYLE[selectedAveria.estado]?.bg || ''} ${ESTADO_STYLE[selectedAveria.estado]?.text || ''}`}>
-                  {selectedAveria.estado}
-                </span>
+                <StatusBadge status={selectedAveria.estado} />
                 <CopyButton getTextFn={() => formatAveria(selectedAveria, null)} />
                 <button
                   onClick={() => setSelectedAveria(null)}
@@ -374,7 +415,7 @@ export default function AveriasPage() {
                 )}
                 {selectedAveria.adjuntosResolucion && selectedAveria.adjuntosResolucion.length > 0 && (
                   <div className="mt-3">
-                    <Adjuntos value={selectedAveria.adjuntosResolucion} onChange={() => {}} readOnly max={5} />
+                    <Adjuntos value={selectedAveria.adjuntosResolucion} onChange={() => { }} readOnly max={5} />
                   </div>
                 )}
               </div>
@@ -394,7 +435,7 @@ export default function AveriasPage() {
                         title={h.motivo || 'Sin motivo registrado'}
                       >
                         <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${ESTADO_STYLE[h.estadoNuevo]?.dot || 'bg-gray-400'}`}></span>
+                          <span className={`w-2 h-2 rounded-full ${DOT_COLORS[h.estadoNuevo] || 'bg-gray-400'}`}></span>
                           <span className="text-xs font-medium text-text-primary">{h.estadoNuevo}</span>
                         </div>
                         <span className="text-border mx-1">|</span>

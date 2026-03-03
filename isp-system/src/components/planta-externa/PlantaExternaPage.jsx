@@ -3,14 +3,7 @@ import { Plus, Search, Cable, Wifi, MapPin, AlertTriangle, CheckCircle2, Clock, 
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
-
-const ESTADO_STYLE = {
-  'Pendiente': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
-  'En progreso': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
-  'Reprogramada': { bg: 'bg-cyan-500/20', text: 'text-cyan-400', dot: 'bg-cyan-400' },
-  'Completada': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
-  'Cancelada': { bg: 'bg-text-muted/20', text: 'text-text-muted', dot: 'bg-text-muted' },
-};
+import StatusBadge from '../ui/StatusBadge';
 
 const PRIORIDAD_STYLE = {
   'Crítica': 'text-accent-red font-bold',
@@ -45,6 +38,7 @@ export default function PlantaExternaPage() {
   const tecnicos = useStore(s => s.tecnicos);
   const instalaciones = useStore(s => s.instalaciones);
   const updateTicket = useStore(s => s.updateTicket);
+  const resolveTicketChain = useStore(s => s.resolveTicketChain);
 
   const [search, setSearch] = useState('');
   const [filterTipo, setFilterTipo] = useState('all');
@@ -174,10 +168,7 @@ export default function PlantaExternaPage() {
     // Propagate to parent ticket
     const deriv = derivaciones.find(d => d.id === resolutionTarget.derivacionId);
     if (deriv?.ticketId) {
-      updateTicket(deriv.ticketId, {
-        estado: 'Resuelto',
-        _historyComment: `Resuelto desde Planta Externa (${deriv.id})`
-      });
+      resolveTicketChain(deriv.ticketId, `Resuelto desde Planta Externa (${deriv.id})`);
     }
     if (deriv && selectedDerivacion) {
       setSelectedDerivacion({ ...deriv, estado: 'Completada', ...resolutionData });
@@ -339,7 +330,6 @@ export default function PlantaExternaPage() {
           </div>
         )}
         {filtered.map(d => {
-          const es = ESTADO_STYLE[d.estado] || ESTADO_STYLE['Pendiente'];
           const cat = getTipoCategoria(d.tipo);
           return (
             <div
@@ -360,7 +350,7 @@ export default function PlantaExternaPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-text-muted">{d.id}</span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${es.bg} ${es.text}`}>{d.estado}</span>
+                      <StatusBadge status={d.estado} />
                       <span className={`text-[11px] font-semibold ${PRIORIDAD_STYLE[d.prioridad]}`}>{d.prioridad}</span>
                       <span className="text-[11px] text-text-muted bg-bg-secondary px-2 py-0.5 rounded">
                         {cat === 'radio' ? 'Radio Enlace' : cat === 'fibra' ? 'Fibra Óptica' : 'Infraestructura'}
@@ -575,9 +565,7 @@ export default function PlantaExternaPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-sm text-text-muted">{selectedDerivacion.id}</span>
-                  <span className={`px-2.5 py-0.5 rounded text-[11px] font-bold ${(ESTADO_STYLE[selectedDerivacion.estado] || ESTADO_STYLE['Pendiente']).bg} ${(ESTADO_STYLE[selectedDerivacion.estado] || ESTADO_STYLE['Pendiente']).text}`}>
-                    {selectedDerivacion.estado}
-                  </span>
+                  <StatusBadge status={selectedDerivacion.estado} />
                 </div>
                 <h3 className="text-lg font-bold">{selectedDerivacion.tipo}</h3>
               </div>

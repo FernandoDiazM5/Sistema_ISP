@@ -104,6 +104,7 @@ export default function VisitasTecnicasPage() {
   const tecnicos = useStore(s => s.tecnicos);
   const tickets = useStore(s => s.tickets);
   const updateTicket = useStore(s => s.updateTicket);
+  const resolveTicketChain = useStore(s => s.resolveTicketChain);
   const addDerivacion = useStore(s => s.addDerivacion);
   const deleteVisita = useStore(s => s.deleteVisita);
 
@@ -386,10 +387,7 @@ export default function VisitasTecnicasPage() {
     // Propagate resolution to parent ticket
     const visita = visitas.find(v => v.id === resolutionTarget.visitaId);
     if (visita?.ticketId) {
-      updateTicket(visita.ticketId, {
-        estado: 'Resuelto',
-        _historyComment: `Resuelto desde Visita Técnica (${visita.id})`
-      });
+      resolveTicketChain(visita.ticketId, `Resuelto desde Visita Técnica (${visita.id})`);
     }
 
     setShowResolutionModal(false);

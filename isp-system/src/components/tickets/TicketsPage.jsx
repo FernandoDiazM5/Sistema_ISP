@@ -25,17 +25,7 @@ import InlineVisitaModal from './modals/InlineVisitaModal';
 import InlineSoporteModal from './modals/InlineSoporteModal';
 import HistoryItemModal from './modals/HistoryItemModal';
 import EscalationModal from './modals/EscalationModal';
-
-const ESTADOS_COLOR = {
-  'Abierto': 'info',
-  'En Proceso': 'warning',
-  'Escalado': 'orange',
-  'Resuelto': 'success',
-  'Cerrado': 'default',
-  'Cancelado': 'default',
-  'Derivado a Visita': 'purple',
-  'Derivado a Planta Externa': 'orange',
-};
+import StatusBadge from '../ui/StatusBadge';
 
 const ESTADOS_KANBAN_MAP = {
   'Abierto': { bg: 'bg-blue-500/10', text: 'text-blue-500', dot: 'bg-blue-500' },
@@ -64,6 +54,7 @@ export default function TicketsPage() {
   const sesionesRemoto = useStore(s => s.sesionesRemoto);
   const addRequerimiento = useStore(s => s.addRequerimiento);
   const tiposRequerimiento = useStore(s => s.tiposRequerimiento);
+  const addDerivacion = useStore(s => s.addDerivacion);
 
   const [viewMode, setViewMode] = useState('list');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -245,6 +236,20 @@ export default function TicketsPage() {
           ticketOrigen: ticketId,
         });
       }
+      if (tipo === 'planta') {
+        addDerivacion({
+          tipo: 'Mantenimiento NAP', // Categorizado como Fibra al azar, elegible a editar luego
+          zona: 'Por confirmar',
+          direccion: 'Detalles en el ticket origen',
+          tecnicoId: '',
+          tecnicoNombre: 'Pendiente',
+          estado: 'Pendiente',
+          prioridad: ticket.prioridad || 'Media',
+          descripcion: `Derivado desde el ticket ${ticketId}.\nCliente: ${ticket.clienteNombre || 'N/A'}\nMotivo: ${motivo}`,
+          ticketId: ticketId,
+          clienteRelacionado: ticket.clienteId || null,
+        });
+      }
     }
   };
 
@@ -385,7 +390,7 @@ export default function TicketsPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="font-mono text-xs text-text-muted">{t.id}</span>
-                    <Badge variant={ESTADOS_COLOR[t.estado]}>{t.estado}</Badge>
+                    <StatusBadge status={t.estado} />
                     <Badge variant={PRIORIDAD_COLOR[t.prioridad]}>{t.prioridad}</Badge>
                     {(t.tipoAtencion || t.tipo) && <Badge variant="default" size="sm">{t.tipoAtencion || t.tipo}</Badge>}
                     {client?.tecnologia && (

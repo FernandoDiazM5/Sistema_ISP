@@ -244,8 +244,14 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
     // ===================== LIVE PULL (DESCARGA DIRECTA DE COLECCIONES) =====================
     livePull: async () => {
         set({ isSyncing: true, syncError: null, syncProgress: { step: 0, totalSteps: 1, label: 'Iniciando conexión...', percent: 0 } });
+        const { setLoadingGlobal } = useStore.getState();
+        setLoadingGlobal(true, 'Conectando con la granja de servidores Firebase...');
+
         try {
-            const onProgress = (info: any) => set({ syncProgress: info });
+            const onProgress = (info: any) => {
+                set({ syncProgress: info });
+                setLoadingGlobal(true, `Descargando desde la nube: ${info.label || Math.round((info.percent || 0) * 100) + '%'}`);
+            };
 
             // Obtener el registro de la última sincronización
             const lastSyncStr = get().lastSync; // ej. ISO string
@@ -275,10 +281,13 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             set({ lastSync: now, isSyncing: false, syncProgress: null });
 
             return true;
-        } catch (error) {
+        } catch (error: any) {
             console.error('Live Pull Error:', error);
             set({ isSyncing: false, syncError: error.message, syncProgress: null });
             return false;
+        } finally {
+            const { setLoadingGlobal } = useStore.getState();
+            setLoadingGlobal(false);
         }
     },
 

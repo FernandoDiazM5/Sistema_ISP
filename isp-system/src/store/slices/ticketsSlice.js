@@ -48,20 +48,81 @@ export const createTicketsSlice = (set, get) => ({
         return { tickets: newTickets };
     }),
 
-    // Eliminación en cascada: ticket + visitas + sesiones de soporte vinculadas
+    // Eliminación en cascada: ticket + visitas + sesiones de soporte vinculadas + derivaciones + requerimientos
     deleteTicketCascade: (ticketId) => set(s => {
         const newTickets = s.tickets.filter(t => t.id !== ticketId);
         const newVisitas = s.visitas.filter(v => v.ticketId !== ticketId);
         const newSesiones = s.sesionesRemoto.filter(sr => sr.ticketId !== ticketId);
+        const newDerivaciones = s.derivaciones ? s.derivaciones.filter(d => d.ticketId !== ticketId) : [];
+        const newRequerimientos = s.requerimientos ? s.requerimientos.filter(r => r.ticketOrigen !== ticketId) : [];
 
         saveToDB('isp_tickets', newTickets);
         saveToDB('isp_visitas', newVisitas);
         saveToDB('isp_sesionesRemoto', newSesiones);
+        saveToDB('isp_derivaciones', newDerivaciones);
+        saveToDB('isp_requerimientos', newRequerimientos);
 
         return {
             tickets: newTickets,
             visitas: newVisitas,
             sesionesRemoto: newSesiones,
+            derivaciones: newDerivaciones,
+            requerimientos: newRequerimientos,
+        };
+    }),
+
+    // Resolución Ascendente (Upstream Closure)
+    resolveTicketChain: (ticketId, motivoResolucion) => set(s => {
+        const now = new Date().toISOString();
+        const dateNow = now.split('T')[0];
+
+        // 1. Resolver el Ticket
+        const newTickets = s.tickets.map(t => {
+            if (t.id === ticketId && t.estado !== 'Resuelto' && t.estado !== 'Cerrado' && t.estado !== 'Cancelado') {
+                const historyItem = { fecha: now, estadoAnterior: t.estado, estadoNuevo: 'Resuelto', motivo: motivoResolucion || 'Resolución automática encadenada' };
+                return { ...t, estado: 'Resuelto', fechaUpdate: dateNow, historial: [historyItem, ...(t.historial || [])] };
+            }
+            return t;
+        });
+
+        // 2. Resolver Soporte Remoto intermedio
+        const newSesiones = s.sesionesRemoto.map(sr => {
+            if (sr.ticketId === ticketId && sr.estado !== 'Completada' && sr.estado !== 'Fallida') {
+                const historyItem = { fecha: now, estadoAnterior: sr.estado, estadoNuevo: 'Completada', motivo: motivoResolucion || 'Cierre automático ascendente' };
+                return { ...sr, estado: 'Completada', resultado: (sr.resultado ? sr.resultado + ' | ' : '') + 'Cerrado por eslabón hijo.', historial: [historyItem, ...(sr.historial || [])] };
+            }
+            return sr;
+        });
+
+        // 3. Resolver Visitas Técnicas intermedias
+        const newVisitas = s.visitas.map(v => {
+            if (v.ticketId === ticketId && v.estado !== 'Completada' && v.estado !== 'Cancelada' && v.estado !== 'Fallida') {
+                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'Completada', motivo: motivoResolucion || 'Cierre automático ascendente' };
+                return { ...v, estado: 'Completada', resultado: (v.resultado ? v.resultado + ' | ' : '') + 'Cerrado por eslabón hijo.', historial: [historyItem, ...(v.historial || [])] };
+            }
+            return v;
+        });
+
+        // 4. Resolver Derivaciones (Planta Externa) en caso se llame desde otro lugar superior a Planta Externa
+        const newDerivaciones = s.derivaciones ? s.derivaciones.map(d => {
+            if (d.ticketId === ticketId && d.estado !== 'Completada' && d.estado !== 'Cancelada') {
+                const historyItem = { fecha: now, estadoAnterior: d.estado, estadoNuevo: 'Completada', motivo: motivoResolucion || 'Cierre automático ascendente' };
+                return { ...d, estado: 'Completada', historial: [historyItem, ...(d.historial || [])] };
+            }
+            return d;
+        }) : [];
+
+        saveToDB('isp_tickets', newTickets);
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        saveToDB('isp_visitas', newVisitas);
+        // Only save derivaciones if it exists to avoid corrupting db
+        if (s.derivaciones) saveToDB('isp_derivaciones', newDerivaciones);
+
+        return {
+            tickets: newTickets,
+            sesionesRemoto: newSesiones,
+            visitas: newVisitas,
+            ...(s.derivaciones && { derivaciones: newDerivaciones })
         };
     }),
 

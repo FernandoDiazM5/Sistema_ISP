@@ -5,6 +5,7 @@ import MainLayout from './components/layout/MainLayout';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import ReloadPrompt from './components/common/ReloadPrompt';
 import ToastContainer from './components/ui/Toast';
+import GlobalLoader from './components/common/GlobalLoader';
 import useStore from './store/useStore';
 import useSyncStore from './store/syncStore';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -137,6 +138,7 @@ export default function App() {
         <AppContent />
         <ReloadPrompt />
         <ToastContainer />
+        <GlobalLoader />
       </AuthProvider>
     </ErrorBoundary>
   );

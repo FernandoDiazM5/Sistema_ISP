@@ -135,11 +135,21 @@ export interface StoreState {
   hydrateStore: () => Promise<void>;
 
   [key: string]: any; // Permite integrar los slices gradualmente
+
+  // ==== GLOBAL LOADING UI ====
+  isLoadingGlobal: boolean;
+  loadingMessageGlobal: string;
+  setLoadingGlobal: (isLoading: boolean, message?: string) => void;
 }
 
 const useStore = create<StoreState>((set: any, get: any) => ({
   storeReady: false,
   isMigrating: false,
+
+  // ==== GLOBAL LOADING UI ====
+  isLoadingGlobal: false,
+  loadingMessageGlobal: '',
+  setLoadingGlobal: (isLoading: boolean, message = '') => set({ isLoadingGlobal: isLoading, loadingMessageGlobal: message }),
 
   // ===================== COMPOSE SLICES =====================
   ...createClientsSlice(set, get),
@@ -187,10 +197,21 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       // Esto poblará el store automáticamente desde la caché local o la nube
       // Hidratar desde IndexedDB primero (datos locales rápidos)
       const updates: any = {};
+
+      // Lista de colecciones maestras que NO deben ser reemplazadas por arrays vacíos.
+      const catalogKeysToProtect = [
+        'categorias', 'subcategorias', 'prioridadesSLA',
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      ];
+
       for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
         try {
           const val = await db.get(dbKey);
           if (val !== undefined && val !== null) {
+            // Protección contra catálogos vacíos
+            if (catalogKeysToProtect.includes(stateKey) && Array.isArray(val) && val.length === 0) {
+              continue; // Evitamos hidratar un catálogo maestro vacío, preservando los por defecto
+            }
             updates[stateKey] = val;
           }
         } catch (e) { /* ignore missing keys */ }
@@ -255,10 +276,25 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'clientChanges'
     ];
 
+    const catalogKeysToProtect = [
+      'categorias', 'subcategorias', 'prioridadesSLA',
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+    ];
+
     set((state: any) => {
       const updates: any = {};
       for (const key of keysToRestore) {
-        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+        if (data[key] && Array.isArray(data[key])) {
+
+          // Validación: No reemplazar catálogos maestros con arreglos vacíos
+          if (catalogKeysToProtect.includes(key) && data[key].length === 0) {
+            continue; // Saltar
+          }
+
+          if (data[key].length === 0) {
+            continue;
+          }
+
           const incomingItems = data[key];
           const existingItems = state[key] || [];
 
@@ -301,9 +337,19 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
       'clientChanges'
     ];
+
+    const catalogKeysToProtect = [
+      'categorias', 'subcategorias', 'prioridadesSLA',
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+    ];
+
     const updates: any = {};
     for (const key of keysToRestore) {
       if (data[key] !== undefined) {
+        // Validación: No reemplazar catálogos maestros con arreglos vacíos
+        if (catalogKeysToProtect.includes(key) && Array.isArray(data[key]) && data[key].length === 0) {
+          continue; // Saltar, manteniendo la constante de catálogo precargada
+        }
         updates[key] = data[key];
       }
     }

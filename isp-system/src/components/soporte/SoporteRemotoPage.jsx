@@ -9,17 +9,11 @@ import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
 import DiagnosticFields, { getEmptyDiag } from '../common/DiagnosticFields';
 import CopyButton from '../common/CopyButton';
+import StatusBadge from '../ui/StatusBadge';
 import { formatSoporteRemoto } from '../../utils/whatsappFormats';
 
 /* ========================= CONSTANTS ========================= */
-const ESTADO_STYLE = {
-  'En curso': { bg: 'bg-accent-blue/20', text: 'text-accent-blue' },
-  'Completada': { bg: 'bg-accent-green/20', text: 'text-accent-green' },
-  'Fallida': { bg: 'bg-accent-red/20', text: 'text-accent-red' },
-  'Derivado a Visita': { bg: 'bg-purple-500/20', text: 'text-purple-400' },
-  'Derivado a Planta Externa': { bg: 'bg-orange-500/20', text: 'text-orange-400' },
-};
-
+/* ========================= CONSTANTS ========================= */
 const TIPO_STYLE = {
   'Diagnóstico': { bg: 'bg-accent-cyan/15', text: 'text-accent-cyan' },
   'Configuración': { bg: 'bg-accent-purple/15', text: 'text-accent-purple' },
@@ -116,6 +110,7 @@ export default function SoporteRemotoPage() {
   const clients = useStore(s => s.clients);
   const tickets = useStore(s => s.tickets);
   const updateTicket = useStore(s => s.updateTicket);
+  const resolveTicketChain = useStore(s => s.resolveTicketChain);
   const tecnicos = useStore(s => s.tecnicos);
   const addVisita = useStore(s => s.addVisita);
   const addDerivacion = useStore(s => s.addDerivacion);
@@ -412,10 +407,7 @@ export default function SoporteRemotoPage() {
     // Propagate resolution to parent ticket
     const sesion = sesiones.find(s => s.id === resolutionTarget.sesionId);
     if (sesion?.ticketId) {
-      updateTicket(sesion.ticketId, {
-        estado: 'Resuelto',
-        _historyComment: `Resuelto desde Soporte Remoto (${sesion.id})`
-      });
+      resolveTicketChain(sesion.ticketId, `Resuelto desde Soporte Remoto (${sesion.id})`);
     }
     if (sesion) {
       setSelectedSesion({ ...sesion, estado: resolutionTarget.newEstado, ...resolutionData });
@@ -518,7 +510,6 @@ export default function SoporteRemotoPage() {
           </div>
         )}
         {filteredSesiones.map(s => {
-          const es = ESTADO_STYLE[s.estado] || ESTADO_STYLE['Completada'];
           const ts = TIPO_STYLE[s.tipo] || { bg: 'bg-bg-secondary', text: 'text-text-secondary' };
           const hasDiag = s.diagnosticos && Object.values(s.diagnosticos).some(v => v !== '' && v !== null && v !== undefined);
           const warns = getDiagWarnings(s.diagnosticos);
@@ -535,7 +526,7 @@ export default function SoporteRemotoPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-text-muted">{s.id}</span>
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${es.bg} ${es.text}`}>{s.estado}</span>
+                      <StatusBadge status={s.estado} />
                       <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>
                       {s.ticketId && (
                         <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-orange/15 text-accent-orange flex items-center gap-1">
@@ -756,7 +747,6 @@ export default function SoporteRemotoPage() {
           <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[640px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {(() => {
               const s = selectedSesion;
-              const es = ESTADO_STYLE[s.estado] || ESTADO_STYLE['Completada'];
               const ts = TIPO_STYLE[s.tipo] || { bg: 'bg-bg-secondary', text: 'text-text-secondary' };
               const d = s.diagnosticos;
               const warns = getDiagWarnings(d);
@@ -777,7 +767,7 @@ export default function SoporteRemotoPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm text-text-muted font-bold">{s.id}</span>
-                          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${es.bg} ${es.text}`}>{s.estado}</span>
+                          <StatusBadge status={s.estado} />
                         </div>
                         <p className="text-xs text-text-muted mt-0.5">{s.fecha}</p>
                       </div>

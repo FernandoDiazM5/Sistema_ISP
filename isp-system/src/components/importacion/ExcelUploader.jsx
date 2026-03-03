@@ -1,66 +1,77 @@
 import { useRef } from 'react';
 import { CloudUpload, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import useStore from '../../store/useStore';
 
 export default function ExcelUploader({ onDataLoaded, loading }) {
   const fileRef = useRef(null);
+  const setLoadingGlobal = useStore(s => s.setLoadingGlobal);
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
+
+    setLoadingGlobal(true, 'Analizando Celdas del Excel... por favor espera.');
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const wb = XLSX.read(e.target.result, {
-        type: 'array',
-        cellText: false,    // Mantener formato original
-        cellDates: false,   // No parsear fechas automáticamente
-        raw: false          // No usar valores raw (que pueden ser números)
-      });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      try {
+        const wb = XLSX.read(e.target.result, {
+          type: 'array',
+          cellText: false,    // Mantener formato original
+          cellDates: false,   // No parsear fechas automáticamente
+          raw: false          // No usar valores raw (que pueden ser números)
+        });
+        const ws = wb.Sheets[wb.SheetNames[0]];
 
-      // Convertir todo a array de arrays temporalmente para detectar dónde están las cabeceras
-      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+        // Convertir todo a array de arrays temporalmente para detectar dónde están las cabeceras
+        const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
 
-      let headerRowIndex = 0;
-      // Buscar en las primeras 10 filas alguna que parezca cabecera
-      for (let i = 0; i < Math.min(10, allRows.length); i++) {
-        const rowArray = allRows[i].map(c => String(c).toLowerCase().trim());
-        let score = 0;
+        let headerRowIndex = 0;
+        // Buscar en las primeras 10 filas alguna que parezca cabecera
+        for (let i = 0; i < Math.min(10, allRows.length); i++) {
+          const rowArray = allRows[i].map(c => String(c).toLowerCase().trim());
+          let score = 0;
 
-        // Puntuación requerida para asumir que esto es la fila de encabezados
-        if (rowArray.includes('id') || rowArray.includes('cedula') || rowArray.includes('codigo')) score++;
-        if (rowArray.includes('nombre') || rowArray.includes('cliente')) score++;
-        if (rowArray.includes('mac') || rowArray.includes('ip')) score++;
-        if (rowArray.includes('plan')) score++;
-        if (rowArray.includes('estado') || rowArray.includes('status')) score++;
+          // Puntuación requerida para asumir que esto es la fila de encabezados
+          if (rowArray.includes('id') || rowArray.includes('cedula') || rowArray.includes('codigo')) score++;
+          if (rowArray.includes('nombre') || rowArray.includes('cliente')) score++;
+          if (rowArray.includes('mac') || rowArray.includes('ip')) score++;
+          if (rowArray.includes('plan')) score++;
+          if (rowArray.includes('estado') || rowArray.includes('status')) score++;
 
-        // Si hay al menos dos coincidencias, es altamente probable que sea cabecera
-        if (score >= 2) {
-          headerRowIndex = i;
-          break;
+          // Si hay al menos dos coincidencias, es altamente probable que sea cabecera
+          if (score >= 2) {
+            headerRowIndex = i;
+            break;
+          }
         }
+
+        // Procesar finalmente con el range correcto
+        const rawData = XLSX.utils.sheet_to_json(ws, {
+          range: headerRowIndex,
+          defval: '',
+          raw: false  // Forzar lectura como texto formateado, no valores raw
+        });
+
+        // Mapeo defensivo: Los archivos CSV o Excel sucios pueden tener espacios
+        // en los headers (ej. "Nombre " o " Id"). Limpiamos las llaves.
+        const sanitizedData = rawData.map(row => {
+          const cleanRow = {};
+          for (const [key, value] of Object.entries(row)) {
+            // Removemos BOM character (\uFEFF) y espacios al inicio/final del header
+            const cleanKey = key.replace(/^\uFEFF/, '').trim();
+            cleanRow[cleanKey] = value;
+          }
+          return cleanRow;
+        });
+
+        onDataLoaded(sanitizedData, file.name);
+      } catch (err) {
+        console.error("Error procesando excel:", err);
+      } finally {
+        setLoadingGlobal(false);
       }
-
-      // Procesar finalmente con el range correcto
-      const rawData = XLSX.utils.sheet_to_json(ws, {
-        range: headerRowIndex,
-        defval: '',
-        raw: false  // Forzar lectura como texto formateado, no valores raw
-      });
-
-      // Mapeo defensivo: Los archivos CSV o Excel sucios pueden tener espacios
-      // en los headers (ej. "Nombre " o " Id"). Limpiamos las llaves.
-      const sanitizedData = rawData.map(row => {
-        const cleanRow = {};
-        for (const [key, value] of Object.entries(row)) {
-          // Removemos BOM character (\uFEFF) y espacios al inicio/final del header
-          const cleanKey = key.replace(/^\uFEFF/, '').trim();
-          cleanRow[cleanKey] = value;
-        }
-        return cleanRow;
-      });
-
-      onDataLoaded(sanitizedData, file.name);
     };
     reader.readAsArrayBuffer(file);
   };

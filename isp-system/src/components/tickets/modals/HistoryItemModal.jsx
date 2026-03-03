@@ -1,14 +1,6 @@
 import { X, MapPin, CheckCircle2, AlertTriangle, Radio, Zap, Gauge } from 'lucide-react';
 import Adjuntos from '../../common/Adjuntos';
-
-const ESTADOS_COLOR = {
-    'Abierto': { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400' },
-    'En Proceso': { bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-    'Escalado': { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400' },
-    'Resuelto': { bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400' },
-    'Cerrado': { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-400' },
-    'Cancelado': { bg: 'bg-gray-500/20', text: 'text-gray-500', dot: 'bg-gray-500' },
-};
+import StatusBadge from '../../ui/StatusBadge';
 
 function DiagValue({ label, value, unit, warn }) {
     if (value === undefined || value === null || value === '') return null;
@@ -57,12 +49,7 @@ export default function HistoryItemModal({ item, type, onClose }) {
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="font-mono text-sm text-text-muted">{item.id}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.estado === 'Completada' ? 'bg-green-500/20 text-green-400' :
-                                item.estado === 'Fallida' || item.estado === 'Cancelada' ? 'bg-red-500/20 text-red-400' :
-                                    'bg-blue-500/20 text-blue-400'
-                                }`}>
-                                {item.estado}
-                            </span>
+                            <StatusBadge status={item.estado} />
                         </div>
                         <h3 className="text-lg font-bold">{isVisita ? 'Detalle de Visita' : 'Detalle de Soporte Remoto'}</h3>
                     </div>

@@ -7,14 +7,15 @@ import Adjuntos from '../../common/Adjuntos';
 import CopyButton from '../../common/CopyButton';
 import { formatTicket } from '../../../utils/whatsappFormats';
 import useStore from '../../../store/useStore';
+import StatusBadge from '../../ui/StatusBadge';
 
-const ESTADOS_COLOR = {
-    'Abierto': { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-400' },
-    'En Proceso': { bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-400' },
-    'Escalado': { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-400' },
-    'Resuelto': { bg: 'bg-green-500/20', text: 'text-green-400', dot: 'bg-green-400' },
-    'Cerrado': { bg: 'bg-gray-500/20', text: 'text-gray-400', dot: 'bg-gray-400' },
-    'Cancelado': { bg: 'bg-gray-500/20', text: 'text-gray-500', dot: 'bg-gray-500' },
+const DOT_COLORS = {
+    'Abierto': 'bg-red-400',
+    'En Proceso': 'bg-yellow-400',
+    'Escalado': 'bg-orange-400',
+    'Resuelto': 'bg-green-400',
+    'Cerrado': 'bg-gray-400',
+    'Cancelado': 'bg-gray-500',
 };
 
 const PRIORIDAD_COLOR = {
@@ -68,9 +69,7 @@ export default function TicketDetailModal({
                                 <X size={20} />
                             </button>
                         </div>
-                        <span className={`px-3 py-1 rounded-lg text-xs font-bold ${(ESTADOS_COLOR[ticket.estado] || ESTADOS_COLOR['Abierto']).bg} ${(ESTADOS_COLOR[ticket.estado] || ESTADOS_COLOR['Abierto']).text}`}>
-                            {ticket.estado}
-                        </span>
+                        <StatusBadge status={ticket.estado} />
                     </div>
                 </div>
 
@@ -84,10 +83,10 @@ export default function TicketDetailModal({
                             <div><span className="text-text-muted">Dirección: </span><span className="text-text-primary font-medium">{clientInfo.direccion || 'N/A'}</span></div>
                             <div><span className="text-text-muted">Estado: </span><span className="text-text-primary font-medium">{clientInfo.estado_cuenta || 'N/A'}</span></div>
                             {clientInfo.movil_1 && (
-                              <div><span className="text-text-muted">Teléfono: </span><span className="text-text-primary font-medium">{clientInfo.movil_1}</span></div>
+                                <div><span className="text-text-muted">Teléfono: </span><span className="text-text-primary font-medium">{clientInfo.movil_1}</span></div>
                             )}
                             {clientInfo.nodo_router && (
-                              <div><span className="text-text-muted">Nodo: </span><span className="text-text-primary font-medium">{clientInfo.nodo_router}</span></div>
+                                <div><span className="text-text-muted">Nodo: </span><span className="text-text-primary font-medium">{clientInfo.nodo_router}</span></div>
                             )}
                         </div>
                     </div>
@@ -182,8 +181,8 @@ export default function TicketDetailModal({
                                     <div className="group relative flex items-center gap-2 bg-bg-card border border-border/60 rounded-full px-3 py-1.5 cursor-help transition-colors hover:border-accent-blue/50 hover:bg-bg-secondary" title={h.motivo}>
                                         <div className="flex items-center gap-1.5">
                                             <span className={`w-2 h-2 rounded-full ${h.estadoNuevo.startsWith('Escalado')
-                                                ? ESTADOS_COLOR['Escalado']?.dot
-                                                : (ESTADOS_COLOR[h.estadoNuevo]?.dot || 'bg-gray-400')
+                                                ? DOT_COLORS['Escalado']
+                                                : (DOT_COLORS[h.estadoNuevo] || 'bg-gray-400')
                                                 }`}></span>
                                             <span className="text-xs font-medium text-text-primary">{h.estadoNuevo}</span>
                                         </div>

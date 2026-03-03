@@ -26,6 +26,49 @@ export const createClientsSlice = (set, get) => ({
         saveToDB('isp_dataSource', 'excel');
     },
 
+    // ===================== BAJAS DE CLIENTE =====================
+    autoCancelClientOperations: (clientId, reason = 'Cliente dado de baja') => {
+        const state = get();
+
+        // 1. Cancelar Tickets Pendientes
+        const pendingTickets = state.tickets.filter(t => t.clienteId === clientId && (t.estado === 'Abierto' || t.estado === 'En Proceso' || t.estado === 'Escalado'));
+        pendingTickets.forEach(t => {
+            state.updateTicket(t.id, { estado: 'Cancelado', _historyComment: reason });
+        });
+
+        // 2. Cancelar Post-Venta
+        const pendingPV = state.postVenta.filter(p => p.clienteId === clientId && (p.estado === 'Pendiente' || p.estado === 'En Proceso'));
+        pendingPV.forEach(p => {
+            state.updatePostVenta(p.id, { estado: 'Rechazado', _historyComment: reason }); // PostVenta cancelado se trata como Rechazado
+        });
+
+        // 3. Cancelar Instalaciones Programadas (si tuvieran link al ID)
+        // Usualmente las instalaciones pueden no estar linkeadas a un cliente existitente sino a un nuevo prospecto.
+        // Pero si coincide el nombre exacto o cedula, quizás deberíamos anularlo.
+        const pendingInst = state.instalaciones.filter(i => (i.clienteNombre === state.clients.find(c => c.id === clientId)?.nombre) && (i.estado === 'Pendiente' || i.estado === 'Programada'));
+        pendingInst.forEach(i => {
+            state.updateInstalacion(i.id, { estado: 'Cancelada' });
+            // Agregar historial interno si la app lo soporta
+        });
+
+        // 4. Liberar Equipos Asignados (Inventario)
+        if (state.equipos && state.updateEquipo) {
+            const assignedEquipos = state.equipos.filter(e => e.clienteId === clientId && e.estado === 'En uso');
+            assignedEquipos.forEach(e => {
+                state.updateEquipo(e.id, {
+                    estado: 'Disponible',
+                    clienteId: '',
+                    clienteNombre: '',
+                    fechaAsignacion: null,
+                    ubicacion: 'Almacén (Devolución por Baja)'
+                });
+            });
+        }
+
+        // Retorna un true para logueo
+        return true;
+    },
+
     // ===================== HISTORIAL DE CAMBIOS DEL CLIENTE =====================
     clientChanges: [],
 

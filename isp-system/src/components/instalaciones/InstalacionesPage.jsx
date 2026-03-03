@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Wifi, Cable, MapPin, Calendar, User, ChevronRight, X, Clock, CheckCircle2, AlertCircle, Loader2, Wrench, ArrowRight, FileText } from 'lucide-react';
+import { Plus, Search, Wifi, Cable, MapPin, Calendar, User, ChevronRight, X, Clock, CheckCircle2, AlertCircle, Loader2, Wrench, ArrowRight, FileText, Box } from 'lucide-react';
 import useStore from '../../store/useStore';
 import CopyButton from '../common/CopyButton';
 import { formatInstalacion } from '../../utils/whatsappFormats';
@@ -7,13 +7,13 @@ import { formatInstalacion } from '../../utils/whatsappFormats';
 const ESTADOS = ['Pendiente', 'Aprobada', 'Programada', 'En Instalación', 'Completada', 'Derivada', 'Cancelada'];
 
 const ESTADO_COLOR = {
-  'Pendiente':       { bg: '#f59e0b20', text: '#f59e0b', tailBg: 'bg-yellow-500/20', tailText: 'text-yellow-400' },
-  'Aprobada':        { bg: '#3b82f620', text: '#3b82f6', tailBg: 'bg-blue-500/20', tailText: 'text-blue-400' },
-  'Programada':      { bg: '#8b5cf620', text: '#8b5cf6', tailBg: 'bg-purple-500/20', tailText: 'text-purple-400' },
-  'En Instalación':  { bg: '#f9731620', text: '#f97316', tailBg: 'bg-orange-500/20', tailText: 'text-orange-400' },
-  'Completada':      { bg: '#10b98120', text: '#10b981', tailBg: 'bg-green-500/20', tailText: 'text-green-400' },
-  'Derivada':        { bg: '#ef444420', text: '#ef4444', tailBg: 'bg-red-500/20', tailText: 'text-red-400' },
-  'Cancelada':       { bg: '#6b728020', text: '#6b7280', tailBg: 'bg-gray-500/20', tailText: 'text-gray-400' },
+  'Pendiente': { bg: '#f59e0b20', text: '#f59e0b', tailBg: 'bg-yellow-500/20', tailText: 'text-yellow-400' },
+  'Aprobada': { bg: '#3b82f620', text: '#3b82f6', tailBg: 'bg-blue-500/20', tailText: 'text-blue-400' },
+  'Programada': { bg: '#8b5cf620', text: '#8b5cf6', tailBg: 'bg-purple-500/20', tailText: 'text-purple-400' },
+  'En Instalación': { bg: '#f9731620', text: '#f97316', tailBg: 'bg-orange-500/20', tailText: 'text-orange-400' },
+  'Completada': { bg: '#10b98120', text: '#10b981', tailBg: 'bg-green-500/20', tailText: 'text-green-400' },
+  'Derivada': { bg: '#ef444420', text: '#ef4444', tailBg: 'bg-red-500/20', tailText: 'text-red-400' },
+  'Cancelada': { bg: '#6b728020', text: '#6b7280', tailBg: 'bg-gray-500/20', tailText: 'text-gray-400' },
 };
 
 const PIPELINE_STAGES = ['Pendiente', 'Aprobada', 'Programada', 'En Instalación', 'Completada'];
@@ -31,13 +31,13 @@ const PLANES = [
 const TECNOLOGIAS = ['Radio Enlace', 'Fibra Óptica'];
 
 const ESTADO_TRANSITIONS = {
-  'Pendiente':      ['Aprobada', 'Cancelada'],
-  'Aprobada':       ['Programada', 'Cancelada'],
-  'Programada':     ['En Instalación', 'Cancelada'],
+  'Pendiente': ['Aprobada', 'Cancelada'],
+  'Aprobada': ['Programada', 'Cancelada'],
+  'Programada': ['En Instalación', 'Cancelada'],
   'En Instalación': ['Completada', 'Derivada'],
-  'Completada':     [],
-  'Derivada':       ['En Instalación'],
-  'Cancelada':      [],
+  'Completada': [],
+  'Derivada': ['En Instalación'],
+  'Cancelada': [],
 };
 
 function EstadoBadge({ estado, size = 'sm' }) {
@@ -72,6 +72,8 @@ export default function InstalacionesPage() {
   const clients = useStore(s => s.clients);
   const tecnicos = useStore(s => s.tecnicos);
   const derivaciones = useStore(s => s.derivaciones);
+  const equipos = useStore(s => s.equipos);
+  const updateEquipo = useStore(s => s.updateEquipo);
 
   const [search, setSearch] = useState('');
   const [filterEstado, setFilterEstado] = useState('all');
@@ -79,6 +81,8 @@ export default function InstalacionesPage() {
   const [filterTecnologia, setFilterTecnologia] = useState('all');
   const [showNewModal, setShowNewModal] = useState(false);
   const [selectedInstalacion, setSelectedInstalacion] = useState(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(null);
+  const [completionForm, setCompletionForm] = useState({ equipoId: '', observaciones: '' });
 
   useEffect(() => {
     if (selectedInstalacion) {
@@ -197,8 +201,53 @@ export default function InstalacionesPage() {
   };
 
   const handleStatusChange = (instalacion, newStatus) => {
-    updateInstalacion(instalacion.id, { estado: newStatus });
-    setSelectedInstalacion(prev => prev ? { ...prev, estado: newStatus } : null);
+    if (newStatus === 'Completada') {
+      setShowCompletionModal(instalacion);
+      setCompletionForm({ equipoId: '', observaciones: instalacion.observaciones || '' });
+    } else {
+      updateInstalacion(instalacion.id, { estado: newStatus });
+      setSelectedInstalacion(prev => prev ? { ...prev, estado: newStatus } : null);
+    }
+  };
+
+  const handleCompletionSubmit = (e) => {
+    e.preventDefault();
+    if (!showCompletionModal) return;
+
+    let equipoInstaladoLabel = '';
+
+    // 1. Si eligió un equipo, descontarlo del almacén (Pasarlo a 'En uso' y linkear cliente simulado o real)
+    if (completionForm.equipoId) {
+      const eq = equipos.find(e => e.id === completionForm.equipoId);
+      if (eq) {
+        equipoInstaladoLabel = `${eq.marca} ${eq.modelo} [SN: ${eq.serial}]`;
+
+        // Buscar el clienteId si existe un cliente registrado con ese nombre / DNI
+        const clientMatch = clients.find(c => c.nombre === showCompletionModal.prospectoNombre || c.dni === showCompletionModal.prospectoDNI);
+
+        updateEquipo(eq.id, {
+          estado: 'En uso',
+          clienteId: clientMatch ? clientMatch.id : 'NUEVO_ALTA',
+          clienteNombre: showCompletionModal.prospectoNombre,
+          fechaAsignacion: new Date().toISOString().split('T')[0],
+          ubicacion: 'Domicilio Cliente'
+        });
+      }
+    }
+
+    // 2. Actualizar instalación a completada
+    updateInstalacion(showCompletionModal.id, {
+      estado: 'Completada',
+      equipoInstalado: equipoInstaladoLabel,
+      observaciones: completionForm.observaciones,
+      horaFin: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
+    });
+
+    if (selectedInstalacion && selectedInstalacion.id === showCompletionModal.id) {
+      setSelectedInstalacion(prev => ({ ...prev, estado: 'Completada', equipoInstalado: equipoInstaladoLabel, observaciones: completionForm.observaciones }));
+    }
+
+    setShowCompletionModal(null);
   };
 
   return (
@@ -460,6 +509,10 @@ export default function InstalacionesPage() {
                   <input
                     type="text"
                     placeholder="Número de documento"
+                    minLength={8}
+                    maxLength={15}
+                    pattern="^[0-9A-Za-z]+$"
+                    title="Ingrese un documento válido sin espacios ni caracteres especiales"
                     value={formData.prospectoDNI}
                     onChange={e => handleFormChange('prospectoDNI', e.target.value)}
                   />
@@ -467,8 +520,11 @@ export default function InstalacionesPage() {
                 <div>
                   <label className="block text-xs text-text-secondary font-medium mb-1.5">Teléfono / Celular</label>
                   <input
-                    type="text"
+                    type="tel"
                     placeholder="Número de contacto"
+                    minLength={7}
+                    maxLength={15}
+                    pattern="^[0-9+\-\s()]+$"
                     value={formData.prospectoTelefono}
                     onChange={e => handleFormChange('prospectoTelefono', e.target.value)}
                   />
@@ -519,18 +575,22 @@ export default function InstalacionesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-text-secondary font-medium mb-1.5">Zona</label>
-                  <input
-                    type="text"
-                    placeholder="Zona de instalación"
+                  <select
                     value={formData.zona}
                     onChange={e => handleFormChange('zona', e.target.value)}
-                  />
+                  >
+                    <option value="">Seleccionar zona...</option>
+                    {zonas.map((z, idx) => (
+                      <option key={idx} value={z}>{z}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-text-secondary font-medium mb-1.5">Dirección</label>
                   <input
                     type="text"
                     placeholder="Dirección completa"
+                    minLength={5}
                     value={formData.direccion}
                     onChange={e => handleFormChange('direccion', e.target.value)}
                   />
@@ -788,6 +848,76 @@ export default function InstalacionesPage() {
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====== MODAL COMPLETAR INSTALACIÓN (ASIGNAR EQUIPO) ====== */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setShowCompletionModal(null)}>
+          <div className="bg-bg-card border border-border w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-bg-secondary/30">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-text-primary">
+                <CheckCircle2 size={18} className="text-accent-green" />
+                Completar Instalación
+              </h3>
+              <button onClick={() => setShowCompletionModal(null)} className="text-text-muted hover:text-text-primary bg-transparent border-none cursor-pointer p-1">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCompletionSubmit} className="p-6">
+              <div className="mb-4">
+                <label className="block text-xs text-text-secondary font-medium mb-1.5 uppercase tracking-wide">
+                  Asignar Equipo del Inventario (Almacén)
+                </label>
+                <select
+                  value={completionForm.equipoId}
+                  onChange={e => setCompletionForm(prev => ({ ...prev, equipoId: e.target.value }))}
+                  className="w-full bg-bg-secondary border border-border text-text-primary px-3 py-2.5 rounded-lg text-sm outline-none focus:border-accent-blue"
+                  required
+                >
+                  <option value="">-- Seleccionar Equipo Disponible --</option>
+                  {equipos
+                    .filter(eq => eq.estado === 'Disponible')
+                    .map(eq => (
+                      <option key={eq.id} value={eq.id}>
+                        {eq.tipo} {eq.marca} - SN: {eq.serial}
+                      </option>
+                    ))}
+                </select>
+                <p className="text-[10px] text-text-muted mt-1.5 flex items-center gap-1">
+                  <Box size={10} /> Sólo se muestran equipos disponibles.
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs text-text-secondary font-medium mb-1.5 uppercase tracking-wide">Observaciones Finales</label>
+                <textarea
+                  value={completionForm.observaciones}
+                  onChange={e => setCompletionForm(prev => ({ ...prev, observaciones: e.target.value }))}
+                  className="w-full bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] outline-none focus:border-accent-blue"
+                  placeholder="Detalles sobre la instalación o observaciones..."
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCompletionModal(null)}
+                  className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer hover:bg-bg-tertiary transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={!completionForm.equipoId}
+                  className="flex-1 py-2.5 rounded-lg bg-accent-green text-white font-bold cursor-pointer border-none disabled:opacity-50 hover:opacity-90"
+                >
+                  Confirmar Asignación
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

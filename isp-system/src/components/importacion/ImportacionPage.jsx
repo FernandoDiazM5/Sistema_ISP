@@ -14,7 +14,7 @@ import ManualReviewTable from './ManualReviewTable';
 import SyncStatus from './SyncStatus';
 
 export default function ImportacionPage() {
-  const { clients, importClients, setLastImport, addImportRecord, cleaningOptions, restoreSystem, factoryReset, importHistory, setCleaningOptions, addClientChanges } = useStore();
+  const { clients, importClients, setLastImport, addImportRecord, cleaningOptions, restoreSystem, factoryReset, importHistory, setCleaningOptions, addClientChanges, autoCancelClientOperations, setLoadingGlobal } = useStore();
 
   const [step, setStep] = useState('upload'); // upload | processing | preview | finished
   const [fileName, setFileName] = useState('');
@@ -183,7 +183,12 @@ export default function ImportacionPage() {
     setReviewItems(prev => prev.filter(item => !(item.id === clientId && item.tipo === tipo)));
   };
 
-  const confirmImport = () => {
+  const confirmImport = async () => {
+    setLoadingGlobal(true, 'Fusionando e Importando Clientes. Esto puede demorar unos segundos...');
+
+    // Dejar que React pinte el overlay antes de bloquear el main thread
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     let finalData;
     if (importMode === 'completa') {
       finalData = processedData;
@@ -219,18 +224,26 @@ export default function ImportacionPage() {
 
     importClients(finalData);
 
-    // [NUEVO] Registrar auditoría de cambios para la Pestaña "Cambios"
+    // [NUEVO] Registrar auditoría de cambios para la Pestaña "Cambios" y Detectar Bajas (Retiros)
     if (importMode !== 'completa') {
       const logsToSave = changes
         .filter(c => c.type === 'MOD')
-        .map(c => ({
-          id: `CCH-${Date.now()}-${c.id}`,
-          clientId: c.id,
-          fecha: new Date().toISOString(),
-          origen: 'Importación Excel',
-          archivo: fileName,
-          cambios: c.diffs
-        }));
+        .map(c => {
+          // Detectar si el cliente fue dado de baja para anular sus servicios pendientes en la app
+          const becameRetirado = c.diffs?.some(d => d.field === 'estado_cuenta' && d.new?.toLowerCase() === 'retirado');
+          if (becameRetirado) {
+            autoCancelClientOperations(c.id, 'Baja automática por Importación Excel (Estado: Retirado)');
+          }
+
+          return {
+            id: `CCH-${Date.now()}-${c.id}`,
+            clientId: c.id,
+            fecha: new Date().toISOString(),
+            origen: 'Importación Excel',
+            archivo: fileName,
+            cambios: c.diffs
+          };
+        });
 
       if (logsToSave.length > 0) {
         addClientChanges(logsToSave);
@@ -248,40 +261,51 @@ export default function ImportacionPage() {
     setLastImport(importInfo);
     addImportRecord({ ...importInfo, mode: importMode });
     setStep('finished');
+    setLoadingGlobal(false);
   };
 
-  const handleExport = () => {
-    const exportData = clients.map(c => ({
-      'Id': c.id,
-      'Nombre': `${c.nombre}  ${c.estado_cuenta}`,
-      'Mac': c.mac,
-      'Ip': c.ip,
-      'IP Receptor': c.ip_receptor,
-      'Ultimo pago': c.ultimo_pago,
-      'Tipo estrato': c.tipo_estrato,
-      'Dirección Principal': c.direccion,
-      'Dirección Servicio': c.direccion_servicio,
-      'Dia pago': c.dia_pago,
-      'Deuda actual': c.deuda_monto > 0 ? `${c.deuda_meses} S/. ${c.deuda_monto.toFixed(2)}` : '',
-      'Correo': c.email || c.notas_tecnicas,
-      'Plan': c.plan,
-      'Proximo pago': c.proximo_pago,
-      'Movil': c.movil_2 ? `${c.movil_1}${c.movil_2}` : c.movil_1,
-      'Saldo': c.saldo,
-      'Router': c.nodo_router,
-      'Instalado': c.fecha_instalacion,
-      'Cedula': c.dni,
-      'User PPP/Hotspot': c.user_ppp,
-      'Codigo': c.codigo,
-      'Total cobrar': `S/. ${c.precio.toFixed(2)}`,
-      'Zona': c.zona,
-      'Status': c.status,
-    }));
+  const handleExport = async () => {
+    setLoadingGlobal(true, 'Procesando archivo rápido de excel...');
+    await new Promise(resolve => setTimeout(resolve, 50));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, 'Lista_de_Usuarios_Actualizada.xlsx');
+    try {
+      const exportData = clients.map(c => ({
+        'Id': c.id,
+        'Nombre': `${c.nombre}  ${c.estado_cuenta}`,
+        'Mac': c.mac,
+        'Ip': c.ip,
+        'IP Receptor': c.ip_receptor,
+        'Ultimo pago': c.ultimo_pago,
+        'Tipo estrato': c.tipo_estrato,
+        'Dirección Principal': c.direccion,
+        'Dirección Servicio': c.direccion_servicio,
+        'Dia pago': c.dia_pago,
+        'Deuda actual': c.deuda_monto > 0 ? `${c.deuda_meses} S/. ${c.deuda_monto.toFixed(2)}` : '',
+        'Correo': c.email || c.notas_tecnicas,
+        'Plan': c.plan,
+        'Proximo pago': c.proximo_pago,
+        'Movil': c.movil_2 ? `${c.movil_1}${c.movil_2}` : c.movil_1,
+        'Saldo': c.saldo,
+        'Router': c.nodo_router,
+        'Instalado': c.fecha_instalacion,
+        'Cedula': c.dni,
+        'User PPP/Hotspot': c.user_ppp,
+        'Codigo': c.codigo,
+        'Total cobrar': `S/. ${c.precio.toFixed(2)}`,
+        'Zona': c.zona,
+        'Status': c.status,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+      XLSX.writeFile(wb, 'Lista_de_Usuarios_Actualizada.xlsx');
+
+      setLoadingGlobal(false);
+    } catch (err) {
+      console.error(err);
+      setLoadingGlobal(false);
+    }
   };
 
   const handleCustomExport = async () => {
@@ -310,6 +334,8 @@ export default function ImportacionPage() {
       alert("Por favor selecciona al menos una tabla para exportar.");
       return;
     }
+
+    setLoadingGlobal(true, `Generando Backup Local para ${exportTables.length} Módulos. Compilando datos...`);
 
     const tablesToExport = sheets.filter(s => exportTables.includes(s.id));
     setIsExporting(true);
@@ -372,7 +398,7 @@ export default function ImportacionPage() {
             const numChunks = Math.ceil(allRows.length / CHUNK_SIZE);
 
             for (let i = 0; i < numChunks; i++) {
-              const doc = new jsPDF('landscape');
+              let doc = new jsPDF('landscape');
               const chunkRows = allRows.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
 
               doc.text(`Tabla: ${name} (Parte ${i + 1}/${numChunks}) - ${chunkRows.length} registros`, 14, 14);
@@ -401,6 +427,7 @@ export default function ImportacionPage() {
       alert("Hubo un error al generar el archivo. Si la base de datos es muy grande, intenta exportar en formato Excel o CSV.");
     } finally {
       setIsExporting(false);
+      setLoadingGlobal(false);
     }
   };
 

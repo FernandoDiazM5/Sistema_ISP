@@ -737,6 +737,7 @@ export default function PostVentaPage() {
                   type="number"
                   step="0.01"
                   min="0"
+                  required
                   value={detailCostoReal}
                   onChange={e => setDetailCostoReal(e.target.value)}
                   placeholder={`Estimado: ${selectedPV.costoEstimado}`}

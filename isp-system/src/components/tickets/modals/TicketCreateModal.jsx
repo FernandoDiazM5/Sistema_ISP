@@ -208,7 +208,9 @@ export default function TicketCreateModal({ onClose, onSuccess, initialData = nu
                         <textarea
                             value={newDescription}
                             onChange={e => setNewDescription(e.target.value)}
-                            placeholder="Describa el problema..."
+                            placeholder="Describa el problema detalladamente..."
+                            minLength={10}
+                            required
                             className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[100px] resize-y outline-none focus:border-accent-blue w-full"
                         />
                     </div>

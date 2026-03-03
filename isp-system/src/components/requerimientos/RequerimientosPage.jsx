@@ -1,14 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, FileText, Clock, CheckCircle2, AlertCircle, X, Pencil, Trash2, ArrowRight, Settings } from 'lucide-react';
 import useStore from '../../store/useStore';
-
-const ESTADO_STYLE = {
-    'Pendiente': { bg: 'bg-accent-yellow/20', text: 'text-accent-yellow', dot: 'bg-accent-yellow' },
-    'En Revisión': { bg: 'bg-accent-blue/20', text: 'text-accent-blue', dot: 'bg-accent-blue' },
-    'Aprobado': { bg: 'bg-accent-green/20', text: 'text-accent-green', dot: 'bg-accent-green' },
-    'Rechazado': { bg: 'bg-accent-red/20', text: 'text-accent-red', dot: 'bg-accent-red' },
-    'Completado': { bg: 'bg-accent-purple/20', text: 'text-accent-purple', dot: 'bg-accent-purple' },
-};
+import CopyButton from '../common/CopyButton';
+import StatusBadge from '../ui/StatusBadge';
 
 const PRIORIDAD_STYLE = {
     'Urgente': 'text-accent-red font-bold',
@@ -24,6 +18,8 @@ export default function RequerimientosPage() {
     const addRequerimiento = useStore(s => s.addRequerimiento);
     const updateRequerimiento = useStore(s => s.updateRequerimiento);
     const deleteRequerimiento = useStore(s => s.deleteRequerimiento);
+    const updateTicket = useStore(s => s.updateTicket);
+    const resolveTicketChain = useStore(s => s.resolveTicketChain);
     const tiposRequerimiento = useStore(s => s.tiposRequerimiento);
     const addTipoRequerimiento = useStore(s => s.addTipoRequerimiento);
     const updateTipoRequerimiento = useStore(s => s.updateTipoRequerimiento);
@@ -95,6 +91,12 @@ export default function RequerimientosPage() {
             estado: nuevoEstado,
             _historyComment: `Cambio de estado a ${nuevoEstado}`
         });
+
+        const req = requerimientos.find(r => r.id === id);
+        if (nuevoEstado === 'Completado' && req?.ticketOrigen) {
+            resolveTicketChain(req.ticketOrigen, `Resuelto automáticamente desde Requerimiento Administrativo (${req.id})`);
+        }
+
         if (selectedReq && selectedReq.id === id) {
             setSelectedReq({ ...selectedReq, estado: nuevoEstado });
         }
@@ -215,7 +217,6 @@ export default function RequerimientosPage() {
                     </div>
                 )}
                 {filtered.map(req => {
-                    const ec = ESTADO_STYLE[req.estado] || ESTADO_STYLE['Pendiente'];
                     return (
                         <div
                             key={req.id}
@@ -230,9 +231,7 @@ export default function RequerimientosPage() {
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-mono text-xs text-text-muted">{req.id}</span>
-                                            <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${ec.bg} ${ec.text}`}>
-                                                {req.estado}
-                                            </span>
+                                            <StatusBadge status={req.estado} />
                                             <span className={`text-[11px] ${PRIORIDAD_STYLE[req.prioridad] || ''}`}>
                                                 {req.prioridad}
                                             </span>
@@ -388,9 +387,7 @@ export default function RequerimientosPage() {
                                 <h3 className="text-lg font-bold mt-1">{selectedReq.titulo}</h3>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className={`px-3 py-1 rounded-lg text-xs font-bold ${ESTADO_STYLE[selectedReq.estado]?.bg} ${ESTADO_STYLE[selectedReq.estado]?.text}`}>
-                                    {selectedReq.estado}
-                                </span>
+                                <StatusBadge status={selectedReq.estado} />
                                 <button
                                     onClick={() => setSelectedReq(null)}
                                     className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted cursor-pointer hover:text-text-primary transition-colors"
@@ -443,14 +440,9 @@ export default function RequerimientosPage() {
                                 <div className="flex flex-col gap-2">
                                     {selectedReq.historial.map((h, i) => (
                                         <div key={i} className="flex items-center gap-2 text-[11px]">
-                                            <span className="text-text-muted">{new Date(h.fecha).toLocaleDateString()}</span>
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ESTADO_STYLE[h.estadoAnterior]?.bg || 'bg-bg-card'} ${ESTADO_STYLE[h.estadoAnterior]?.text || 'text-text-muted'}`}>
-                                                {h.estadoAnterior}
-                                            </span>
+                                            <StatusBadge status={h.estadoAnterior} size="sm" />
                                             <ArrowRight size={10} className="text-text-muted" />
-                                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ESTADO_STYLE[h.estadoNuevo]?.bg || 'bg-bg-card'} ${ESTADO_STYLE[h.estadoNuevo]?.text || 'text-text-muted'}`}>
-                                                {h.estadoNuevo}
-                                            </span>
+                                            <StatusBadge status={h.estadoNuevo} size="sm" />
                                             {h.motivo && <span className="text-text-muted">— {h.motivo}</span>}
                                         </div>
                                     ))}
@@ -461,12 +453,11 @@ export default function RequerimientosPage() {
                         {/* Actions */}
                         <div className="flex gap-2">
                             {getStatusFlow(selectedReq.estado).map(nextEstado => {
-                                const style = ESTADO_STYLE[nextEstado] || {};
                                 return (
                                     <button
                                         key={nextEstado}
                                         onClick={() => handleStatusChange(selectedReq.id, nextEstado)}
-                                        className={`flex-1 py-2.5 rounded-lg border-none text-xs font-semibold cursor-pointer transition-opacity hover:opacity-80 ${style.bg || 'bg-bg-secondary'} ${style.text || 'text-text-secondary'}`}
+                                        className={`flex-1 py-2.5 rounded-lg border-none text-xs font-semibold cursor-pointer transition-opacity hover:opacity-80 bg-bg-secondary text-text-primary`}
                                     >
                                         {nextEstado === 'Rechazado' ? 'Rechazar' : `Pasar a ${nextEstado}`}
                                     </button>
