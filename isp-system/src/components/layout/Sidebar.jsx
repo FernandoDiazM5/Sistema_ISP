@@ -85,9 +85,16 @@ export default function Sidebar({ isOpen, onClose }) {
         return user?.rol === USER_ROLES.SUPER_ADMIN;
       }
 
-      // 2. Caso especial: Mantenimiento solo para roles con acceso total (permissions: ['*'])
+      // 2. Caso especial: Mantenimiento — visible para ADMIN y SUPER_ADMIN
+      // Usa múltiples verificaciones en paralelo para mayor robustez
       if (item.to === '/mantenimiento') {
-        return role?.permissions?.includes('*') === true;
+        const rol = user?.rol;
+        // Verificación directa por string
+        if (rol === 'SUPER_ADMIN' || rol === 'ADMIN') return true;
+        // Verificación por objeto ROLES (cubre variantes de casing)
+        if (role?.permissions?.includes('*')) return true;
+        // Verificación por permisos del módulo en store
+        return hasPermission(MODULES.MANTENIMIENTO, 'read');
       }
 
       // 3. Verificar permiso del módulo correspondiente
