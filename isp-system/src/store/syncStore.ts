@@ -58,7 +58,6 @@ export interface SyncStoreState {
     setSyncMode: (mode: 'manual' | 'auto') => void;
     startLiveSync: () => void;
     stopLiveSync: () => void;
-    debouncedLivePush: () => void;
     livePull: () => Promise<boolean>;
     syncPush: () => Promise<any>;
     syncPull: () => Promise<boolean>;
@@ -94,12 +93,30 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
 
     addOfflineAction: (action: any) => {
         set((state: any) => {
-            const newQueue = state.offlineQueue.filter((item: any) =>
+            // Deduplicar por colección+id (upsert)
+            const dedupedQueue = state.offlineQueue.filter((item: any) =>
                 !(item.collectionName === action.collectionName && item.id === action.id)
             );
-            newQueue.push({ ...action, timestamp: Date.now() });
-            localStorage.setItem('isp_offline_queue', JSON.stringify(newQueue));
-            return { offlineQueue: newQueue };
+            dedupedQueue.push({ ...action, timestamp: Date.now() });
+
+            // Límite de seguridad: máximo 500 entradas para no saturar localStorage (~5 MB).
+            // Si se supera, descartamos las más antiguas (las primeras del array).
+            const MAX_QUEUE = 500;
+            const finalQueue = dedupedQueue.length > MAX_QUEUE
+                ? dedupedQueue.slice(dedupedQueue.length - MAX_QUEUE)
+                : dedupedQueue;
+
+            if (dedupedQueue.length > MAX_QUEUE) {
+                console.warn(`[OfflineQueue] Cola supera ${MAX_QUEUE} entradas. Se descartaron ${dedupedQueue.length - MAX_QUEUE} acciones antiguas.`);
+            }
+
+            try {
+                localStorage.setItem('isp_offline_queue', JSON.stringify(finalQueue));
+            } catch (e) {
+                // localStorage lleno — la cola queda solo en memoria hasta que se procese o reinicie.
+                console.error('[OfflineQueue] localStorage lleno. La cola offline solo persiste en memoria.', e);
+            }
+            return { offlineQueue: finalQueue };
         });
     },
 
@@ -174,6 +191,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
                 'whatsappLogs', 'templates', 'whatsappCategories',
                 'categorias', 'subcategorias', 'prioridadesSLA',
                 'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
+                'averiasTipos',
             ];
 
             const deltas: any[] = [];
@@ -237,9 +255,6 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
         set({ liveEnabled: false, liveUnsubscribe: null });
         console.log('[LiveSync] Sincronización en tiempo real desactivada');
     },
-
-    // Ya no usamos pushLiveData en el nuevo modelo atómico
-    debouncedLivePush: () => { },
 
     // ===================== LIVE PULL (DESCARGA DIRECTA DE COLECCIONES) =====================
     livePull: async () => {

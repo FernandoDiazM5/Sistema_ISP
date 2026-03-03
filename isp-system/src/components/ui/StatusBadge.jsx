@@ -34,6 +34,15 @@ const STATUS_CONFIG = {
     'Fallida': { variant: 'danger', defaultText: 'Fallida' },
     'Pendiente': { variant: 'warning', defaultText: 'Pendiente' },
 
+    // Installations pipeline
+    'Aprobada': { variant: 'info', defaultText: 'Aprobada' },
+    'En Instalación': { variant: 'orange', defaultText: 'En Instalación' },
+    'Derivada': { variant: 'danger', defaultText: 'Derivada' },
+
+    // Averías
+    'En reparación': { variant: 'warning', defaultText: 'En reparación' },
+    'Coordinando': { variant: 'info', defaultText: 'Coordinando' },
+
     // Admin & Financial
     'En Revisión': { variant: 'info', defaultText: 'En Revisión' },
     'Aprobado': { variant: 'success', defaultText: 'Aprobado' },

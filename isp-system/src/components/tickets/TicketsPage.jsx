@@ -102,29 +102,22 @@ export default function TicketsPage() {
 
       return matchStart && matchEnd && matchStatus && matchPrioridad;
     });
-  }, [filteredData, dateRange, viewMode, localFilters]);
+    // viewMode eliminado de deps — no afecta el filtrado, solo la vista de presentación
+  }, [filteredData, dateRange, localFilters]);
 
-  // Kanban grouped tickets (updated for multiselect)
+  // Kanban grouped tickets — reutiliza filteredData (búsqueda unificada con useFilters)
   const kanbanData = useMemo(() => {
     const grouped = {};
     KANBAN_COLUMNS.forEach(col => {
-      grouped[col] = tickets.filter(t => {
-        // Search logic manually applied here since useFilters handles the main list
-        const matchesSearch = searchColumns.some(field =>
-          String(t[field] || '').toLowerCase().includes(searchInput.toLowerCase())
-        );
-
+      grouped[col] = filteredData.filter(t => {
         const matchStart = !dateRange.start || t.fecha >= dateRange.start;
         const matchEnd = !dateRange.end || t.fecha <= dateRange.end;
-
-        // MultiSelect Priority Logic
         const matchPrioridad = localFilters.prioridad.length === 0 || localFilters.prioridad.includes(t.prioridad);
-
-        return t.estado === col && matchesSearch && matchStart && matchEnd && matchPrioridad;
+        return t.estado === col && matchStart && matchEnd && matchPrioridad;
       });
     });
     return grouped;
-  }, [tickets, searchInput, dateRange, localFilters.prioridad, searchColumns]);
+  }, [filteredData, dateRange, localFilters.prioridad]);
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);

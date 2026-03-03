@@ -48,13 +48,32 @@ const SUBCATEGORIAS = [
 ];
 
 const PRIORIDADES_SLA = [
-  { id: 'PRI-01', subcategoriaId: 'SUB-101', prioridad: 'Crítica', tiempoLimite: '4 horas', impacto: 'Cliente incomunicado' },
-  { id: 'PRI-02', subcategoriaId: 'SUB-102', prioridad: 'Media', tiempoLimite: '24 horas', impacto: 'Servicio degradado' },
-  { id: 'PRI-03', subcategoriaId: 'SUB-201', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Sin TV' },
-  { id: 'PRI-04', subcategoriaId: 'SUB-301', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Cambio estético' },
-  { id: 'PRI-05', subcategoriaId: 'SUB-501', prioridad: 'Alta', tiempoLimite: '8 horas', impacto: 'Hardware dañado' },
-  { id: 'PRI-06', subcategoriaId: 'SUB-601', prioridad: 'Media', tiempoLimite: '4 horas', impacto: 'Reconexión' },
-  { id: 'PRI-07', subcategoriaId: 'SUB-401', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Infraestructura dañada' },
+  // CAT-01: Falla de Internet
+  { id: 'PRI-01', subcategoriaId: 'SUB-101', prioridad: 'Crítica', tiempoLimite: '4 horas',  impacto: 'Cliente incomunicado' },
+  { id: 'PRI-02', subcategoriaId: 'SUB-102', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Servicio degradado' },
+  { id: 'PRI-03', subcategoriaId: 'SUB-103', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Conexión intermitente' },
+  { id: 'PRI-04', subcategoriaId: 'SUB-104', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Acceso parcial a sitios' },
+  { id: 'PRI-05', subcategoriaId: 'SUB-105', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Velocidad por debajo del plan' },
+  // CAT-02: Falla de Cable
+  { id: 'PRI-06', subcategoriaId: 'SUB-201', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Sin señal de TV' },
+  { id: 'PRI-07', subcategoriaId: 'SUB-202', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Imagen congelada / mala calidad' },
+  { id: 'PRI-08', subcategoriaId: 'SUB-203', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Decodificador con falla' },
+  // CAT-03: Configuración
+  { id: 'PRI-09', subcategoriaId: 'SUB-301', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Cambio de red WiFi' },
+  { id: 'PRI-10', subcategoriaId: 'SUB-302', prioridad: 'Baja',    tiempoLimite: '72 horas', impacto: 'Apertura de puertos' },
+  { id: 'PRI-11', subcategoriaId: 'SUB-303', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Reseteo de equipo remoto' },
+  // CAT-04: Infraestructura
+  { id: 'PRI-12', subcategoriaId: 'SUB-401', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Infraestructura dañada' },
+  { id: 'PRI-13', subcategoriaId: 'SUB-402', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Nodo o NAP dañado' },
+  { id: 'PRI-14', subcategoriaId: 'SUB-403', prioridad: 'Media',   tiempoLimite: '48 horas', impacto: 'Cambio de domicilio del servicio' },
+  // CAT-05: Hardware
+  { id: 'PRI-15', subcategoriaId: 'SUB-501', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Router u ONT averiado' },
+  { id: 'PRI-16', subcategoriaId: 'SUB-502', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Transformador o POE dañado' },
+  { id: 'PRI-17', subcategoriaId: 'SUB-503', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Puerto LAN inutilizable' },
+  // CAT-06: Administrativo
+  { id: 'PRI-18', subcategoriaId: 'SUB-601', prioridad: 'Media',   tiempoLimite: '4 horas',  impacto: 'Cliente sin servicio por pago' },
+  { id: 'PRI-19', subcategoriaId: 'SUB-602', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Cambio de plan solicitado' },
+  { id: 'PRI-20', subcategoriaId: 'SUB-603', prioridad: 'Baja',    tiempoLimite: '72 horas', impacto: 'Consulta o error de facturación' },
 ];
 
 const ESTADOS_CATALOGO = [
@@ -103,6 +122,15 @@ const TIPOS_REQUERIMIENTO = [
   { id: 'TREQ-11', nombre: 'Otro', categoria: 'General' },
 ];
 
+const AVERIAS_TIPOS = [
+  { id: 'AVTP-01', nombre: 'Corte de fibra' },
+  { id: 'AVTP-02', nombre: 'Caída de nodo' },
+  { id: 'AVTP-03', nombre: 'Interferencia' },
+  { id: 'AVTP-04', nombre: 'Falla eléctrica' },
+  { id: 'AVTP-05', nombre: 'Daño de equipo' },
+  { id: 'AVTP-06', nombre: 'Otra' },
+];
+
 // ===================== STORE COMPOSITION =====================
 export interface StoreState {
   storeReady: boolean;
@@ -128,6 +156,32 @@ export interface StoreState {
   addTipoRequerimiento: (tipo: any) => void;
   updateTipoRequerimiento: (id: string, updates: any) => void;
   deleteTipoRequerimiento: (id: string) => void;
+
+  // CRUD Categorías
+  addCategoria: (data: { nombre: string; descripcion: string }) => void;
+  updateCategoria: (id: string, updates: { nombre?: string; descripcion?: string }) => void;
+  deleteCategoria: (id: string) => void;
+
+  // CRUD Subcategorías
+  addSubcategoria: (data: { categoriaId: string; nombre: string; tipoAtencion: string }) => void;
+  updateSubcategoria: (id: string, updates: any) => void;
+  deleteSubcategoria: (id: string) => void;
+
+  // CRUD Prioridades SLA
+  addPrioridadSLA: (data: { subcategoriaId: string; prioridad: string; tiempoLimite: string; impacto: string }) => void;
+  updatePrioridadSLA: (id: string, updates: any) => void;
+  deletePrioridadSLA: (id: string) => void;
+
+  // CRUD Estados Catálogo
+  addEstadoCatalogo: (data: { entidad: string; nombre: string; color: string; orden: number; esFinal: boolean }) => void;
+  updateEstadoCatalogo: (id: string, updates: any) => void;
+  deleteEstadoCatalogo: (id: string) => void;
+
+  // CRUD Tipos de Averías
+  averiasTipos: any[];
+  addAveriaTipo: (nombre: string) => void;
+  updateAveriaTipo: (id: string, nombre: string) => void;
+  deleteAveriaTipo: (id: string) => void;
 
   getSubcategoriasByCategoria: (catId: string) => any[];
   getEstadosByEntidad: (entidad: string) => any[];
@@ -201,7 +255,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       // Lista de colecciones maestras que NO deben ser reemplazadas por arrays vacíos.
       const catalogKeysToProtect = [
         'categorias', 'subcategorias', 'prioridadesSLA',
-        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos'
       ];
 
       for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
@@ -273,12 +327,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
-      'clientChanges'
-    ];
-
-    const catalogKeysToProtect = [
-      'categorias', 'subcategorias', 'prioridadesSLA',
-      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      'averiasTipos', 'clientChanges'
     ];
 
     set((state: any) => {
@@ -286,11 +335,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       for (const key of keysToRestore) {
         if (data[key] && Array.isArray(data[key])) {
 
-          // Validación: No reemplazar catálogos maestros con arreglos vacíos
-          if (catalogKeysToProtect.includes(key) && data[key].length === 0) {
-            continue; // Saltar
-          }
-
+          // Nunca reemplazar con arreglos vacíos (protege catálogos y cualquier colección)
           if (data[key].length === 0) {
             continue;
           }
@@ -299,7 +344,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
           const existingItems = state[key] || [];
 
           if (!Array.isArray(existingItems)) {
-            updates[key] = incomingItems; // Fallback para objetos planos
+            updates[key] = incomingItems;
           } else {
             // Fusionar arrays por ID, el incoming sobreescribe al local existente
             const mergedMap = new Map(existingItems.map((item: any) => [item.id, item]));
@@ -319,7 +364,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
         const dbKey = (STORE_TO_DB_KEY_MAP as any)[key];
         if (dbKey && state[key] !== undefined) {
-          db.set(dbKey, state[key]).catch(() => { });
+          db.set(dbKey, state[key]).catch((err: any) => {
+            console.error(`[IndexedDB] Error al persistir delta '${key}':`, err);
+          });
         }
       }
     }
@@ -335,12 +382,12 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'branding', 'customRolePermissions', 'whatsappCategories',
       'categorias', 'subcategorias', 'prioridadesSLA',
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
-      'clientChanges'
+      'averiasTipos', 'clientChanges'
     ];
 
     const catalogKeysToProtect = [
       'categorias', 'subcategorias', 'prioridadesSLA',
-      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento'
+      'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos'
     ];
 
     const updates: any = {};
@@ -358,7 +405,9 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       // Persistir localmente en IndexedDB
       for (const [stateKey, dbKey] of Object.entries(STORE_TO_DB_KEY_MAP)) {
         if (updates[stateKey] !== undefined) {
-          db.set(dbKey, updates[stateKey]).catch(() => { });
+          db.set(dbKey, updates[stateKey]).catch((err: any) => {
+            console.error(`[IndexedDB] Error al persistir '${stateKey}' en '${dbKey}':`, err);
+          });
         }
       }
     }
@@ -411,6 +460,157 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   deleteTipoRequerimiento: (id) => set(s => ({
     tiposRequerimiento: s.tiposRequerimiento.filter(t => t.id !== id),
   })),
+
+  // ===================== AVERIAS TIPOS =====================
+  averiasTipos: AVERIAS_TIPOS,
+
+  addAveriaTipo: (nombre: string) => {
+    const s = get();
+    const max = s.averiasTipos.reduce((m: number, t: any) => {
+      const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    const newItem = { id: `AVTP-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.averiasTipos, newItem];
+    set({ averiasTipos: updated });
+    db.set('isp_averiasTipos', updated).catch((e: any) => console.error('[IndexedDB] averiasTipos:', e));
+    saveDocument('averiasTipos', newItem);
+  },
+
+  updateAveriaTipo: (id: string, nombre: string) => {
+    const updated = get().averiasTipos.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ averiasTipos: updated });
+    db.set('isp_averiasTipos', updated).catch((e: any) => console.error('[IndexedDB] averiasTipos:', e));
+    saveDocument('averiasTipos', { id, nombre });
+  },
+
+  deleteAveriaTipo: (id: string) => {
+    const updated = get().averiasTipos.filter((t: any) => t.id !== id);
+    set({ averiasTipos: updated });
+    db.set('isp_averiasTipos', updated).catch((e: any) => console.error('[IndexedDB] averiasTipos:', e));
+    deleteDocument('averiasTipos', id);
+  },
+
+  // ===================== CRUD CATEGORÍAS =====================
+  addCategoria: (data: { nombre: string; descripcion: string }) => {
+    const s = get();
+    const max = s.categorias.reduce((m: number, c: any) => {
+      const n = parseInt(c.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    const newItem = { ...data, id: `CAT-${String(max + 1).padStart(2, '0')}` };
+    const updated = [...s.categorias, newItem];
+    set({ categorias: updated });
+    db.set('isp_categorias', updated).catch((e: any) => console.error('[IndexedDB] categorias:', e));
+    saveDocument('categorias', newItem);
+  },
+
+  updateCategoria: (id: string, updates: any) => {
+    const updated = get().categorias.map((c: any) => c.id === id ? { ...c, ...updates } : c);
+    set({ categorias: updated });
+    db.set('isp_categorias', updated).catch((e: any) => console.error('[IndexedDB] categorias:', e));
+    saveDocument('categorias', { id, ...updates });
+  },
+
+  deleteCategoria: (id: string) => {
+    const s = get();
+    const subIds = s.subcategorias.filter((sub: any) => sub.categoriaId === id).map((sub: any) => sub.id);
+    const slaIds = s.prioridadesSLA.filter((p: any) => subIds.includes(p.subcategoriaId)).map((p: any) => p.id);
+    const updatedCats = s.categorias.filter((c: any) => c.id !== id);
+    const updatedSubs = s.subcategorias.filter((sub: any) => sub.categoriaId !== id);
+    const updatedSLAs = s.prioridadesSLA.filter((p: any) => !subIds.includes(p.subcategoriaId));
+    set({ categorias: updatedCats, subcategorias: updatedSubs, prioridadesSLA: updatedSLAs });
+    db.set('isp_categorias', updatedCats).catch((e: any) => console.error('[IndexedDB] categorias:', e));
+    db.set('isp_subcategorias', updatedSubs).catch((e: any) => console.error('[IndexedDB] subcategorias:', e));
+    db.set('isp_prioridadesSLA', updatedSLAs).catch((e: any) => console.error('[IndexedDB] prioridadesSLA:', e));
+    deleteDocument('categorias', id);
+    subIds.forEach((sid: string) => deleteDocument('subcategorias', sid));
+    slaIds.forEach((sid: string) => deleteDocument('prioridadesSLA', sid));
+  },
+
+  // ===================== CRUD SUBCATEGORÍAS =====================
+  addSubcategoria: (data: { categoriaId: string; nombre: string; tipoAtencion: string }) => {
+    const s = get();
+    const max = s.subcategorias.reduce((m: number, sub: any) => {
+      const n = parseInt(sub.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    const newItem = { ...data, id: `SUB-${String(max + 1).padStart(3, '0')}` };
+    const updated = [...s.subcategorias, newItem];
+    set({ subcategorias: updated });
+    db.set('isp_subcategorias', updated).catch((e: any) => console.error('[IndexedDB] subcategorias:', e));
+    saveDocument('subcategorias', newItem);
+  },
+
+  updateSubcategoria: (id: string, updates: any) => {
+    const updated = get().subcategorias.map((s: any) => s.id === id ? { ...s, ...updates } : s);
+    set({ subcategorias: updated });
+    db.set('isp_subcategorias', updated).catch((e: any) => console.error('[IndexedDB] subcategorias:', e));
+    saveDocument('subcategorias', { id, ...updates });
+  },
+
+  deleteSubcategoria: (id: string) => {
+    const s = get();
+    const slaIds = s.prioridadesSLA.filter((p: any) => p.subcategoriaId === id).map((p: any) => p.id);
+    const updatedSubs = s.subcategorias.filter((sub: any) => sub.id !== id);
+    const updatedSLAs = s.prioridadesSLA.filter((p: any) => p.subcategoriaId !== id);
+    set({ subcategorias: updatedSubs, prioridadesSLA: updatedSLAs });
+    db.set('isp_subcategorias', updatedSubs).catch((e: any) => console.error('[IndexedDB] subcategorias:', e));
+    db.set('isp_prioridadesSLA', updatedSLAs).catch((e: any) => console.error('[IndexedDB] prioridadesSLA:', e));
+    deleteDocument('subcategorias', id);
+    slaIds.forEach((sid: string) => deleteDocument('prioridadesSLA', sid));
+  },
+
+  // ===================== CRUD PRIORIDADES SLA =====================
+  addPrioridadSLA: (data: { subcategoriaId: string; prioridad: string; tiempoLimite: string; impacto: string }) => {
+    const s = get();
+    const max = s.prioridadesSLA.reduce((m: number, p: any) => {
+      const n = parseInt(p.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    const newItem = { ...data, id: `PRI-${String(max + 1).padStart(2, '0')}` };
+    const updated = [...s.prioridadesSLA, newItem];
+    set({ prioridadesSLA: updated });
+    db.set('isp_prioridadesSLA', updated).catch((e: any) => console.error('[IndexedDB] prioridadesSLA:', e));
+    saveDocument('prioridadesSLA', newItem);
+  },
+
+  updatePrioridadSLA: (id: string, updates: any) => {
+    const updated = get().prioridadesSLA.map((p: any) => p.id === id ? { ...p, ...updates } : p);
+    set({ prioridadesSLA: updated });
+    db.set('isp_prioridadesSLA', updated).catch((e: any) => console.error('[IndexedDB] prioridadesSLA:', e));
+    saveDocument('prioridadesSLA', { id, ...updates });
+  },
+
+  deletePrioridadSLA: (id: string) => {
+    const updated = get().prioridadesSLA.filter((p: any) => p.id !== id);
+    set({ prioridadesSLA: updated });
+    db.set('isp_prioridadesSLA', updated).catch((e: any) => console.error('[IndexedDB] prioridadesSLA:', e));
+    deleteDocument('prioridadesSLA', id);
+  },
+
+  // ===================== CRUD ESTADOS CATÁLOGO =====================
+  addEstadoCatalogo: (data: { entidad: string; nombre: string; color: string; orden: number; esFinal: boolean }) => {
+    const s = get();
+    const max = s.estadosCatalogo.reduce((m: number, e: any) => {
+      const n = parseInt(e.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    const newItem = { ...data, id: `EST-${String(max + 1).padStart(2, '0')}` };
+    const updated = [...s.estadosCatalogo, newItem];
+    set({ estadosCatalogo: updated });
+    db.set('isp_estadosCatalogo', updated).catch((e: any) => console.error('[IndexedDB] estadosCatalogo:', e));
+    saveDocument('estadosCatalogo', newItem);
+  },
+
+  updateEstadoCatalogo: (id: string, updates: any) => {
+    const updated = get().estadosCatalogo.map((e: any) => e.id === id ? { ...e, ...updates } : e);
+    set({ estadosCatalogo: updated });
+    db.set('isp_estadosCatalogo', updated).catch((e: any) => console.error('[IndexedDB] estadosCatalogo:', e));
+    saveDocument('estadosCatalogo', { id, ...updates });
+  },
+
+  deleteEstadoCatalogo: (id: string) => {
+    const updated = get().estadosCatalogo.filter((e: any) => e.id !== id);
+    set({ estadosCatalogo: updated });
+    db.set('isp_estadosCatalogo', updated).catch((e: any) => console.error('[IndexedDB] estadosCatalogo:', e));
+    deleteDocument('estadosCatalogo', id);
+  },
 
   // Helpers de lectura dinámicos
   getSubcategoriasByCategoria: (catId) => get().subcategorias.filter((s: any) => s.categoriaId === catId),

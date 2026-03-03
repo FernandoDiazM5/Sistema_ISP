@@ -6,6 +6,7 @@ import ResolutionModal from '../common/ResolutionModal';
 import CopyButton from '../common/CopyButton';
 import { formatAveria } from '../../utils/whatsappFormats';
 import StatusBadge from '../ui/StatusBadge';
+import useToast from '../../hooks/useToast';
 
 const DOT_COLORS = {
   'Activa': 'bg-accent-red',
@@ -21,6 +22,10 @@ export default function AveriasPage() {
   const tickets = useStore(s => s.tickets);
   const clients = useStore(s => s.clients);
   const updateTicket = useStore(s => s.updateTicket);
+  // Selector reactivo — reemplaza useStore.getState() en render (bug #10)
+  const tecnicos = useStore(s => s.tecnicos);
+  const averiasTipos = useStore(s => s.averiasTipos);
+  const toast = useToast();
 
   const [showForm, setShowForm] = useState(false);
   const [editingAveria, setEditingAveria] = useState(null);
@@ -32,6 +37,8 @@ export default function AveriasPage() {
   // Resolution Modal State
   const [showResolutionModal, setShowResolutionModal] = useState(false);
   const [resolutionTargetId, setResolutionTargetId] = useState(null);
+  // Smart Resolve: confirmación no-bloqueante (reemplaza window.confirm/alert)
+  const [smartResolveState, setSmartResolveState] = useState(null); // { averia, ticketsToResolve }
 
   // Sync selectedAveria with store updates (Real-time reactivity)
   useEffect(() => {
@@ -117,44 +124,60 @@ export default function AveriasPage() {
   };
 
   const handleResolutionConfirm = ({ solucion, accionesRealizadas, adjuntosResolucion }) => {
-    if (resolutionTargetId) {
-      // 1. Resolvemos la avería en cuestión
-      const averia = averias.find(a => a.id === resolutionTargetId);
-      updateAveria(resolutionTargetId, {
-        estado: 'Resuelta',
-        fechaResolucion: new Date().toISOString().split('T')[0],
-        solucion,
-        accionesRealizadas, // Optional extra field if store supports it or just merge into desc
-        adjuntosResolucion,
-        _historyComment: 'Avería resuelta con informe de solución'
-      });
+    if (!resolutionTargetId) return;
+    const averia = averias.find(a => a.id === resolutionTargetId);
 
-      // 2. Proponer auto-cierre de tickets hermanos (Smart Resolve)
-      if (averia && window.confirm(`¿Deseas marcar como RESUELTOS automáticamente todos los tickets vinculados a los clientes de la zona ${averia.zona} y nodo ${averia.nodo}?`)) {
-        const affectedClients = clients.filter(c =>
-          c.zona?.toLowerCase() === averia.zona?.toLowerCase() &&
-          c.nodo?.toLowerCase() === averia.nodo?.toLowerCase()
-        ).map(c => c.id);
+    // 1. Resolver la avería
+    updateAveria(resolutionTargetId, {
+      estado: 'Resuelta',
+      fechaResolucion: new Date().toISOString().split('T')[0],
+      solucion,
+      accionesRealizadas,
+      adjuntosResolucion,
+      _historyComment: 'Avería resuelta con informe de solución'
+    });
 
-        const affectedTickets = tickets.filter(t =>
-          (t.estado === 'Abierto' || t.estado === 'En Proceso' || t.estado === 'Escalado') &&
-          affectedClients.includes(t.clienteId)
-        );
+    setShowResolutionModal(false);
+    setResolutionTargetId(null);
 
-        affectedTickets.forEach(t => {
-          updateTicket(t.id, {
-            estado: 'Resuelto',
-            _historyComment: `Autocierre corporativo por solución de Avería Masiva (${averia.id})`
-          });
-        });
+    // 2. Smart Resolve: calcular tickets afectados y mostrar modal no-bloqueante
+    if (averia) {
+      const affectedClientIds = clients
+        .filter(c =>
+          c.zona?.toLowerCase().trim() === averia.zona?.toLowerCase().trim() &&
+          c.nodo?.toLowerCase().trim() === averia.nodo?.toLowerCase().trim()
+        )
+        .map(c => c.id);
 
-        if (affectedTickets.length > 0) alert(`¡Éxito! Se resolvieron automáticamente ${affectedTickets.length} tickets en masa correspondientes a la zona afectada.`);
-        else alert('No se encontraron tickets en estado Abierto/En proceso para dichos clientes en este Nodo.');
+      const ticketsToResolve = tickets.filter(t =>
+        (t.estado === 'Abierto' || t.estado === 'En Proceso' || t.estado === 'Escalado') &&
+        affectedClientIds.includes(t.clienteId)
+      );
+
+      if (ticketsToResolve.length > 0) {
+        setSmartResolveState({ averia, ticketsToResolve });
+      } else {
+        toast.info('Avería resuelta. No se encontraron tickets activos vinculados a la zona/nodo afectada.');
       }
-
-      setShowResolutionModal(false);
-      setResolutionTargetId(null);
     }
+  };
+
+  const handleSmartResolveConfirm = () => {
+    if (!smartResolveState) return;
+    const { averia, ticketsToResolve } = smartResolveState;
+    ticketsToResolve.forEach(t => {
+      updateTicket(t.id, {
+        estado: 'Resuelto',
+        _historyComment: `Autocierre corporativo por solución de Avería Masiva (${averia.id})`
+      });
+    });
+    toast.success(`Se resolvieron automáticamente ${ticketsToResolve.length} ticket${ticketsToResolve.length > 1 ? 's' : ''} vinculados a la avería ${averia.id}.`);
+    setSmartResolveState(null);
+  };
+
+  const handleSmartResolveCancel = () => {
+    toast.info('Resolución registrada. Los tickets de la zona quedan sin cambios.');
+    setSmartResolveState(null);
   };
 
   return (
@@ -262,13 +285,10 @@ export default function AveriasPage() {
           <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[500px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-4">{editingAveria ? 'Editar Avería' : 'Reportar Avería'}</h3>
             <form onSubmit={handleSubmitAveria} className="flex flex-col gap-3">
-              <select name="tipo" defaultValue={editingAveria?.tipo || 'Corte de fibra'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
-                <option value="Corte de fibra">Corte de fibra</option>
-                <option value="Caída de nodo">Caída de nodo</option>
-                <option value="Interferencia">Interferencia</option>
-                <option value="Falla eléctrica">Falla eléctrica</option>
-                <option value="Daño de equipo">Daño de equipo</option>
-                <option value="Otra">Otra</option>
+              <select name="tipo" defaultValue={editingAveria?.tipo || (averiasTipos[0]?.nombre || '')} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
+                {averiasTipos.map(t => (
+                  <option key={t.id} value={t.nombre}>{t.nombre}</option>
+                ))}
               </select>
 
               <div className="grid grid-cols-2 gap-3">
@@ -286,7 +306,7 @@ export default function AveriasPage() {
                 </select>
                 <select name="tecnico" defaultValue={editingAveria?.tecnicoAsignado || ''} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">
                   <option value="" disabled>Asignar Técnico...</option>
-                  {useStore.getState().tecnicos.filter(t => t.estado === 'Activo').map((t, idx) => (
+                  {tecnicos.filter(t => t.estado === 'Activo').map((t, idx) => (
                     <option key={idx} value={t.nombre}>{t.nombre}</option>
                   ))}
                   <option value="Sin asignar">Sin asignar (Pendiente)</option>
@@ -542,6 +562,59 @@ export default function AveriasPage() {
           </div>
         </div>
       )}
+      {/* Smart Resolve — confirmación no-bloqueante para cierre automático de tickets */}
+      {smartResolveState && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-bg-card border border-accent-yellow/30 rounded-2xl w-full max-w-[460px] shadow-2xl overflow-hidden">
+            <div className="bg-accent-yellow/10 p-5 flex items-center gap-3 border-b border-accent-yellow/20">
+              <div className="w-11 h-11 rounded-xl bg-accent-yellow/20 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={22} className="text-accent-yellow" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-text-primary">Cierre automático de tickets</h3>
+                <p className="text-[11px] text-text-muted mt-0.5">
+                  Zona: {smartResolveState.averia.zona} — Nodo: {smartResolveState.averia.nodo}
+                </p>
+              </div>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-text-secondary mb-4">
+                Se encontraron{' '}
+                <span className="font-bold text-text-primary">
+                  {smartResolveState.ticketsToResolve.length} ticket{smartResolveState.ticketsToResolve.length > 1 ? 's' : ''}
+                </span>{' '}
+                activos vinculados a los clientes de esta zona/nodo. ¿Marcarlos como{' '}
+                <span className="font-semibold text-accent-green">Resueltos</span> automáticamente?
+              </p>
+              <div className="max-h-[120px] overflow-y-auto flex flex-col gap-1 mb-4">
+                {smartResolveState.ticketsToResolve.map(t => (
+                  <div key={t.id} className="flex items-center gap-2 text-xs bg-bg-secondary rounded-lg px-3 py-1.5">
+                    <span className="font-mono text-text-muted">{t.id}</span>
+                    <span className="text-text-primary truncate">{t.clienteNombre}</span>
+                    <StatusBadge status={t.estado} size="sm" className="ml-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-4 border-t border-border">
+              <button
+                onClick={handleSmartResolveCancel}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-bg-secondary border border-border text-sm font-semibold text-text-secondary hover:bg-bg-tertiary transition-colors cursor-pointer"
+              >
+                Solo la avería
+              </button>
+              <button
+                onClick={handleSmartResolveConfirm}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-accent-green border-none text-white text-sm font-bold hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={14} />
+                Resolver {smartResolveState.ticketsToResolve.length} ticket{smartResolveState.ticketsToResolve.length > 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Resolution Modal */}
       <ResolutionModal
         open={showResolutionModal}

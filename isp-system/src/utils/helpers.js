@@ -4,21 +4,33 @@
  */
 
 /**
- * Genera el siguiente ID secuencial para una colección.
- * @param {Array} collection - Array de objetos de la colección
- * @param {string} prefix - Prefijo del ID (ej: 'TK', 'EQ', 'VT')
- * @param {string} idField - Campo usado como ID (por defecto 'id')
- * @returns {string} ID con formato PREFIX-NNN (ej: 'TK-001')
+ * Genera el siguiente ID para una colección con sufijo aleatorio para
+ * resistencia a colisiones en modo offline concurrente.
+ *
+ * Formato: PREFIX-NNN-XX  (ej: 'TK-001-A3', 'VT-007-B9')
+ * - NNN: número secuencial basado en el máximo existente en la colección.
+ * - XX:  sufijo base-36 de 2 chars generado aleatoriamente (~1/1296 de colisión).
+ *
+ * Compatible con IDs legados (PREFIX-NNN de 2 segmentos): el parser siempre
+ * lee parts[1] (el número secuencial) e ignora cualquier sufijo extra.
+ *
+ * @param {Array}  collection - Array de objetos de la colección
+ * @param {string} prefix     - Prefijo del ID (ej: 'TK', 'EQ', 'VT')
+ * @param {string} idField    - Campo usado como ID (por defecto 'id')
+ * @returns {string} ID con formato PREFIX-NNN-XX
  */
 export function getNextId(collection, prefix, idField = 'id') {
-    if (!collection || collection.length === 0) return `${prefix}-001`;
+    const salt = Math.random().toString(36).slice(2, 4).toUpperCase();
+    if (!collection || collection.length === 0) return `${prefix}-001-${salt}`;
     const maxId = collection.reduce((max, item) => {
         if (!item[idField]) return max;
         const parts = item[idField].split('-');
-        const num = parseInt(parts[parts.length - 1] || 0);
+        // Siempre parsear parts[1] (número secuencial).
+        // Soporta formato legado PREFIX-NNN y nuevo PREFIX-NNN-XX.
+        const num = parseInt(parts[1] || 0);
         return !isNaN(num) && num > max ? num : max;
     }, 0);
-    return `${prefix}-${String(maxId + 1).padStart(3, '0')}`;
+    return `${prefix}-${String(maxId + 1).padStart(3, '0')}-${salt}`;
 }
 
 /**
@@ -53,6 +65,7 @@ export const ISP_KEY_MAP = {
     isp_catalogoServicios: 'catalogoServicios',
     isp_tiposRequerimiento: 'tiposRequerimiento',
     isp_client_changes: 'clientChanges',
+    isp_averiasTipos: 'averiasTipos',
 };
 
 /**

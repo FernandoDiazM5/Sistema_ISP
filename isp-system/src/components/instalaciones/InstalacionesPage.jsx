@@ -3,6 +3,7 @@ import { Plus, Search, Wifi, Cable, MapPin, Calendar, User, ChevronRight, X, Clo
 import useStore from '../../store/useStore';
 import CopyButton from '../common/CopyButton';
 import { formatInstalacion } from '../../utils/whatsappFormats';
+import StatusBadge from '../ui/StatusBadge';
 
 const ESTADOS = ['Pendiente', 'Aprobada', 'Programada', 'En Instalación', 'Completada', 'Derivada', 'Cancelada'];
 
@@ -39,21 +40,6 @@ const ESTADO_TRANSITIONS = {
   'Derivada': ['En Instalación'],
   'Cancelada': [],
 };
-
-function EstadoBadge({ estado, size = 'sm' }) {
-  const c = ESTADO_COLOR[estado] || ESTADO_COLOR['Pendiente'];
-  const padding = size === 'sm' ? 'py-[3px] px-2.5' : 'py-1 px-3';
-  const fontSize = size === 'sm' ? 'text-[11px]' : 'text-xs';
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-semibold whitespace-nowrap ${padding} ${fontSize}`}
-      style={{ background: c.bg, color: c.text }}
-    >
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.text, boxShadow: `0 0 6px ${c.text}` }} />
-      {estado}
-    </span>
-  );
-}
 
 function TecnologiaBadge({ tecnologia }) {
   const isFibra = tecnologia === 'Fibra Óptica';
@@ -147,13 +133,15 @@ export default function InstalacionesPage() {
     const stages = {};
     PIPELINE_STAGES.forEach(stage => { stages[stage] = []; });
     stages['Derivada'] = [];
-    instalaciones.forEach(inst => {
+    // Usa `filtered` en lugar de `instalaciones` para que búsqueda,
+    // zona y tecnología también se apliquen en la vista Pipeline.
+    filtered.forEach(inst => {
       if (stages[inst.estado]) {
         stages[inst.estado].push(inst);
       }
     });
     return stages;
-  }, [instalaciones]);
+  }, [filtered]);
 
   const relatedDerivaciones = useMemo(() => {
     if (!selectedInstalacion) return [];
@@ -181,7 +169,6 @@ export default function InstalacionesPage() {
       prospectoDNI: formData.prospectoDNI,
       prospectoTelefono: formData.prospectoTelefono,
       prospectoEmail: formData.prospectoEmail,
-      clienteNombre: formData.prospectoNombre,
       tecnicoId: formData.tecnicoId || null,
       tecnicoNombre: formData.tecnicoNombre || 'Sin asignar',
       tipo: 'Nueva Instalación',
@@ -227,7 +214,8 @@ export default function InstalacionesPage() {
 
         updateEquipo(eq.id, {
           estado: 'En uso',
-          clienteId: clientMatch ? clientMatch.id : 'NUEVO_ALTA',
+          // null cuando el prospecto aún no fue dado de alta como cliente formal
+          clienteId: clientMatch?.id || null,
           clienteNombre: showCompletionModal.prospectoNombre,
           fechaAsignacion: new Date().toISOString().split('T')[0],
           ubicacion: 'Domicilio Cliente'
@@ -423,7 +411,7 @@ export default function InstalacionesPage() {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-xs text-text-muted">{inst.id}</span>
-                  <EstadoBadge estado={inst.estado} />
+                  <StatusBadge status={inst.estado} size="sm" />
                   <TecnologiaBadge tecnologia={inst.tecnologia} />
                 </div>
                 <div className="flex items-center gap-2">
@@ -663,7 +651,7 @@ export default function InstalacionesPage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-sm text-text-muted">{selectedInstalacion.id}</span>
-                  <EstadoBadge estado={selectedInstalacion.estado} size="md" />
+                  <StatusBadge status={selectedInstalacion.estado} />
                 </div>
                 <h3 className="text-lg font-bold">{selectedInstalacion.prospectoNombre || selectedInstalacion.clienteNombre}</h3>
               </div>
