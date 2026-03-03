@@ -1,5 +1,5 @@
 import { initFirebase } from '../api/firebase';
-import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection, query, where, updateDoc } from 'firebase/firestore';
 import { DEFAULT_PERMISSIONS, ROLES } from '../types/user';
 
 /**
@@ -182,12 +182,72 @@ export async function checkUsers() {
   }
 }
 
+/**
+ * Encuentra un usuario existente por email y actualiza su rol a SUPER_ADMIN.
+ * Úsalo desde la consola del navegador si el usuario ya existe pero tiene el rol incorrecto.
+ */
+export async function fixSuperAdmin(email = FIRST_SUPER_ADMIN.email) {
+  try {
+    const db = initFirebase();
+    if (!db) {
+      console.error('❌ Firebase no está configurado');
+      return;
+    }
+
+    const emailNorm = email.toLowerCase().trim();
+    console.log(`🔍 Buscando usuario con email: ${emailNorm}`);
+
+    const q = query(collection(db, 'users'), where('email', '==', emailNorm));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      console.warn('⚠️ Usuario no encontrado en Firestore. Creando como nuevo SUPER_ADMIN...');
+      return initSuperAdmin(emailNorm, FIRST_SUPER_ADMIN.nombre);
+    }
+
+    const userDoc = snapshot.docs[0];
+    const current = userDoc.data();
+    console.log(`📄 Usuario encontrado: UID=${userDoc.id}  rol_actual=${current.rol}`);
+
+    const now = new Date().toISOString();
+    await updateDoc(doc(db, 'users', userDoc.id), {
+      rol: ROLES.SUPER_ADMIN,
+      permisos: { ...DEFAULT_PERMISSIONS[ROLES.SUPER_ADMIN] },
+      activo: true,
+      updatedAt: now,
+    });
+
+    // Limpiar caché local para forzar re-login con datos frescos
+    localStorage.removeItem('isp_user');
+    localStorage.removeItem('isp_currentUser');
+
+    console.log('');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('✅ ¡Usuario actualizado a SUPER_ADMIN exitosamente!');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('📧 Email:', emailNorm);
+    console.log('🔑 UID:', userDoc.id);
+    console.log('🎭 Rol nuevo: SUPER_ADMIN (Acceso Total)');
+    console.log('🗑️  Cache localStorage limpiada');
+    console.log('');
+    console.log('👉 Recarga la página y vuelve a iniciar sesión para aplicar los cambios.');
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('');
+
+    return { success: true, uid: userDoc.id, email: emailNorm };
+  } catch (error) {
+    console.error('❌ Error al arreglar usuario:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // ==================== AUTO-INICIALIZACIÓN ====================
 // Ejecutar automáticamente en desarrollo
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   // Exponer funciones globalmente para uso manual
   window.initSuperAdmin = initSuperAdmin;
   window.checkUsers = checkUsers;
+  window.fixSuperAdmin = fixSuperAdmin;
 
   // Esperar a que Firebase esté listo y ejecutar auto-creación
   setTimeout(() => {
@@ -200,4 +260,6 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('💡 Comandos disponibles:');
   console.log('   • checkUsers() - Ver todos los usuarios en Firebase');
   console.log('   • initSuperAdmin("email@gmail.com", "Nombre") - Crear usuario manualmente');
+  console.log('   • fixSuperAdmin() - Reparar rol de fernandodiazm.5@gmail.com → SUPER_ADMIN');
+  console.log('   • fixSuperAdmin("otro@email.com") - Reparar rol de otro email');
 }
