@@ -4,7 +4,7 @@ import {
   Ticket, AlertTriangle, MonitorSmartphone, Calendar,
   Cable, Box, HardHat, FileText, Plus, Pencil, Trash2,
   Check, X, ChevronDown, ChevronRight, Tag, Layers, Clock,
-  Cpu, Wifi, Settings2,
+  Cpu, Wifi, Settings2, Briefcase,
 } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -751,6 +751,34 @@ function TabRequerimientos() {
   );
 }
 
+function TabTecnicos() {
+  const cargosTecnico = useStore(s => s.cargosTecnico);
+  const addCargoTecnico = useStore(s => s.addCargoTecnico);
+  const updateCargoTecnico = useStore(s => s.updateCargoTecnico);
+  const deleteCargoTecnico = useStore(s => s.deleteCargoTecnico);
+
+  const especialidadesTecnico = useStore(s => s.especialidadesTecnico);
+  const addEspecialidadTecnico = useStore(s => s.addEspecialidadTecnico);
+  const updateEspecialidadTecnico = useStore(s => s.updateEspecialidadTecnico);
+  const deleteEspecialidadTecnico = useStore(s => s.deleteEspecialidadTecnico);
+
+  const vehiculosTecnico = useStore(s => s.vehiculosTecnico);
+  const addVehiculoTecnico = useStore(s => s.addVehiculoTecnico);
+  const updateVehiculoTecnico = useStore(s => s.updateVehiculoTecnico);
+  const deleteVehiculoTecnico = useStore(s => s.deleteVehiculoTecnico);
+
+  return (
+    <div className="space-y-4">
+      <SimpleListSection title="Cargos Operativos" icon={Briefcase} items={cargosTecnico}
+        onAdd={addCargoTecnico} onUpdate={updateCargoTecnico} onDelete={deleteCargoTecnico} color="purple" />
+      <SimpleListSection title="Especialidades" icon={Tag} items={especialidadesTecnico}
+        onAdd={addEspecialidadTecnico} onUpdate={updateEspecialidadTecnico} onDelete={deleteEspecialidadTecnico} color="teal" />
+      <SimpleListSection title="Tipos de Vehículo" icon={Box} items={vehiculosTecnico}
+        onAdd={addVehiculoTecnico} onUpdate={updateVehiculoTecnico} onDelete={deleteVehiculoTecnico} color="orange" />
+    </div>
+  );
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Página principal
 // ──────────────────────────────────────────────────────────────────────────────
@@ -761,6 +789,7 @@ const TABS = [
   { id: 'visitas', label: 'Visitas Técnicas', icon: Calendar, desc: 'Tipos de visita' },
   { id: 'planta', label: 'Planta Externa', icon: Cable, desc: 'Tipos de derivación' },
   { id: 'equipos', label: 'Equipos', icon: Box, desc: 'Tipos y marcas de equipo' },
+  { id: 'tecnicos', label: 'Técnicos', icon: Briefcase, desc: 'Cargos, especialidades y vehículos' },
   { id: 'instalaciones', label: 'Instalaciones', icon: HardHat, desc: 'Planes y tecnologías' },
   { id: 'requerimientos', label: 'Requerimientos', icon: FileText, desc: 'Tipos de requerimiento' },
 ];
@@ -772,6 +801,7 @@ const TAB_COMPONENTS = {
   visitas: TabVisitas,
   planta: TabPlantaExterna,
   equipos: TabEquipos,
+  tecnicos: TabTecnicos,
   instalaciones: TabInstalaciones,
   requerimientos: TabRequerimientos,
 };

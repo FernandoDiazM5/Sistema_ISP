@@ -31,6 +31,9 @@ function getDataSnapshot() {
         branding: s.branding,
         customRolePermissions: s.customRolePermissions,
         whatsappCategories: s.whatsappCategories,
+        cargosTecnico: s.cargosTecnico,
+        especialidadesTecnico: s.especialidadesTecnico,
+        vehiculosTecnico: s.vehiculosTecnico,
     };
 }
 
@@ -194,6 +197,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
                 'averiasTipos',
                 'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
                 'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+                'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico',
             ];
 
             const deltas: any[] = [];

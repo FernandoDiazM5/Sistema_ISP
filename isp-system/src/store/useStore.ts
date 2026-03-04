@@ -49,31 +49,31 @@ const SUBCATEGORIAS = [
 
 const PRIORIDADES_SLA = [
   // CAT-01: Falla de Internet
-  { id: 'PRI-01', subcategoriaId: 'SUB-101', prioridad: 'Crítica', tiempoLimite: '4 horas',  impacto: 'Cliente incomunicado' },
-  { id: 'PRI-02', subcategoriaId: 'SUB-102', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Servicio degradado' },
-  { id: 'PRI-03', subcategoriaId: 'SUB-103', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Conexión intermitente' },
-  { id: 'PRI-04', subcategoriaId: 'SUB-104', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Acceso parcial a sitios' },
-  { id: 'PRI-05', subcategoriaId: 'SUB-105', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Velocidad por debajo del plan' },
+  { id: 'PRI-01', subcategoriaId: 'SUB-101', prioridad: 'Crítica', tiempoLimite: '4 horas', impacto: 'Cliente incomunicado' },
+  { id: 'PRI-02', subcategoriaId: 'SUB-102', prioridad: 'Media', tiempoLimite: '24 horas', impacto: 'Servicio degradado' },
+  { id: 'PRI-03', subcategoriaId: 'SUB-103', prioridad: 'Media', tiempoLimite: '24 horas', impacto: 'Conexión intermitente' },
+  { id: 'PRI-04', subcategoriaId: 'SUB-104', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Acceso parcial a sitios' },
+  { id: 'PRI-05', subcategoriaId: 'SUB-105', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Velocidad por debajo del plan' },
   // CAT-02: Falla de Cable
-  { id: 'PRI-06', subcategoriaId: 'SUB-201', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Sin señal de TV' },
-  { id: 'PRI-07', subcategoriaId: 'SUB-202', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Imagen congelada / mala calidad' },
-  { id: 'PRI-08', subcategoriaId: 'SUB-203', prioridad: 'Media',   tiempoLimite: '24 horas', impacto: 'Decodificador con falla' },
+  { id: 'PRI-06', subcategoriaId: 'SUB-201', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Sin señal de TV' },
+  { id: 'PRI-07', subcategoriaId: 'SUB-202', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Imagen congelada / mala calidad' },
+  { id: 'PRI-08', subcategoriaId: 'SUB-203', prioridad: 'Media', tiempoLimite: '24 horas', impacto: 'Decodificador con falla' },
   // CAT-03: Configuración
-  { id: 'PRI-09', subcategoriaId: 'SUB-301', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Cambio de red WiFi' },
-  { id: 'PRI-10', subcategoriaId: 'SUB-302', prioridad: 'Baja',    tiempoLimite: '72 horas', impacto: 'Apertura de puertos' },
-  { id: 'PRI-11', subcategoriaId: 'SUB-303', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Reseteo de equipo remoto' },
+  { id: 'PRI-09', subcategoriaId: 'SUB-301', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Cambio de red WiFi' },
+  { id: 'PRI-10', subcategoriaId: 'SUB-302', prioridad: 'Baja', tiempoLimite: '72 horas', impacto: 'Apertura de puertos' },
+  { id: 'PRI-11', subcategoriaId: 'SUB-303', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Reseteo de equipo remoto' },
   // CAT-04: Infraestructura
-  { id: 'PRI-12', subcategoriaId: 'SUB-401', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Infraestructura dañada' },
-  { id: 'PRI-13', subcategoriaId: 'SUB-402', prioridad: 'Alta',    tiempoLimite: '12 horas', impacto: 'Nodo o NAP dañado' },
-  { id: 'PRI-14', subcategoriaId: 'SUB-403', prioridad: 'Media',   tiempoLimite: '48 horas', impacto: 'Cambio de domicilio del servicio' },
+  { id: 'PRI-12', subcategoriaId: 'SUB-401', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Infraestructura dañada' },
+  { id: 'PRI-13', subcategoriaId: 'SUB-402', prioridad: 'Alta', tiempoLimite: '12 horas', impacto: 'Nodo o NAP dañado' },
+  { id: 'PRI-14', subcategoriaId: 'SUB-403', prioridad: 'Media', tiempoLimite: '48 horas', impacto: 'Cambio de domicilio del servicio' },
   // CAT-05: Hardware
-  { id: 'PRI-15', subcategoriaId: 'SUB-501', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Router u ONT averiado' },
-  { id: 'PRI-16', subcategoriaId: 'SUB-502', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Transformador o POE dañado' },
-  { id: 'PRI-17', subcategoriaId: 'SUB-503', prioridad: 'Alta',    tiempoLimite: '8 horas',  impacto: 'Puerto LAN inutilizable' },
+  { id: 'PRI-15', subcategoriaId: 'SUB-501', prioridad: 'Alta', tiempoLimite: '8 horas', impacto: 'Router u ONT averiado' },
+  { id: 'PRI-16', subcategoriaId: 'SUB-502', prioridad: 'Alta', tiempoLimite: '8 horas', impacto: 'Transformador o POE dañado' },
+  { id: 'PRI-17', subcategoriaId: 'SUB-503', prioridad: 'Alta', tiempoLimite: '8 horas', impacto: 'Puerto LAN inutilizable' },
   // CAT-06: Administrativo
-  { id: 'PRI-18', subcategoriaId: 'SUB-601', prioridad: 'Media',   tiempoLimite: '4 horas',  impacto: 'Cliente sin servicio por pago' },
-  { id: 'PRI-19', subcategoriaId: 'SUB-602', prioridad: 'Baja',    tiempoLimite: '48 horas', impacto: 'Cambio de plan solicitado' },
-  { id: 'PRI-20', subcategoriaId: 'SUB-603', prioridad: 'Baja',    tiempoLimite: '72 horas', impacto: 'Consulta o error de facturación' },
+  { id: 'PRI-18', subcategoriaId: 'SUB-601', prioridad: 'Media', tiempoLimite: '4 horas', impacto: 'Cliente sin servicio por pago' },
+  { id: 'PRI-19', subcategoriaId: 'SUB-602', prioridad: 'Baja', tiempoLimite: '48 horas', impacto: 'Cambio de plan solicitado' },
+  { id: 'PRI-20', subcategoriaId: 'SUB-603', prioridad: 'Baja', tiempoLimite: '72 horas', impacto: 'Consulta o error de facturación' },
 ];
 
 const ESTADOS_CATALOGO = [
@@ -192,6 +192,27 @@ const TECNOLOGIAS_INSTALACION = [
   { id: 'TEC-02', nombre: 'Fibra Óptica' },
 ];
 
+const CARGOS_TECNICO = [
+  { id: 'CAR-01', nombre: 'Técnico Instalador' },
+  { id: 'CAR-02', nombre: 'Liniero de Planta Externa' },
+  { id: 'CAR-03', nombre: 'Técnico de Soporte NOC' },
+  { id: 'CAR-04', nombre: 'Supervisor de Zona' },
+];
+
+const ESPECIALIDADES_TECNICO = [
+  { id: 'ESP-01', nombre: 'Fibra Óptica (FTTH)' },
+  { id: 'ESP-02', nombre: 'Radio Enlace (WISP)' },
+  { id: 'ESP-03', nombre: 'Redes Estructuradas (HFC/LAN)' },
+  { id: 'ESP-04', nombre: 'Electricidad y Energía' },
+];
+
+const VEHICULOS_TECNICO = [
+  { id: 'VEH-01', nombre: 'Camioneta 4x4' },
+  { id: 'VEH-02', nombre: 'Motocicleta' },
+  { id: 'VEH-03', nombre: 'Transporte A Pie / Púbico' },
+  { id: 'VEH-04', nombre: 'Auto Sedán' },
+];
+
 // ===================== STORE COMPOSITION =====================
 export interface StoreState {
   storeReady: boolean;
@@ -286,6 +307,22 @@ export interface StoreState {
   updateTecnologiaInstalacion: (id: string, nombre: string) => void;
   deleteTecnologiaInstalacion: (id: string) => void;
 
+  // CRUD Catálogos de Técnicos
+  cargosTecnico: any[];
+  addCargoTecnico: (nombre: string) => void;
+  updateCargoTecnico: (id: string, nombre: string) => void;
+  deleteCargoTecnico: (id: string) => void;
+
+  especialidadesTecnico: any[];
+  addEspecialidadTecnico: (nombre: string) => void;
+  updateEspecialidadTecnico: (id: string, nombre: string) => void;
+  deleteEspecialidadTecnico: (id: string) => void;
+
+  vehiculosTecnico: any[];
+  addVehiculoTecnico: (nombre: string) => void;
+  updateVehiculoTecnico: (id: string, nombre: string) => void;
+  deleteVehiculoTecnico: (id: string) => void;
+
   getSubcategoriasByCategoria: (catId: string) => any[];
   getEstadosByEntidad: (entidad: string) => any[];
   getSLABySubcategoria: (subId: string) => any;
@@ -361,6 +398,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
         'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
         'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
         'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico'
       ];
 
       for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
@@ -435,6 +473,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'averiasTipos', 'clientChanges',
       'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
       'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+      'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico'
     ];
 
     set((state: any) => {
@@ -693,6 +732,78 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     set({ tecnologiasInstalacion: updated });
     db.set('isp_tecnologiasInstalacion', updated).catch((e: any) => console.error('[IndexedDB] tecnologiasInstalacion:', e));
     deleteDocument('tecnologiasInstalacion', id);
+  },
+
+  // CRUD Cargos Técnico
+  cargosTecnico: CARGOS_TECNICO,
+  addCargoTecnico: (nombre) => {
+    const s = get();
+    const max = s.cargosTecnico.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `CAR-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.cargosTecnico, newItem];
+    set({ cargosTecnico: updated });
+    db.set('isp_cargosTecnico', updated).catch(console.error);
+    saveDocument('cargosTecnico', newItem);
+  },
+  updateCargoTecnico: (id, nombre) => {
+    const updated = get().cargosTecnico.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ cargosTecnico: updated });
+    db.set('isp_cargosTecnico', updated).catch(console.error);
+    saveDocument('cargosTecnico', { id, nombre });
+  },
+  deleteCargoTecnico: (id) => {
+    const updated = get().cargosTecnico.filter((t: any) => t.id !== id);
+    set({ cargosTecnico: updated });
+    db.set('isp_cargosTecnico', updated).catch(console.error);
+    deleteDocument('cargosTecnico', id);
+  },
+
+  // CRUD Especialidades Técnico
+  especialidadesTecnico: ESPECIALIDADES_TECNICO,
+  addEspecialidadTecnico: (nombre) => {
+    const s = get();
+    const max = s.especialidadesTecnico.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `ESP-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.especialidadesTecnico, newItem];
+    set({ especialidadesTecnico: updated });
+    db.set('isp_especialidadesTecnico', updated).catch(console.error);
+    saveDocument('especialidadesTecnico', newItem);
+  },
+  updateEspecialidadTecnico: (id, nombre) => {
+    const updated = get().especialidadesTecnico.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ especialidadesTecnico: updated });
+    db.set('isp_especialidadesTecnico', updated).catch(console.error);
+    saveDocument('especialidadesTecnico', { id, nombre });
+  },
+  deleteEspecialidadTecnico: (id) => {
+    const updated = get().especialidadesTecnico.filter((t: any) => t.id !== id);
+    set({ especialidadesTecnico: updated });
+    db.set('isp_especialidadesTecnico', updated).catch(console.error);
+    deleteDocument('especialidadesTecnico', id);
+  },
+
+  // CRUD Vehiculos Técnico
+  vehiculosTecnico: VEHICULOS_TECNICO,
+  addVehiculoTecnico: (nombre) => {
+    const s = get();
+    const max = s.vehiculosTecnico.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `VEH-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.vehiculosTecnico, newItem];
+    set({ vehiculosTecnico: updated });
+    db.set('isp_vehiculosTecnico', updated).catch(console.error);
+    saveDocument('vehiculosTecnico', newItem);
+  },
+  updateVehiculoTecnico: (id, nombre) => {
+    const updated = get().vehiculosTecnico.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ vehiculosTecnico: updated });
+    db.set('isp_vehiculosTecnico', updated).catch(console.error);
+    saveDocument('vehiculosTecnico', { id, nombre });
+  },
+  deleteVehiculoTecnico: (id) => {
+    const updated = get().vehiculosTecnico.filter((t: any) => t.id !== id);
+    set({ vehiculosTecnico: updated });
+    db.set('isp_vehiculosTecnico', updated).catch(console.error);
+    deleteDocument('vehiculosTecnico', id);
   },
 
   // ===================== CATÁLOGOS =====================

@@ -20,14 +20,13 @@ const ESPECIALIDAD_COLORS = {
   'General': '#8b5cf6',
 };
 
-const CARGOS = ['Técnico de Campo', 'Supervisor Técnico', 'Técnico de Planta'];
-const ESPECIALIDADES = ['Radio Enlace', 'Fibra Óptica', 'General'];
 const ESTADOS = ['Activo', 'Inactivo', 'Vacaciones'];
 
 const EMPTY_FORM = {
   nombre: '',
-  cargo: 'Técnico de Campo',
-  especialidad: 'General',
+  cargo: '',
+  especialidad: '',
+  vehiculo: '',
   telefono: '',
   email: '',
   zona: '',
@@ -41,6 +40,10 @@ export default function TecnicosPage() {
   const deleteTecnico = useStore(s => s.deleteTecnico);
   const visitas = useStore(s => s.visitas);
   const tickets = useStore(s => s.tickets);
+
+  const cargosTecnico = useStore(s => s.cargosTecnico) || [];
+  const especialidadesTecnico = useStore(s => s.especialidadesTecnico) || [];
+  const vehiculosTecnico = useStore(s => s.vehiculosTecnico) || [];
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -90,7 +93,12 @@ export default function TecnicosPage() {
   // ==================== HANDLERS ====================
   const openCreate = () => {
     setEditingId(null);
-    setForm(EMPTY_FORM);
+    setForm({
+      ...EMPTY_FORM,
+      cargo: cargosTecnico[0]?.nombre || '',
+      especialidad: especialidadesTecnico[0]?.nombre || '',
+      vehiculo: vehiculosTecnico[0]?.nombre || ''
+    });
     setShowModal(true);
   };
 
@@ -98,8 +106,9 @@ export default function TecnicosPage() {
     setEditingId(tecnico.id);
     setForm({
       nombre: tecnico.nombre,
-      cargo: tecnico.cargo,
-      especialidad: tecnico.especialidad,
+      cargo: tecnico.cargo || '',
+      especialidad: tecnico.especialidad || '',
+      vehiculo: tecnico.vehiculo || '',
       telefono: tecnico.telefono,
       email: tecnico.email,
       zona: tecnico.zona,
@@ -339,8 +348,8 @@ export default function TecnicosPage() {
                 />
               </div>
 
-              {/* Cargo + Especialidad */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Cargo + Especialidad + Vehiculo */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Cargo</label>
                   <select
@@ -348,7 +357,8 @@ export default function TecnicosPage() {
                     onChange={e => setForm(f => ({ ...f, cargo: e.target.value }))}
                     className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
                   >
-                    {CARGOS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {!form.cargo && <option value="">Seleccione...</option>}
+                    {cargosTecnico.map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
                   </select>
                 </div>
                 <div>
@@ -358,7 +368,19 @@ export default function TecnicosPage() {
                     onChange={e => setForm(f => ({ ...f, especialidad: e.target.value }))}
                     className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
                   >
-                    {ESPECIALIDADES.map(e => <option key={e} value={e}>{e}</option>)}
+                    {!form.especialidad && <option value="">Seleccione...</option>}
+                    {especialidadesTecnico.map(e => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Vehículo</label>
+                  <select
+                    value={form.vehiculo}
+                    onChange={e => setForm(f => ({ ...f, vehiculo: e.target.value }))}
+                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
+                  >
+                    <option value="">Ninguno</option>
+                    {vehiculosTecnico.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
                   </select>
                 </div>
               </div>
@@ -489,11 +511,10 @@ export default function TecnicosPage() {
                 <button
                   key={tab.key}
                   onClick={() => setDetailTab(tab.key)}
-                  className={`px-4 py-2.5 text-xs font-semibold border-none cursor-pointer transition-colors rounded-t-lg ${
-                    detailTab === tab.key
-                      ? 'bg-bg-secondary text-accent-blue border-b-2 border-b-accent-blue'
-                      : 'bg-transparent text-text-muted hover:text-text-secondary'
-                  }`}
+                  className={`px-4 py-2.5 text-xs font-semibold border-none cursor-pointer transition-colors rounded-t-lg ${detailTab === tab.key
+                    ? 'bg-bg-secondary text-accent-blue border-b-2 border-b-accent-blue'
+                    : 'bg-transparent text-text-muted hover:text-text-secondary'
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -526,6 +547,13 @@ export default function TecnicosPage() {
                         <span className="text-[10px] text-text-muted uppercase">Teléfono</span>
                       </div>
                       <p className="text-sm font-medium">{selectedTecnico.telefono}</p>
+                    </div>
+                    <div className="bg-bg-secondary rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle size={13} className="text-text-muted" />
+                        <span className="text-[10px] text-text-muted uppercase">Vehículo Asignado</span>
+                      </div>
+                      <p className="text-sm font-medium">{selectedTecnico.vehiculo || '—'}</p>
                     </div>
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
