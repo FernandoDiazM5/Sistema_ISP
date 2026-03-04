@@ -15,6 +15,7 @@ import {
     query,
     where
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { CONFIG } from '../utils/constants';
 
 // Obtener configuración de Firebase desde CONFIG
@@ -22,6 +23,7 @@ const getConfig = () => CONFIG.FIREBASE;
 
 let db = null;
 let app = null;
+let storage = null;
 
 // ===================== OFFLINE QUEUE INTERCEPTOR =====================
 let offlineCallback = null;
@@ -45,8 +47,9 @@ export const initFirebase = () => {
                     tabManager: persistentMultipleTabManager()
                 })
             });
+            storage = getStorage(app);
 
-            console.log('Firebase initialized with persistence');
+            console.log('Firebase initialized with persistence and storage');
         } catch (e) {
             console.error('Error initializing Firebase', e);
         }
@@ -61,7 +64,65 @@ export const getFirebaseApp = () => {
     return app;
 };
 
+export const getFirebaseStorage = () => {
+    if (!storage) {
+        initFirebase();
+    }
+    return storage;
+};
+
 // ===================== EXPORTED UTILS =====================
+
+/**
+ * Sube una imagen (Blob/File) a Firebase Storage y retorna su URL
+ * @param {File} file Archivo a subir
+ * @param {string} path Directorio interno (ej. 'tecnicos')
+ * @returns {Promise<string>} Download URL
+ */
+export const uploadImageToStorage = async (file, path = 'uploads') => {
+    const s = getFirebaseStorage();
+    if (!s) throw new Error('Firebase Storage no inicializado');
+
+    // Generar un nombre único para evitar colisiones
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const storageRef = ref(s, `${path}/${uniqueName}`);
+
+    try {
+        // Subir archivo
+        const snapshot = await uploadBytes(storageRef, file);
+        // Obtener URL pública
+        const downloadUrl = await getDownloadURL(snapshot.ref);
+        return downloadUrl;
+    } catch (error) {
+        console.error('Error subiendo imagen a Storage:', error);
+        throw error;
+    }
+};
+
+/**
+ * Elimina un archivo de Firebase Storage dada su URL
+ */
+export const deleteImageFromStorage = async (imageUrl) => {
+    if (!imageUrl || !imageUrl.includes('firebasestorage.googleapis.com')) return;
+
+    const s = getFirebaseStorage();
+    if (!s) return;
+
+    try {
+        // Decodificar la URL para extraer el path interno
+        const decodedUrl = decodeURIComponent(imageUrl);
+        const urlParts = decodedUrl.split('/o/');
+        if (urlParts.length > 1) {
+            const pathToFile = urlParts[1].split('?alt=media')[0];
+            const fileRef = ref(s, pathToFile);
+            await deleteObject(fileRef);
+        }
+    } catch (error) {
+        console.error('Error eliminando imagen de Storage:', error);
+    }
+};
+
+// ===================== FIRESTORE UTILS =====================
 
 /**
  * Guarda un documento en una colección específica (con soporte Offline Queue)

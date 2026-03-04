@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity, Upload, Image as ImageIcon } from 'lucide-react';
 import useStore from '../../store/useStore';
+import useToast from '../../hooks/useToast';
+import { uploadImageToStorage } from '../../api/firebase';
 
 const ESTADO_COLORS = {
   'Activo': { bg: 'bg-accent-green/15', text: 'text-accent-green', dot: 'bg-accent-green' },
@@ -41,6 +42,7 @@ export default function TecnicosPage() {
   const deleteTecnico = useStore(s => s.deleteTecnico);
   const visitas = useStore(s => s.visitas);
   const tickets = useStore(s => s.tickets);
+  const toast = useToast();
 
   const cargosTecnico = useStore(s => s.cargosTecnico) || [];
   const especialidadesTecnico = useStore(s => s.especialidadesTecnico) || [];
@@ -51,6 +53,7 @@ export default function TecnicosPage() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedTecnico, setSelectedTecnico] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   useEffect(() => {
     if (selectedTecnico) {
@@ -156,18 +159,24 @@ export default function TecnicosPage() {
   };
 
   // ==================== MULTI-SELECT HANDLERS ====================
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) { // 2MB Max
-        alert("La foto no debe pesar más de 2MB.");
+      if (file.size > 20 * 1024 * 1024) { // 20MB Max para Storage
+        toast.error("La foto no debe pesar más de 20MB.");
         return;
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm(f => ({ ...f, foto: reader.result }));
-      };
-      reader.readAsDataURL(file);
+
+      setIsUploadingPhoto(true);
+      try {
+        const downloadUrl = await uploadImageToStorage(file, 'tecnicos');
+        setForm(f => ({ ...f, foto: downloadUrl }));
+        toast.success("Foto subida exitosamente");
+      } catch (error) {
+        toast.error("Error al subir la foto a la nube.");
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
@@ -698,8 +707,19 @@ export default function TecnicosPage() {
                     </div>
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
-                        <Shield size={13} className="text-text-muted" />
-                        <span className="text-[10px] text-text-muted uppercase">Estado</span>
+                        {isUploadingPhoto ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <Activity size={24} className="text-accent-blue animate-spin" />
+                            <p className="text-xs text-text-muted">Subiendo a la nube...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload size={24} className="text-text-muted mb-2" />
+                            <p className="text-xs text-text-muted text-center px-4">
+                              Click o arrastra imagen<br />JPG, PNG (max 20MB)
+                            </p>
+                          </>
+                        )}
                       </div>
                       <p className="text-sm font-medium">{selectedTecnico.estado}</p>
                     </div>
