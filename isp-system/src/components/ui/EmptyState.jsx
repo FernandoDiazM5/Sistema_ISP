@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { SearchX } from 'lucide-react';
 
 const EmptyState = memo(function EmptyState({
+    // eslint-disable-next-line no-unused-vars
     icon: Icon = SearchX,
     title = 'No se encontraron resultados',
     description = 'Intenta ajustar los filtros o realizar una nueva búsqueda.',

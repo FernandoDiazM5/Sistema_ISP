@@ -1076,7 +1076,8 @@ function ServiceRow({ name, status }) {
   );
 }
 
-function ThemeOption({ id, label, color, accent, icon: Icon, active, onClick }) {
+// eslint-disable-next-line no-unused-vars
+function ThemeOption({ label, color, accent, icon: Icon, active, onClick }) {
   return (
     <button
       onClick={onClick}

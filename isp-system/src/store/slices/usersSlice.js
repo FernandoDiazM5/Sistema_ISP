@@ -134,7 +134,7 @@ export const createUsersSlice = (set, get) => ({
             if (parsed.uid === uid) {
               localStorage.setItem('isp_user', JSON.stringify({ ...parsed, ...updatedUser }));
             }
-          } catch (e) { /* ignore */ }
+          } catch { /* ignore */ }
         }
       }
 

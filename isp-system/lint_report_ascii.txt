@@ -1,0 +1,437 @@
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\App.jsx
+  44:9  error  'clients' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  45:9  error  'dataSource' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\api\dataTransformer.js
+  20:12  error  'e' is defined but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\api\firebase.js
+    3:5   error  'getFirestore' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  218:83  error  'info' is defined but never used                                                     no-unused-vars
+  352:55  error  'info' is defined but never used                                                     no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\auth\GoogleAuthProvider.jsx
+  36:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\averias\AveriasPage.jsx
+  48:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  46 |       const updated = averias.find(a => a.id === selectedAveria.id);
+  47 |       if (updated && updated !== selectedAveria) {
+> 48 |         setSelectedAveria(updated);
+     |         ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |       }
+  50 |     }
+  51 |   }, [averias, selectedAveria]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\clientes\ClienteDetalle.jsx
+   57:36  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  113:29  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  124:37  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  446:9   warning  The 'clientChangesDb' logical expression could make the dependencies of useMemo Hook (at line 488) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'clientChangesDb' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\clientes\ClientesPage.jsx
+  43:9  error  'addTicket' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\clientes\ClientesTable.jsx
+  14:11  error    'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+  17:19  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  15 |     const [sorting, setSorting] = useState([]);
+  16 |
+> 17 |     const table = useReactTable({
+     |                   ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  18 |         data,
+  19 |         columns,
+  20 |         state: {  react-hooks/incompatible-library
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\common\Adjuntos.jsx
+  156:6  warning  React Hook useEffect has a missing dependency: 'handleKeyDown'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\common\DataTable.jsx
+  13:17  error    Error: Calling setState from useMemo may trigger an infinite loop
+
+Each time the memo callback is evaluated it will change state. This can cause a memoization dependency to change, running the memo function again and causing an infinite loop. Instead of setting state in useMemo(), prefer deriving the value during render. (https://react.dev/reference/react/useState).
+
+  11 |
+  12 |   // Reset page when data changes
+> 13 |   useMemo(() => setCurrentPage(1), [data.length]);
+     |                 ^^^^^^^^^^^^^^ Found setState() within useMemo()
+  14 |
+  15 |   return (
+  16 |     <div className="flex flex-col gap-4">  react-hooks/set-state-in-render
+  13:36  warning  React Hook useMemo has an unnecessary dependency: 'data.length'. Either exclude it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\common\DiagnosticFields.jsx
+  24:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\configuracion\ConfiguracionPage.jsx
+  1079:24  error  'id' is defined but never used    no-unused-vars
+  1079:56  error  'Icon' is defined but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\importacion\ImportacionPage.jsx
+   1:20   error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                       no-unused-vars
+  17:84   error  'restoreSystem' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  17:113  error  'importHistory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  17:128  error  'setCleaningOptions' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\importacion\SyncStatus.jsx
+  21:24  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  19 |
+  20 |     const lastDate = new Date(lastImport.date);
+> 21 |     const diffHours = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60);
+     |                        ^^^^^^^^^^ Cannot call impure function
+  22 |
+  23 |     if (diffHours < 1) {
+  24 |       return {  react-hooks/purity
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\instalaciones\InstalacionesPage.jsx
+  69:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  67 |       const updated = instalaciones.find(a => a.id === selectedInstalacion.id);
+  68 |       if (updated && updated !== selectedInstalacion) {
+> 69 |         setSelectedInstalacion(updated);
+     |         ^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  70 |       }
+  71 |     }
+  72 |   }, [instalaciones, selectedInstalacion]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\mantenimiento\MantenimientoPage.jsx
+   13:43  error  'Icon' is defined but never used                                                                      no-unused-vars
+  303:9   error  'updatePrioridadSLA' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  304:9   error  'deletePrioridadSLA' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  306:9   error  'updateEstadoCatalogo' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  781:59  error  'MapPin' is not defined                                                                               no-undef
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\planta-externa\PlantaExternaPage.jsx
+  32:9  error  'updateTicket' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-unused-vars
+  47:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  45 |       const updated = derivaciones.find(a => a.id === selectedDerivacion.id);
+  46 |       if (updated && updated !== selectedDerivacion) {
+> 47 |         setSelectedDerivacion(updated);
+     |         ^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  48 |       }
+  49 |     }
+  50 |   }, [derivaciones, selectedDerivacion]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\post-venta\PostVentaPage.jsx
+  55:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  53 |       const updated = postVenta.find(a => a.id === selectedPV.id);
+  54 |       if (updated && updated !== selectedPV) {
+> 55 |         setSelectedPV(updated);
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  56 |       }
+  57 |     }
+  58 |   }, [postVenta, selectedPV]);  react-hooks/set-state-in-effect
+  71:28  error  'setDetailMateriales' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\requerimientos\RequerimientosPage.jsx
+  21:11  error  'updateTicket' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+  38:17  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  36 |             const updated = requerimientos.find(a => a.id === selectedReq.id);
+  37 |             if (updated && updated !== selectedReq) {
+> 38 |                 setSelectedReq(updated);
+     |                 ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  39 |             }
+  40 |         }
+  41 |     }, [requerimientos, selectedReq]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\soporte\SoporteRemotoPage.jsx
+    1:48  error  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  170:9   error  'clientTech' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  200:7   error  Error: Cannot access variable before it is declared
+
+`resetForm` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  198 |   useEffect(() => {
+  199 |     if (prefillSoporte) {
+> 200 |       resetForm();
+      |       ^^^^^^^^^ `resetForm` accessed before it is declared
+  201 |
+  202 |       if (prefillSoporte.ticketId) {
+  203 |         const tk = tickets.find(t => t.id === prefillSoporte.ticketId);
+
+  224 |
+  225 |   /* ---- Reset Form ---- */
+> 226 |   const resetForm = () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 227 |     setSelectedTicket(null);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 228 |     setSelectedClient(null);
+      ???
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 237 |     setDiag(getEmptyDiag());
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 238 |   };
+      | ^^^^^ `resetForm` is declared here
+  239 |
+  240 |   /* ---- Ticket autocomplete handlers ---- */
+  241 |   const handleTicketSelect = (ticket) => {  react-hooks/immutability
+  757:21  error  'showRadio' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  758:21  error  'showFibra' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tecnicos\TecnicosPage.jsx
+  62:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  60 |       const updated = tecnicos.find(a => a.id === selectedTecnico.id);
+  61 |       if (updated && updated !== selectedTecnico) {
+> 62 |         setSelectedTecnico(updated);
+     |         ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  63 |       }
+  64 |     }
+  65 |   }, [tecnicos, selectedTecnico]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\TicketsPage.jsx
+   78:5  error  'filters' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-unused-vars
+   79:5  error  'updateFilter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+   80:5  error  'resetFilters' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-unused-vars
+   89:9  error  'updateLocalFilter' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+  265:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  263 |       const updated = tickets.find(t => t.id === selectedTicket.id);
+  264 |       if (updated && updated !== selectedTicket) {
+> 265 |         setSelectedTicket(updated);
+      |         ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  266 |       }
+  267 |     }
+  268 |   }, [tickets, selectedTicket]);  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\modals\EscalationModal.jsx
+   7:79  error  'clientTecnologia' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  10:12  error  'diagnostico' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  14:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  12 |     useEffect(() => {
+  13 |         if (open) {
+> 14 |             setDiagnostico({});
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  15 |             setMotivo('');
+  16 |             setTipo('visita');
+  17 |         }  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\modals\InlineSoporteModal.jsx
+  24:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  22 |     useEffect(() => {
+  23 |         if (ticket) {
+> 24 |             setSoporteTipo('Diagn??stico');
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |             setSoporteTecnico('');
+  26 |             setSoporteIP(client?.ip || '');
+  27 |             setSoporteObservaciones('');  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\modals\InlineVisitaModal.jsx
+  25:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  23 |     useEffect(() => {
+  24 |         if (ticket) {
+> 25 |             setVisitaTecnico('');
+     |             ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |             setVisitaTipo('Reparaci??n');
+  27 |             setVisitaPrioridad('Media');
+  28 |             setVisitaFecha('');  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\modals\TicketCreateModal.jsx
+  28:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  26 |         if (initialData) {
+  27 |             const client = clients.find(c => c.id === initialData.clienteId);
+> 28 |             setSelectedClient(client || { id: initialData.clienteId, nombre: initialData.clienteNombre });
+     |             ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  29 |             setClientSearch(initialData.clienteNombre);
+  30 |             setSelectedCategoria(initialData.categoriaId || '');
+  31 |             setSelectedSubcategoria(initialData.subcategoriaId || '');  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\modals\TicketDetailModal.jsx
+  1:10  error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\ui\EmptyState.jsx
+  5:11  error  'Icon' is assigned a value but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\usuarios\UsuariosPage.jsx
+  69:6  warning  React Hook useEffect has missing dependencies: 'canManageUsers' and 'loadAllUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\visitas\VisitasTecnicasPage.jsx
+  127:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  125 |     if (selectedVisita) {
+  126 |       if (selectedVisita.diagnosticoCompleto) {
+> 127 |         setEditingDiag(selectedVisita.diagnosticoCompleto);
+      |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  128 |       } else {
+  129 |         const empty = getEmptyDiag();
+  130 |         const fromFlat = {};                                           react-hooks/set-state-in-effect
+  217:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  215 |   useEffect(() => {
+  216 |     if (prefillVisita) {
+> 217 |       setFormClientId(prefillVisita.clienteId);
+      |       ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  218 |       setFormClientNombre(prefillVisita.clienteNombre);
+  219 |       setFormClientSearch(prefillVisita.clienteNombre);
+  220 |       setFormTicketId(prefillVisita.ticketId || '');  react-hooks/set-state-in-effect
+  225:6   warning  React Hook useEffect has a missing dependency: 'clearPrefillVisita'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  232:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  230 |       const updated = visitas.find(v => v.id === selectedVisita.id);
+  231 |       if (updated && updated !== selectedVisita) {
+> 232 |         setSelectedVisita(updated);
+      |         ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  233 |       }
+  234 |     }
+  235 |   }, [visitas, selectedVisita]);                                                     react-hooks/set-state-in-effect
+  478:12  error    'getStatusTransitions' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\whatsapp\WhatsAppPage.jsx
+  240:27   error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+  238 |
+  239 |   // Unique values for each filterable column
+> 240 |   const campaignOptions = useMemo(() => {
+      |                           ^^^^^^^^^^^^^^^
+> 241 |     const opts = {};
+      | ^^^^^^^^^^^^^^^^^^^^
+> 242 |     CAMPAIGN_FILTER_COLS.forEach(col => {
+      | ^^^^^^^^^^^^^^^^^^^^
+> 243 |       const getter = col.getter || (c => c[col.key]);
+      | ^^^^^^^^^^^^^^^^^^^^
+> 244 |       opts[col.key] = [...new Set(clients.map(getter).filter(Boolean))].sort();
+      | ^^^^^^^^^^^^^^^^^^^^
+> 245 |     });
+      | ^^^^^^^^^^^^^^^^^^^^
+> 246 |     return opts;
+      | ^^^^^^^^^^^^^^^^^^^^
+> 247 |   }, [clients]);
+      | ^^^^^^^^^^^^^^^^ Could not preserve existing memoization
+  248 |
+  249 |   // Campaign - apply base + advanced filters + free text search
+  250 |   const applyCampaignFilters = (baseFilter, advFilters, search) => {  react-hooks/preserve-manual-memoization
+  247:6    warning  React Hook useMemo has a missing dependency: 'CAMPAIGN_FILTER_COLS'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  281:125  warning  React Hook useMemo has a missing dependency: 'applyCampaignFilters'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\hooks\useFilters.js
+  41:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  39 |     // Actualizar p??gina al cambiar filtros
+  40 |     useEffect(() => {
+> 41 |         setPagination(prev => ({ ...prev, pageIndex: 0 }));
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  42 |     }, [filters]);
+  43 |
+  44 |     // L??gica de Filtrado  react-hooks/set-state-in-effect
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\store\slices\clientsSlice.js
+  2:10  error  'getNextId' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\store\slices\operationsSlice.js
+  12:44  error  'get' is defined but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\store\slices\ticketsSlice.js
+  12:41  error  'get' is defined but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\store\slices\usersSlice.js
+  137:20  error  'e' is defined but never used  no-unused-vars
+
+??? 71 problems (63 errors, 8 warnings)
+

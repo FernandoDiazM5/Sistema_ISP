@@ -17,7 +17,7 @@ export function fromScientificNotation(value) {
     // Usar toLocaleString con fullwide para expandir la notación científica
     // Esto evita la pérdida de precisión en enteros grandes que toFixed podría causar
     return Number(str).toLocaleString('fullwide', { useGrouping: false });
-  } catch (e) {
+  } catch {
     return str; // Si falla, retornar original
   }
 }

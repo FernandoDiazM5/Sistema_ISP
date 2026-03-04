@@ -8,10 +8,9 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 
 export default function ClientesTable({ data, columns, pagination, setPagination }) {
-    const navigate = useNavigate();
     const [sorting, setSorting] = useState([]);
 
     const table = useReactTable({

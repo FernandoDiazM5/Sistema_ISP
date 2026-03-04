@@ -40,7 +40,6 @@ export default function ClientesPage() {
   const clients = useStore(s => s.clients);
   const columnPrefs = useStore(s => s.columnPrefs);
   const setColumnPrefs = useStore(s => s.setColumnPrefs);
-  const addTicket = useStore(s => s.addTicket);
   const addPostVenta = useStore(s => s.addPostVenta);
   const addToast = useStore(s => s.addToast);
   const tecnicos = useStore(s => s.tecnicos);

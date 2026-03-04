@@ -4,12 +4,13 @@ import {
   Ticket, AlertTriangle, MonitorSmartphone, Calendar,
   Cable, Box, HardHat, FileText, Plus, Pencil, Trash2,
   Check, X, ChevronDown, ChevronRight, Tag, Layers, Clock,
-  Cpu, Wifi, Settings2, Briefcase,
+  Cpu, Wifi, Settings2, Briefcase, MapPin
 } from 'lucide-react';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Componente genérico de sección para catálogos simples (solo nombre)
 // ──────────────────────────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function SimpleListSection({ title, icon: Icon, items, onAdd, onUpdate, onDelete, color = 'blue' }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -300,10 +301,7 @@ function TabTickets() {
   const updateSubcategoria = useStore(s => s.updateSubcategoria);
   const deleteSubcategoria = useStore(s => s.deleteSubcategoria);
   const addPrioridadSLA = useStore(s => s.addPrioridadSLA);
-  const updatePrioridadSLA = useStore(s => s.updatePrioridadSLA);
-  const deletePrioridadSLA = useStore(s => s.deletePrioridadSLA);
   const addEstadoCatalogo = useStore(s => s.addEstadoCatalogo);
-  const updateEstadoCatalogo = useStore(s => s.updateEstadoCatalogo);
   const deleteEstadoCatalogo = useStore(s => s.deleteEstadoCatalogo);
 
   const [expandedCat, setExpandedCat] = useState(null);

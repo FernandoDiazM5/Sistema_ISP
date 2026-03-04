@@ -68,7 +68,7 @@ export default function PostVentaPage() {
 
   // --- Detail modal state ---
   const [detailCostoReal, setDetailCostoReal] = useState('');
-  const [detailMateriales, setDetailMateriales] = useState([]);
+  const [detailMateriales] = useState([]);
 
   // --- Catalog Management ---
   const [showCatalog, setShowCatalog] = useState(false);

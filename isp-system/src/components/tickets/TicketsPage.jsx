@@ -74,10 +74,7 @@ export default function TicketsPage() {
   const {
     filteredData,
     searchInput,
-    setSearchInput,
-    filters,
-    updateFilter,
-    resetFilters
+    setSearchInput
   } = useFilters(tickets, {
     searchFields: searchColumns, // Dynamic search columns
     initialFilters: {} // Don't pass filters here, we handle them manually for MultiSelect
@@ -86,9 +83,7 @@ export default function TicketsPage() {
   // Manually manage filter state since we aren't passing it to the hook
   const [localFilters, setLocalFilters] = useState({ estado: [], prioridad: [] });
 
-  const updateLocalFilter = (key, value) => {
-    setLocalFilters(prev => ({ ...prev, [key]: value }));
-  };
+
 
   // Additional Date Filtering & MultiSelect Logic
   const finalFiltered = useMemo(() => {

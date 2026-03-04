@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Wifi, Download, Database, RefreshCw, Plus, FileSpreadsheet, Archive, Upload, Trash2, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -14,7 +14,7 @@ import ManualReviewTable from './ManualReviewTable';
 import SyncStatus from './SyncStatus';
 
 export default function ImportacionPage() {
-  const { clients, importClients, setLastImport, addImportRecord, cleaningOptions, restoreSystem, factoryReset, importHistory, setCleaningOptions, addClientChanges, autoCancelClientOperations, setLoadingGlobal } = useStore();
+  const { clients, importClients, setLastImport, addImportRecord, cleaningOptions, factoryReset, addClientChanges, autoCancelClientOperations, setLoadingGlobal } = useStore();
 
   const [step, setStep] = useState('upload'); // upload | processing | preview | finished
   const [fileName, setFileName] = useState('');

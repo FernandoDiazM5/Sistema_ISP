@@ -41,9 +41,6 @@ const MantenimientoPage = lazy(() => import('./components/mantenimiento/Mantenim
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const clients = useStore(s => s.clients);
-  const dataSource = useStore(s => s.dataSource);
-
   const hydrateStore = useStore(s => s.hydrateStore);
   const storeReady = useStore(s => s.storeReady);
   const theme = useStore(s => s.theme);

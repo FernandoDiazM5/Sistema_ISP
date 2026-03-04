@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import {
-    getFirestore,
     doc,
     setDoc,
     getDoc,
@@ -65,7 +64,7 @@ export const getFirebaseApp = () => {
 
 /**
  * Guarda un documento en una colección específica (con soporte Offline Queue)
- * @param {string} collectionName 
+ * @param {string} collectionName
  * @param {object} data - Debe incluir 'id' si es posible
  * @returns {Promise<boolean>}
  */
@@ -82,8 +81,8 @@ export const saveDocument = async (collectionName, data) => {
         return true;
     } catch (error) {
         console.error(`Error saving document to ${collectionName}:`, error);
-        // Si no hay red, la petición de Firebase suele lanzar 'unavailable'
-        if (error.code === 'unavailable' || !navigator.onLine) {
+        // Validar si es network request failed o offline (esto es normal y silencioso)
+        if (error.code === 'unavailable' || error.message?.includes('offline')) {
             console.log(`Guardado offline encolado: ${collectionName}/${docId}`);
             if (offlineCallback) offlineCallback({ type: 'save', collectionName, id: docId, data: finalData });
         }

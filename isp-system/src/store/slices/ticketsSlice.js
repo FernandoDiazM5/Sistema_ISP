@@ -9,7 +9,7 @@ async function saveToDB(key, data) {
     }
 }
 
-export const createTicketsSlice = (set, get) => ({
+export const createTicketsSlice = (set) => ({
     // ===================== TICKETS =====================
     tickets: [],
 

@@ -29,7 +29,6 @@ export default function PlantaExternaPage() {
   const tecnicos = useStore(s => s.tecnicos);
   const tiposDerivacion = useStore(s => s.tiposDerivacion);
   const instalaciones = useStore(s => s.instalaciones);
-  const updateTicket = useStore(s => s.updateTicket);
   const resolveTicketChain = useStore(s => s.resolveTicketChain);
 
   const [search, setSearch] = useState('');

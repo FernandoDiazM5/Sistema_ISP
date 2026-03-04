@@ -4,14 +4,13 @@ import { ArrowUpRight, Wrench, Monitor, Radio, X, CheckCircle2, FileText } from 
 /**
  * Modal to handle ticket escalation with options.
  */
-export default function EscalationModal({ open, onClose, onConfirm, ticketId, clientTecnologia }) {
+export default function EscalationModal({ open, onClose, onConfirm, ticketId }) {
     const [tipo, setTipo] = useState('visita'); // 'visita', 'soporte', 'planta', 'requerimiento'
     const [motivo, setMotivo] = useState('');
-    const [diagnostico, setDiagnostico] = useState({});
+
 
     useEffect(() => {
         if (open) {
-            setDiagnostico({});
             setMotivo('');
             setTipo('visita');
         }

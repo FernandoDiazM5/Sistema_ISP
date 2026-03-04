@@ -1,3 +1,4 @@
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity, Upload, Image as ImageIcon } from 'lucide-react';
 import useStore from '../../store/useStore';
 import useToast from '../../hooks/useToast';
