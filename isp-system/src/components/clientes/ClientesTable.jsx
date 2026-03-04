@@ -84,7 +84,7 @@ export default function ClientesTable({ data, columns, pagination, setPagination
             </div>
 
             {/* --- DESKTOP TABLE VIEW (Visible >= md) --- */}
-            <div className="hidden md:block flex-1 overflow-auto bento-card border border-white/5">
+            <div className="hidden md:block flex-1 min-h-0 w-full overflow-y-auto bento-card border border-white/5">
                 <table className="w-full border-collapse text-[13px]">
                     <thead className="bg-bg-secondary/85 backdrop-blur-md sticky top-0 z-10 border-b border-border shadow-sm">
                         {table.getHeaderGroups().map(headerGroup => (
@@ -138,7 +138,7 @@ export default function ClientesTable({ data, columns, pagination, setPagination
             </div>
 
             {/* Paginación (Shared) */}
-            <div className="flex items-center justify-between mt-4 px-2 pb-6 md:pb-0">
+            <div className="flex items-center justify-between mt-4 px-2 pb-6 md:pb-0 shrink-0">
                 <span className="text-xs text-text-muted hidden sm:inline">
                     Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount().toLocaleString()}
                     <span className="mx-2">•</span>
