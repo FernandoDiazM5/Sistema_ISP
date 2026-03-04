@@ -9,7 +9,6 @@ import useSyncStore from '../../store/syncStore';
 import useToast from '../../hooks/useToast';
 import { downloadAsJSON, downloadAsCSV, downloadAsExcel } from '../../utils/exportBackup';
 import AuthorizedUsersManager from './AuthorizedUsersManager';
-import CatalogosTab from './CatalogosTab';
 import { saveDocument } from '../../api/firebase';
 
 function EditableApiRow({ label, envVar, value, onChange, placeholder }) {
@@ -475,7 +474,6 @@ export default function ConfiguracionPage() {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings },
-    { id: 'catalogos', label: 'Catálogos', icon: Key },
     { id: 'usuarios', label: 'Usuarios & Roles', icon: Users },
     { id: 'api', label: 'Conexión API', icon: Globe },
     { id: 'backups', label: 'Backups', icon: Database },
@@ -652,9 +650,6 @@ export default function ConfiguracionPage() {
           </div>
         </div>
       )}
-
-      {/* Tab: Catálogos */}
-      {activeTab === 'catalogos' && <CatalogosTab />}
 
       {/* Tab: Usuarios & Roles */}
       {activeTab === 'usuarios' && (

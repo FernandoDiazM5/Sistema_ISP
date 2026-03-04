@@ -781,7 +781,7 @@ export default function MantenimientoPage() {
   const ActiveComponent = TAB_COMPONENTS[activeTab];
 
   return (
-    <div className="flex flex-col gap-5 p-4 lg:p-6 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-5 p-4 lg:p-6 max-w-5xl mx-auto h-full overflow-y-auto animate-fade">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2.5 rounded-xl bg-accent-blue/10 border border-accent-blue/20">
