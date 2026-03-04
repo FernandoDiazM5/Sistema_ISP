@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Monitor, Plus, Wifi, Terminal, Activity, CheckCircle2,
   Search, ArrowRight, Gauge, Signal, Radio, X, Eye,
@@ -123,7 +123,7 @@ export default function SoporteRemotoPage() {
   const [selectedSesion, setSelectedSesion] = useState(null);
 
   /* ---- Filters ---- */
-  const [search, setSearch] = useState('');
+
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
 
@@ -754,8 +754,6 @@ export default function SoporteRemotoPage() {
               const hasWarnings = Object.keys(warns).length > 0;
               const hasDiag = d && Object.values(d).some(v => v !== '' && v !== null && v !== undefined);
               const techStr = (s.tecnologia || '').toLowerCase();
-              const showRadio = techStr.includes('radio');
-              const showFibra = techStr.includes('fibra');
 
               return (
                 <>

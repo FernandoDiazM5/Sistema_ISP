@@ -18,7 +18,6 @@ export default function RequerimientosPage() {
     const addRequerimiento = useStore(s => s.addRequerimiento);
     const updateRequerimiento = useStore(s => s.updateRequerimiento);
     const deleteRequerimiento = useStore(s => s.deleteRequerimiento);
-    const updateTicket = useStore(s => s.updateTicket);
     const resolveTicketChain = useStore(s => s.resolveTicketChain);
     const tiposRequerimiento = useStore(s => s.tiposRequerimiento);
     const addTipoRequerimiento = useStore(s => s.addTipoRequerimiento);

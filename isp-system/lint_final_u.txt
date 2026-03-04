@@ -1,0 +1,71 @@
+﻿
+> isp-system@0.0.0 lint
+> eslint .
+
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\api\firebase.js
+  217:83  error  'info' is defined but never used  no-unused-vars
+  351:55  error  'info' is defined but never used  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\clientes\ClienteDetalle.jsx
+   57:36  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  113:29  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  124:37  error    'Icon' is defined but never used                                                                                                                                                                                                                       no-unused-vars
+  446:9   warning  The 'clientChangesDb' logical expression could make the dependencies of useMemo Hook (at line 488) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'clientChangesDb' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\common\Adjuntos.jsx
+  156:6  warning  React Hook useEffect has a missing dependency: 'handleKeyDown'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\common\DataTable.jsx
+  13:36  warning  React Hook useMemo has an unnecessary dependency: 'data.length'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\requerimientos\RequerimientosPage.jsx
+  21:11  error  'updateTicket' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\soporte\SoporteRemotoPage.jsx
+    1:48  error  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  170:9   error  'clientTech' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  757:21  error  'showRadio' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  758:21  error  'showFibra' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\tickets\TicketsPage.jsx
+  84:24  error  'setLocalFilters' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\usuarios\UsuariosPage.jsx
+  69:6  warning  React Hook useEffect has missing dependencies: 'canManageUsers' and 'loadAllUsers'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\visitas\VisitasTecnicasPage.jsx
+  225:6   warning  React Hook useEffect has a missing dependency: 'clearPrefillVisita'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  478:12  error    'getStatusTransitions' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                            no-unused-vars
+
+C:\Users\USER\.gemini\antigravity\scratch\Sistema_ISP\isp-system\src\components\whatsapp\WhatsAppPage.jsx
+  240:27   error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+  238 |
+  239 |   // Unique values for each filterable column
+> 240 |   const campaignOptions = useMemo(() => {
+      |                           ^^^^^^^^^^^^^^^
+> 241 |     const opts = {};
+      | ^^^^^^^^^^^^^^^^^^^^
+> 242 |     CAMPAIGN_FILTER_COLS.forEach(col => {
+      | ^^^^^^^^^^^^^^^^^^^^
+> 243 |       const getter = col.getter || (c => c[col.key]);
+      | ^^^^^^^^^^^^^^^^^^^^
+> 244 |       opts[col.key] = [...new Set(clients.map(getter).filter(Boolean))].sort();
+      | ^^^^^^^^^^^^^^^^^^^^
+> 245 |     });
+      | ^^^^^^^^^^^^^^^^^^^^
+> 246 |     return opts;
+      | ^^^^^^^^^^^^^^^^^^^^
+> 247 |   }, [clients]);
+      | ^^^^^^^^^^^^^^^^ Could not preserve existing memoization
+  248 |
+  249 |   // Campaign - apply base + advanced filters + free text search
+  250 |   const applyCampaignFilters = (baseFilter, advFilters, search) => {  react-hooks/preserve-manual-memoization
+  247:6    warning  React Hook useMemo has a missing dependency: 'CAMPAIGN_FILTER_COLS'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  281:125  warning  React Hook useMemo has a missing dependency: 'applyCampaignFilters'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+
+Ô£û 20 problems (13 errors, 7 warnings)
+

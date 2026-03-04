@@ -81,7 +81,7 @@ export default function TicketsPage() {
   });
 
   // Manually manage filter state since we aren't passing it to the hook
-  const [localFilters, setLocalFilters] = useState({ estado: [], prioridad: [] });
+  const [localFilters] = useState({ estado: [], prioridad: [] });
 
 
 
