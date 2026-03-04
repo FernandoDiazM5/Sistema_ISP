@@ -781,50 +781,52 @@ export default function MantenimientoPage() {
   const ActiveComponent = TAB_COMPONENTS[activeTab];
 
   return (
-    <div className="flex flex-col gap-5 p-4 lg:p-6 max-w-5xl mx-auto h-full overflow-y-auto animate-fade">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-accent-blue/10 border border-accent-blue/20">
-          <Settings2 size={20} className="text-accent-blue" />
+    <div className="h-full overflow-y-auto w-full animate-fade p-4 lg:p-6">
+      <div className="flex flex-col gap-5 max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-accent-blue/10 border border-accent-blue/20">
+            <Settings2 size={20} className="text-accent-blue" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-text-primary">Mantenimiento de Catálogos</h1>
+            <p className="text-sm text-text-muted">Administra los valores configurables de todos los módulos del sistema.</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-text-primary">Mantenimiento de Catálogos</h1>
-          <p className="text-sm text-text-muted">Administra los valores configurables de todos los módulos del sistema.</p>
-        </div>
-      </div>
 
-      {/* Tab nav (horizontal scroll en mobile) */}
-      <div className="flex gap-1 overflow-x-auto pb-1 custom-scrollbar">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 border
+        {/* Tab nav (horizontal scroll en mobile) */}
+        <div className="flex gap-1 overflow-x-auto pb-1 custom-scrollbar">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 border
                 ${isActive
-                  ? 'bg-accent-blue/10 text-accent-blue border-accent-blue/30 shadow-sm'
-                  : 'bg-bg-card text-text-secondary border-border hover:bg-bg-secondary hover:text-text-primary'
-                }`}
-            >
-              <Icon size={13} />
-              {tab.label}
-            </button>
-          );
-        })}
+                    ? 'bg-accent-blue/10 text-accent-blue border-accent-blue/30 shadow-sm'
+                    : 'bg-bg-card text-text-secondary border-border hover:bg-bg-secondary hover:text-text-primary'
+                  }`}
+              >
+                <Icon size={13} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Descripción del tab activo */}
+        {(() => {
+          const tab = TABS.find(t => t.id === activeTab);
+          return tab ? (
+            <p className="text-xs text-text-muted -mt-3 pl-1">{tab.desc}</p>
+          ) : null;
+        })()}
+
+        {/* Contenido del tab */}
+        <ActiveComponent />
       </div>
-
-      {/* Descripción del tab activo */}
-      {(() => {
-        const tab = TABS.find(t => t.id === activeTab);
-        return tab ? (
-          <p className="text-xs text-text-muted -mt-3 pl-1">{tab.desc}</p>
-        ) : null;
-      })()}
-
-      {/* Contenido del tab */}
-      <ActiveComponent />
     </div>
   );
 }
