@@ -1,7 +1,6 @@
 import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity, Upload, Image as ImageIcon } from 'lucide-react';
 import useStore from '../../store/useStore';
 import useToast from '../../hooks/useToast';
-import { uploadImageToStorage } from '../../api/firebase';
 
 const ESTADO_COLORS = {
   'Activo': { bg: 'bg-accent-green/15', text: 'text-accent-green', dot: 'bg-accent-green' },
@@ -159,24 +158,56 @@ export default function TecnicosPage() {
   };
 
   // ==================== MULTI-SELECT HANDLERS ====================
-  const handlePhotoUpload = async (e) => {
+  const handlePhotoUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 20 * 1024 * 1024) { // 20MB Max para Storage
-        toast.error("La foto no debe pesar más de 20MB.");
+      if (file.size > 8 * 1024 * 1024) { // límite referencial a 8MB antes de comprimir
+        toast.error("La foto es demasiado pesada (>8MB). Intenta con otra.");
         return;
       }
 
       setIsUploadingPhoto(true);
-      try {
-        const downloadUrl = await uploadImageToStorage(file, 'tecnicos');
-        setForm(f => ({ ...f, foto: downloadUrl }));
-        toast.success("Foto subida exitosamente");
-      } catch (error) {
-        toast.error("Error al subir la foto a la nube.");
-      } finally {
-        setIsUploadingPhoto(false);
-      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Redimensionar si excede 600px
+          const MAX_WIDTH = 600;
+          const MAX_HEIGHT = 600;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Comprimir a JPEG con calidad al 50%
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+
+          setForm(f => ({ ...f, foto: compressedDataUrl }));
+          setIsUploadingPhoto(false);
+          toast.success("Foto procesada y adjuntada correctamente");
+        };
+      };
+
+      reader.readAsDataURL(file);
     }
   };
 
@@ -710,13 +741,13 @@ export default function TecnicosPage() {
                         {isUploadingPhoto ? (
                           <div className="flex flex-col items-center gap-2">
                             <Activity size={24} className="text-accent-blue animate-spin" />
-                            <p className="text-xs text-text-muted">Subiendo a la nube...</p>
+                            <p className="text-xs text-text-muted">Procesando y comprimiendo...</p>
                           </div>
                         ) : (
                           <>
                             <Upload size={24} className="text-text-muted mb-2" />
                             <p className="text-xs text-text-muted text-center px-4">
-                              Click o arrastra imagen<br />JPG, PNG (max 20MB)
+                              Click o arrastra imagen<br />JPG, PNG (max 8MB - Auto compresión)
                             </p>
                           </>
                         )}
