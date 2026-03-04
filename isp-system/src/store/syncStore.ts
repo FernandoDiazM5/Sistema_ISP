@@ -34,6 +34,7 @@ function getDataSnapshot() {
         cargosTecnico: s.cargosTecnico,
         especialidadesTecnico: s.especialidadesTecnico,
         vehiculosTecnico: s.vehiculosTecnico,
+        zonasTecnico: s.zonasTecnico,
     };
 }
 
@@ -197,7 +198,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
                 'averiasTipos',
                 'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
                 'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
-                'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico',
+                'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
             ];
 
             const deltas: any[] = [];

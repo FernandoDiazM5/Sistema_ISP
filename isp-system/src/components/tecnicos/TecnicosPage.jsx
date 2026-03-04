@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity } from 'lucide-react';
+import { Plus, Search, User, Phone, MapPin, Wrench, Edit3, Trash2, X, Mail, Briefcase, Wifi, Radio, Shield, Eye, Calendar, Clock, CheckCircle2, AlertCircle, Activity, Upload, Image as ImageIcon } from 'lucide-react';
 import useStore from '../../store/useStore';
 
 const ESTADO_COLORS = {
@@ -25,12 +25,13 @@ const ESTADOS = ['Activo', 'Inactivo', 'Vacaciones'];
 const EMPTY_FORM = {
   nombre: '',
   cargo: '',
-  especialidad: '',
+  especialidad: [],
   vehiculo: '',
   telefono: '',
   email: '',
-  zona: '',
+  zona: [],
   estado: 'Activo',
+  foto: null,
 };
 
 export default function TecnicosPage() {
@@ -62,6 +63,7 @@ export default function TecnicosPage() {
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [detailTab, setDetailTab] = useState('info');
+  const [zonaInput, setZonaInput] = useState('');
 
   // ==================== STATS ====================
   const stats = useMemo(() => {
@@ -82,12 +84,16 @@ export default function TecnicosPage() {
   const filtered = useMemo(() => {
     if (!search) return tecnicos;
     const q = search.toLowerCase();
-    return tecnicos.filter(t =>
-      (t.nombre && t.nombre.toLowerCase().includes(q)) ||
-      (t.especialidad && t.especialidad.toLowerCase().includes(q)) ||
-      (t.zona && t.zona.toLowerCase().includes(q)) ||
-      (t.cargo && t.cargo.toLowerCase().includes(q))
-    );
+    return tecnicos.filter(t => {
+      const espStr = Array.isArray(t.especialidad) ? t.especialidad.join(' ') : (t.especialidad || '');
+      const zonaStr = Array.isArray(t.zona) ? t.zona.join(' ') : (t.zona || '');
+      return (
+        (t.nombre && t.nombre.toLowerCase().includes(q)) ||
+        (espStr.toLowerCase().includes(q)) ||
+        (zonaStr.toLowerCase().includes(q)) ||
+        (t.cargo && t.cargo.toLowerCase().includes(q))
+      );
+    });
   }, [tecnicos, search]);
 
   // ==================== HANDLERS ====================
@@ -96,9 +102,11 @@ export default function TecnicosPage() {
     setForm({
       ...EMPTY_FORM,
       cargo: cargosTecnico[0]?.nombre || '',
-      especialidad: especialidadesTecnico[0]?.nombre || '',
-      vehiculo: vehiculosTecnico[0]?.nombre || ''
+      vehiculo: vehiculosTecnico[0]?.nombre || '',
+      especialidad: [],
+      zona: []
     });
+    setZonaInput('');
     setShowModal(true);
   };
 
@@ -107,13 +115,15 @@ export default function TecnicosPage() {
     setForm({
       nombre: tecnico.nombre,
       cargo: tecnico.cargo || '',
-      especialidad: tecnico.especialidad || '',
+      especialidad: Array.isArray(tecnico.especialidad) ? tecnico.especialidad : (tecnico.especialidad ? [tecnico.especialidad] : []),
       vehiculo: tecnico.vehiculo || '',
       telefono: tecnico.telefono,
       email: tecnico.email,
-      zona: tecnico.zona,
-      estado: tecnico.estado,
+      zona: Array.isArray(tecnico.zona) ? tecnico.zona : (tecnico.zona ? [tecnico.zona] : []),
+      estado: tecnico.estado || 'Activo',
+      foto: tecnico.foto || null,
     });
+    setZonaInput('');
     setShowModal(true);
   };
 
@@ -143,6 +153,48 @@ export default function TecnicosPage() {
   const openDetail = (tecnico) => {
     setSelectedTecnico(tecnico);
     setDetailTab('info');
+  };
+
+  // ==================== MULTI-SELECT HANDLERS ====================
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB Max
+        alert("La foto no debe pesar más de 2MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm(f => ({ ...f, foto: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = (e) => {
+    e.stopPropagation();
+    setForm(f => ({ ...f, foto: null }));
+  };
+
+  const toggleEspecialidad = (esp) => {
+    const current = form.especialidad || [];
+    if (current.includes(esp)) setForm(f => ({ ...f, especialidad: current.filter(e => e !== esp) }));
+    else setForm(f => ({ ...f, especialidad: [...current, esp] }));
+  };
+
+  const addZona = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = zonaInput.trim().toUpperCase();
+      if (val && !(form.zona || []).includes(val)) {
+        setForm(f => ({ ...f, zona: [...(f.zona || []), val] }));
+      }
+      setZonaInput('');
+    }
+  };
+
+  const removeZona = (z) => {
+    setForm(f => ({ ...f, zona: (f.zona || []).filter(item => item !== z) }));
   };
 
   // ==================== DETAIL HELPERS ====================
@@ -235,12 +287,16 @@ export default function TecnicosPage() {
               {/* Card Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: espColor + '15', color: espColor }}
-                  >
-                    <EspIcon size={18} />
-                  </div>
+                  {tecnico.foto ? (
+                    <img src={tecnico.foto} alt={tecnico.nombre} className="w-10 h-10 rounded-xl object-cover border border-border shrink-0" />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: espColor + '15', color: espColor }}
+                    >
+                      <EspIcon size={18} />
+                    </div>
+                  )}
                   <div>
                     <h3 className="text-sm font-semibold text-text-primary leading-tight">{tecnico.nombre}</h3>
                     <p className="text-[11px] text-text-muted mt-0.5">{tecnico.cargo}</p>
@@ -254,13 +310,23 @@ export default function TecnicosPage() {
 
               {/* Card Details */}
               <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-xs text-text-secondary">
-                  <Wrench size={12} className="text-text-muted flex-shrink-0" />
-                  <span>{tecnico.especialidad}</span>
+                <div className="flex text-xs text-text-secondary">
+                  <Wrench size={12} className="text-text-muted flex-shrink-0 mt-0.5 mr-2" />
+                  <div className="flex flex-wrap gap-1">
+                    {(Array.isArray(tecnico.especialidad) ? tecnico.especialidad : [tecnico.especialidad]).filter(Boolean).map(e => (
+                      <span key={e} className="px-1.5 py-0.5 bg-bg-secondary rounded border border-border text-[10px]">{e}</span>
+                    ))}
+                    {(!tecnico.especialidad || tecnico.especialidad.length === 0) && <span className="text-[11px]">Sin especialidad</span>}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-text-secondary">
-                  <MapPin size={12} className="text-text-muted flex-shrink-0" />
-                  <span>{tecnico.zona}</span>
+                <div className="flex text-xs text-text-secondary">
+                  <MapPin size={12} className="text-text-muted flex-shrink-0 mt-0.5 mr-2" />
+                  <div className="flex flex-wrap gap-1">
+                    {(Array.isArray(tecnico.zona) ? tecnico.zona : [tecnico.zona]).filter(Boolean).map(z => (
+                      <span key={z} className="px-1.5 py-0.5 bg-bg-secondary rounded border border-border text-[10px]">{z}</span>
+                    ))}
+                    {(!tecnico.zona || tecnico.zona.length === 0) && <span className="text-[11px]">Sin zona</span>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-text-secondary">
                   <Phone size={12} className="text-text-muted flex-shrink-0" />
@@ -336,7 +402,31 @@ export default function TecnicosPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 flex flex-col gap-4">
+            <div className="p-6 flex flex-col gap-5">
+
+              {/* Profile Photo */}
+              <div className="flex flex-col items-center gap-3 -mt-2">
+                <div className="relative group cursor-pointer">
+                  {form.foto ? (
+                    <div className="relative w-20 h-20 rounded-full border border-border overflow-hidden">
+                      <img src={form.foto} alt="Profile" className="w-full h-full object-cover" />
+                      <div
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={removePhoto}
+                      >
+                        <Trash2 size={18} className="text-white" />
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-20 h-20 rounded-full border-2 border-dashed border-border bg-bg-secondary hover:bg-bg-tertiary hover:border-accent-blue/50 transition-colors cursor-pointer">
+                      <ImageIcon size={20} className="text-text-muted mb-1" />
+                      <span className="text-[9px] text-text-muted">Subir Foto</span>
+                      <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               {/* Nombre */}
               <div>
                 <label className="text-[11px] text-text-muted uppercase mb-1 block">Nombre *</label>
@@ -348,8 +438,8 @@ export default function TecnicosPage() {
                 />
               </div>
 
-              {/* Cargo + Especialidad + Vehiculo */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Cargo + Vehiculo */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Cargo</label>
                   <select
@@ -362,17 +452,6 @@ export default function TecnicosPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Especialidad</label>
-                  <select
-                    value={form.especialidad}
-                    onChange={e => setForm(f => ({ ...f, especialidad: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
-                  >
-                    {!form.especialidad && <option value="">Seleccione...</option>}
-                    {especialidadesTecnico.map(e => <option key={e.id} value={e.nombre}>{e.nombre}</option>)}
-                  </select>
-                </div>
-                <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Vehículo</label>
                   <select
                     value={form.vehiculo}
@@ -382,6 +461,30 @@ export default function TecnicosPage() {
                     <option value="">Ninguno</option>
                     {vehiculosTecnico.map(v => <option key={v.id} value={v.nombre}>{v.nombre}</option>)}
                   </select>
+                </div>
+              </div>
+
+              {/* Especialidades */}
+              <div>
+                <label className="text-[11px] text-text-muted uppercase mb-2 flex items-center gap-1.5">
+                  <Wrench size={12} /> Especialidades Asignadas
+                </label>
+                <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-border bg-bg-secondary/30">
+                  {especialidadesTecnico.map(e => {
+                    const isSelected = form.especialidad?.includes(e.nombre);
+                    return (
+                      <button
+                        key={e.id}
+                        type="button"
+                        onClick={() => toggleEspecialidad(e.nombre)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border-none cursor-pointer transition-all flex items-center gap-1.5 ${isSelected ? 'bg-accent-blue text-white shadow-md shadow-accent-blue/20' : 'bg-bg-card text-text-secondary hover:bg-bg-tertiary border border-border'}`}
+                      >
+                        {isSelected && <CheckCircle2 size={12} />}
+                        {e.nombre}
+                      </button>
+                    )
+                  })}
+                  {especialidadesTecnico.length === 0 && <span className="text-xs text-text-muted">No hay especialidades registradas.</span>}
                 </div>
               </div>
 
@@ -410,20 +513,29 @@ export default function TecnicosPage() {
               {/* Zona + Estado */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Zona</label>
-                  <input
-                    value={form.zona}
-                    onChange={e => setForm(f => ({ ...f, zona: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-blue/50"
-                    placeholder="ej. PLANICIE 1"
-                  />
+                  <label className="text-[11px] text-text-muted uppercase mb-1 block">Zonas Asignadas</label>
+                  <div className="min-h-[38px] p-1.5 rounded-lg bg-bg-secondary border border-border flex flex-wrap gap-1.5 focus-within:border-accent-blue/50">
+                    {(form.zona || []).map(z => (
+                      <span key={z} className="flex items-center gap-1 bg-bg-card px-2 py-1 rounded-md text-[11px] font-medium border border-border">
+                        {z}
+                        <button onClick={() => removeZona(z)} className="text-text-muted hover:text-accent-red bg-transparent border-none cursor-pointer p-0"><X size={12} /></button>
+                      </span>
+                    ))}
+                    <input
+                      value={zonaInput}
+                      onChange={e => setZonaInput(e.target.value)}
+                      onKeyDown={addZona}
+                      placeholder={form.zona?.length ? "Añadir zona..." : "Escribe y presiona Enter/Coma..."}
+                      className="flex-1 bg-transparent min-w-[120px] text-sm text-text-primary placeholder-text-muted focus:outline-none px-1"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-[11px] text-text-muted uppercase mb-1 block">Estado</label>
                   <select
                     value={form.estado}
                     onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}
-                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50"
+                    className="w-full py-2 px-3 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-blue/50 h-[38px]"
                   >
                     {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
@@ -460,18 +572,23 @@ export default function TecnicosPage() {
             {/* Detail Header */}
             <div className="flex justify-between items-start px-6 py-5 border-b border-border flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{
-                    background: (ESPECIALIDAD_COLORS[selectedTecnico.especialidad] || '#8b5cf6') + '15',
-                    color: ESPECIALIDAD_COLORS[selectedTecnico.especialidad] || '#8b5cf6',
-                  }}
-                >
-                  {(() => {
-                    const Icon = ESPECIALIDAD_ICONS[selectedTecnico.especialidad] || Wrench;
-                    return <Icon size={22} />;
-                  })()}
-                </div>
+                {selectedTecnico.foto ? (
+                  <img src={selectedTecnico.foto} alt={selectedTecnico.nombre} className="w-12 h-12 rounded-xl object-cover border border-border shrink-0" />
+                ) : (
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: (ESPECIALIDAD_COLORS[Array.isArray(selectedTecnico.especialidad) ? selectedTecnico.especialidad[0] : selectedTecnico.especialidad] || '#8b5cf6') + '15',
+                      color: ESPECIALIDAD_COLORS[Array.isArray(selectedTecnico.especialidad) ? selectedTecnico.especialidad[0] : selectedTecnico.especialidad] || '#8b5cf6',
+                    }}
+                  >
+                    {(() => {
+                      const firstEsp = Array.isArray(selectedTecnico.especialidad) ? selectedTecnico.especialidad[0] : selectedTecnico.especialidad;
+                      const Icon = ESPECIALIDAD_ICONS[firstEsp] || Wrench;
+                      return <Icon size={22} />;
+                    })()}
+                  </div>
+                )}
                 <div>
                   <h3 className="text-lg font-bold">{selectedTecnico.nombre}</h3>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -537,9 +654,14 @@ export default function TecnicosPage() {
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <Wrench size={13} className="text-text-muted" />
-                        <span className="text-[10px] text-text-muted uppercase">Especialidad</span>
+                        <span className="text-[10px] text-text-muted uppercase">Especialidades</span>
                       </div>
-                      <p className="text-sm font-medium">{selectedTecnico.especialidad}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {(Array.isArray(selectedTecnico.especialidad) ? selectedTecnico.especialidad : [selectedTecnico.especialidad]).filter(Boolean).map(e => (
+                          <span key={e} className="px-2 py-1 bg-bg-card rounded border border-border text-[11px] font-medium">{e}</span>
+                        ))}
+                        {(!selectedTecnico.especialidad || selectedTecnico.especialidad.length === 0) && <span className="text-xs text-text-muted">Ninguna asignada</span>}
+                      </div>
                     </div>
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
@@ -565,9 +687,14 @@ export default function TecnicosPage() {
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
                         <MapPin size={13} className="text-text-muted" />
-                        <span className="text-[10px] text-text-muted uppercase">Zona</span>
+                        <span className="text-[10px] text-text-muted uppercase">Zonas Asignadas</span>
                       </div>
-                      <p className="text-sm font-medium">{selectedTecnico.zona}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {(Array.isArray(selectedTecnico.zona) ? selectedTecnico.zona : [selectedTecnico.zona]).filter(Boolean).map(z => (
+                          <span key={z} className="px-2 py-1 bg-bg-card rounded border border-border text-[11px] font-medium">{z}</span>
+                        ))}
+                        {(!selectedTecnico.zona || selectedTecnico.zona.length === 0) && <span className="text-xs text-text-muted">Sin zona</span>}
+                      </div>
                     </div>
                     <div className="bg-bg-secondary rounded-xl p-4">
                       <div className="flex items-center gap-2 mb-1">
@@ -824,59 +951,62 @@ export default function TecnicosPage() {
               })()}
             </div>
           </div>
-        </div>
-      )}
+        </div >
+      )
+      }
 
       {/* ==================== DELETE CONFIRMATION ==================== */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]" onClick={() => setShowDeleteConfirm(null)}>
-          <div className="bg-bg-card rounded-2xl border border-border w-full max-w-sm shadow-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent-red/10 mx-auto mb-4">
-              <Trash2 size={22} className="text-accent-red" />
-            </div>
-            <h3 className="text-base font-bold text-center mb-2">Eliminar Técnico</h3>
-            <p className="text-sm text-text-secondary text-center mb-1">
-              Esta acción no se puede deshacer.
-            </p>
-            <p className="text-sm text-text-primary text-center font-semibold mb-5">
-              {showDeleteConfirm.nombre}
-            </p>
+      {
+        showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]" onClick={() => setShowDeleteConfirm(null)}>
+            <div className="bg-bg-card rounded-2xl border border-border w-full max-w-sm shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-accent-red/10 mx-auto mb-4">
+                <Trash2 size={22} className="text-accent-red" />
+              </div>
+              <h3 className="text-base font-bold text-center mb-2">Eliminar Técnico</h3>
+              <p className="text-sm text-text-secondary text-center mb-1">
+                Esta acción no se puede deshacer.
+              </p>
+              <p className="text-sm text-text-primary text-center font-semibold mb-5">
+                {showDeleteConfirm.nombre}
+              </p>
 
-            {(() => {
-              const assignedVisitas = getTecnicoVisitas(showDeleteConfirm.id).filter(v => v.estado === 'Programada' || v.estado === 'En Ruta' || v.estado === 'En Sitio');
-              const assignedTickets = getTecnicoTickets(showDeleteConfirm.id).filter(t => t.estado === 'Abierto' || t.estado === 'En Proceso');
-              if (assignedVisitas.length > 0 || assignedTickets.length > 0) {
-                return (
-                  <div className="bg-accent-yellow/10 border border-accent-yellow/30 rounded-lg p-3 mb-4">
-                    <p className="text-[11px] text-accent-yellow font-semibold mb-1">Advertencia</p>
-                    <p className="text-[11px] text-text-secondary">
-                      Este técnico tiene {assignedVisitas.length > 0 ? `${assignedVisitas.length} visita(s) activa(s)` : ''}
-                      {assignedVisitas.length > 0 && assignedTickets.length > 0 ? ' y ' : ''}
-                      {assignedTickets.length > 0 ? `${assignedTickets.length} ticket(s) abierto(s)` : ''}.
-                    </p>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+              {(() => {
+                const assignedVisitas = getTecnicoVisitas(showDeleteConfirm.id).filter(v => v.estado === 'Programada' || v.estado === 'En Ruta' || v.estado === 'En Sitio');
+                const assignedTickets = getTecnicoTickets(showDeleteConfirm.id).filter(t => t.estado === 'Abierto' || t.estado === 'En Proceso');
+                if (assignedVisitas.length > 0 || assignedTickets.length > 0) {
+                  return (
+                    <div className="bg-accent-yellow/10 border border-accent-yellow/30 rounded-lg p-3 mb-4">
+                      <p className="text-[11px] text-accent-yellow font-semibold mb-1">Advertencia</p>
+                      <p className="text-[11px] text-text-secondary">
+                        Este técnico tiene {assignedVisitas.length > 0 ? `${assignedVisitas.length} visita(s) activa(s)` : ''}
+                        {assignedVisitas.length > 0 && assignedTickets.length > 0 ? ' y ' : ''}
+                        {assignedTickets.length > 0 ? `${assignedTickets.length} ticket(s) abierto(s)` : ''}.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(null)}
-                className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary text-sm cursor-pointer hover:bg-white/[0.04] transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleDelete(showDeleteConfirm.id)}
-                className="flex-1 py-2.5 rounded-lg bg-accent-red text-white text-sm font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
-              >
-                Eliminar
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary text-sm cursor-pointer hover:bg-white/[0.04] transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => handleDelete(showDeleteConfirm.id)}
+                  className="flex-1 py-2.5 rounded-lg bg-accent-red text-white text-sm font-semibold border-none cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

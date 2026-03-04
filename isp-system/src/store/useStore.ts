@@ -213,6 +213,11 @@ const VEHICULOS_TECNICO = [
   { id: 'VEH-04', nombre: 'Auto Sedán' },
 ];
 
+const ZONAS_TECNICO = [
+  { id: 'ZON-01', nombre: 'Zona Norte' },
+  { id: 'ZON-02', nombre: 'Zona Sur' },
+];
+
 // ===================== STORE COMPOSITION =====================
 export interface StoreState {
   storeReady: boolean;
@@ -323,6 +328,11 @@ export interface StoreState {
   updateVehiculoTecnico: (id: string, nombre: string) => void;
   deleteVehiculoTecnico: (id: string) => void;
 
+  zonasTecnico: any[];
+  addZonaTecnico: (nombre: string) => void;
+  updateZonaTecnico: (id: string, nombre: string) => void;
+  deleteZonaTecnico: (id: string) => void;
+
   getSubcategoriasByCategoria: (catId: string) => any[];
   getEstadosByEntidad: (entidad: string) => any[];
   getSLABySubcategoria: (subId: string) => any;
@@ -398,7 +408,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
         'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
         'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
         'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
-        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico'
+        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico'
       ];
 
       for (const [dbKey, stateKey] of Object.entries(ISP_KEY_MAP)) {
@@ -804,6 +814,30 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     set({ vehiculosTecnico: updated });
     db.set('isp_vehiculosTecnico', updated).catch(console.error);
     deleteDocument('vehiculosTecnico', id);
+  },
+
+  // CRUD Zonas Técnico
+  zonasTecnico: ZONAS_TECNICO,
+  addZonaTecnico: (nombre) => {
+    const s = get();
+    const max = s.zonasTecnico.reduce((m: number, t: any) => { const n = parseInt(t.id?.split('-')[1] || '0'); return isNaN(n) ? m : Math.max(m, n); }, 0);
+    const newItem = { id: `ZON-${String(max + 1).padStart(2, '0')}`, nombre };
+    const updated = [...s.zonasTecnico, newItem];
+    set({ zonasTecnico: updated });
+    db.set('isp_zonasTecnico', updated).catch(console.error);
+    saveDocument('zonasTecnico', newItem);
+  },
+  updateZonaTecnico: (id, nombre) => {
+    const updated = get().zonasTecnico.map((t: any) => t.id === id ? { ...t, nombre } : t);
+    set({ zonasTecnico: updated });
+    db.set('isp_zonasTecnico', updated).catch(console.error);
+    saveDocument('zonasTecnico', { id, nombre });
+  },
+  deleteZonaTecnico: (id) => {
+    const updated = get().zonasTecnico.filter((t: any) => t.id !== id);
+    set({ zonasTecnico: updated });
+    db.set('isp_zonasTecnico', updated).catch(console.error);
+    deleteDocument('zonasTecnico', id);
   },
 
   // ===================== CATÁLOGOS =====================

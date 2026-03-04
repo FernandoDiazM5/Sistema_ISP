@@ -767,12 +767,19 @@ function TabTecnicos() {
   const updateVehiculoTecnico = useStore(s => s.updateVehiculoTecnico);
   const deleteVehiculoTecnico = useStore(s => s.deleteVehiculoTecnico);
 
+  const zonasTecnico = useStore(s => s.zonasTecnico);
+  const addZonaTecnico = useStore(s => s.addZonaTecnico);
+  const updateZonaTecnico = useStore(s => s.updateZonaTecnico);
+  const deleteZonaTecnico = useStore(s => s.deleteZonaTecnico);
+
   return (
     <div className="space-y-4">
       <SimpleListSection title="Cargos Operativos" icon={Briefcase} items={cargosTecnico}
         onAdd={addCargoTecnico} onUpdate={updateCargoTecnico} onDelete={deleteCargoTecnico} color="purple" />
       <SimpleListSection title="Especialidades" icon={Tag} items={especialidadesTecnico}
         onAdd={addEspecialidadTecnico} onUpdate={updateEspecialidadTecnico} onDelete={deleteEspecialidadTecnico} color="teal" />
+      <SimpleListSection title="Zonas de Cobertura" icon={MapPin} items={zonasTecnico}
+        onAdd={addZonaTecnico} onUpdate={updateZonaTecnico} onDelete={deleteZonaTecnico} color="blue" />
       <SimpleListSection title="Tipos de Vehículo" icon={Box} items={vehiculosTecnico}
         onAdd={addVehiculoTecnico} onUpdate={updateVehiculoTecnico} onDelete={deleteVehiculoTecnico} color="orange" />
     </div>
@@ -789,7 +796,7 @@ const TABS = [
   { id: 'visitas', label: 'Visitas Técnicas', icon: Calendar, desc: 'Tipos de visita' },
   { id: 'planta', label: 'Planta Externa', icon: Cable, desc: 'Tipos de derivación' },
   { id: 'equipos', label: 'Equipos', icon: Box, desc: 'Tipos y marcas de equipo' },
-  { id: 'tecnicos', label: 'Técnicos', icon: Briefcase, desc: 'Cargos, especialidades y vehículos' },
+  { id: 'tecnicos', label: 'Técnicos', icon: Briefcase, desc: 'Cargos, especialidades, zonas y vehículos' },
   { id: 'instalaciones', label: 'Instalaciones', icon: HardHat, desc: 'Planes y tecnologías' },
   { id: 'requerimientos', label: 'Requerimientos', icon: FileText, desc: 'Tipos de requerimiento' },
 ];
