@@ -12,6 +12,8 @@ import {
     initializeFirestore,
     persistentLocalCache,
     persistentMultipleTabManager,
+    query,
+    where
 } from 'firebase/firestore';
 import { CONFIG } from '../utils/constants';
 
