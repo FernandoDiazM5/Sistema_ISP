@@ -123,6 +123,7 @@ export default function SoporteRemotoPage() {
   const [selectedSesion, setSelectedSesion] = useState(null);
 
   /* ---- Filters ---- */
+  const [search, setSearch] = useState('');
 
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
