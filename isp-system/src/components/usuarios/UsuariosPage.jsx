@@ -130,10 +130,8 @@ export default function UsuariosPage() {
   const validateForm = () => {
     const errors = {};
 
-    if (!form.email) {
-      errors.email = 'El email es obligatorio';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      errors.email = 'El email no es válido';
+    if (!form.email || form.email.trim() === '') {
+      errors.email = 'El usuario (o email) es obligatorio';
     }
 
     if (!form.nombre || form.nombre.trim().length < 3) {
@@ -535,8 +533,8 @@ export default function UsuariosPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <label
                       className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.authType === 'google_oauth'
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-dark-border hover:border-gray-500'
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-dark-border hover:border-gray-500'
                         }`}
                     >
                       <input
@@ -557,8 +555,8 @@ export default function UsuariosPage() {
 
                     <label
                       className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.authType === 'email_password'
-                          ? 'border-purple-500 bg-purple-500/10'
-                          : 'border-dark-border hover:border-gray-500'
+                        ? 'border-purple-500 bg-purple-500/10'
+                        : 'border-dark-border hover:border-gray-500'
                         }`}
                     >
                       <input
@@ -581,9 +579,9 @@ export default function UsuariosPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email *</label>
+                <label className="block text-sm font-medium mb-2">Usuario / Email *</label>
                 <input
-                  type="email"
+                  type="text"
                   value={form.email}
                   onChange={(e) => {
                     setForm(prev => ({ ...prev, email: e.target.value }));
@@ -687,8 +685,8 @@ export default function UsuariosPage() {
                       <label
                         key={rol}
                         className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.rol === rol
-                            ? (ROLE_COLORS[rol]?.border || 'border-gray-500 bg-gray-500/10')
-                            : 'border-border hover:border-text-muted'
+                          ? (ROLE_COLORS[rol]?.border || 'border-gray-500 bg-gray-500/10')
+                          : 'border-border hover:border-text-muted'
                           }`}
                       >
                         <input
@@ -774,8 +772,8 @@ export default function UsuariosPage() {
                           key={level}
                           onClick={() => setCustomPermissions(prev => ({ ...prev, [module]: level }))}
                           className={`p-2 rounded-lg text-sm transition-all ${currentPermission === level
-                              ? 'bg-accent-blue text-white'
-                              : 'bg-dark hover:bg-dark-lighter text-gray-400'
+                            ? 'bg-accent-blue text-white'
+                            : 'bg-dark hover:bg-dark-lighter text-gray-400'
                             }`}
                         >
                           {PERMISSION_LEVEL_LABELS[level].label}

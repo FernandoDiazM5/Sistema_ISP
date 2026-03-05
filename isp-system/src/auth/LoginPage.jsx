@@ -259,7 +259,7 @@ export default function LoginPage() {
               ? 'bg-accent-blue text-white shadow-sm'
               : 'bg-transparent text-text-secondary hover:text-text-primary'
               }`}>
-            Email y Contraseña
+            Usuario y Clave
           </button>
           <button
             onClick={() => setLoginMethod('google')}
@@ -276,15 +276,15 @@ export default function LoginPage() {
           <form onSubmit={handleEmailLogin} className="flex flex-col gap-4">
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
-                Correo Electrónico
+                Usuario / Correo
               </label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
-                  type="email"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu-email@ejemplo.com"
+                  placeholder="admin o tu-email@ejemplo.com"
                   className="w-full py-2.5 pl-10 pr-4 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-blue placeholder:text-text-muted transition-colors"
                   disabled={loading}
                 />
