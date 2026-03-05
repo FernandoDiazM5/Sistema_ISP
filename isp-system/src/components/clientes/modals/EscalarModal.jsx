@@ -6,11 +6,9 @@ import { ArrowUpRight, Wrench, Monitor, Radio, X, CheckCircle2, FileText } from 
  */
 export default function EscalarModal({ client, onClose, onConfirm }) {
     const [tipo, setTipo] = useState('visita'); // 'visita', 'soporte', 'planta', 'requerimiento'
-    const [motivo, setMotivo] = useState('');
 
     useEffect(() => {
         if (client) {
-            setMotivo('');
             setTipo('visita');
         }
     }, [client]);
@@ -18,7 +16,7 @@ export default function EscalarModal({ client, onClose, onConfirm }) {
     if (!client) return null;
 
     const handleConfirm = () => {
-        onConfirm({ tipo, motivo: motivo.trim() || 'Escalamiento manual directo' });
+        onConfirm({ tipo, motivo: 'Derivación directa desde cliente' });
     };
 
     const options = [
@@ -78,16 +76,6 @@ export default function EscalarModal({ client, onClose, onConfirm }) {
                             </div>
                         ))}
                     </div>
-
-                    <div>
-                        <label className="text-xs text-text-secondary font-medium mb-1.5 block">Motivo de la derivación</label>
-                        <textarea
-                            value={motivo}
-                            onChange={e => setMotivo(e.target.value)}
-                            className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full"
-                            placeholder="Detalle el motivo o requerimiento del cliente..."
-                        />
-                    </div>
                 </div>
 
                 {/* Footer Buttons */}
@@ -100,7 +88,6 @@ export default function EscalarModal({ client, onClose, onConfirm }) {
                     </button>
                     <button
                         onClick={handleConfirm}
-                        disabled={!motivo.trim()}
                         className="flex-1 py-2.5 rounded-lg bg-accent-orange border-none text-white cursor-pointer text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         <CheckCircle2 size={14} />
