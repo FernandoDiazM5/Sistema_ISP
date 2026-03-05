@@ -43,14 +43,17 @@ export async function createUserWithPassword(email, password) {
     const mainApp = getFirebaseApp();
     if (!mainApp) throw new Error('Firebase Auth no está configurado');
 
-    // Extraer propiedades (los getter evaluation lazy se triggerean aquí)
+    // Extraer propiedades directamente de la aplicación de Firebase principal, que
+    // ya resolvió exitosamente las variables e inicializó su backend local
+    const baseConfig = mainApp.options;
+
     const config = {
-      apiKey: CONFIG.FIREBASE.apiKey,
-      authDomain: CONFIG.FIREBASE.authDomain,
-      projectId: CONFIG.FIREBASE.projectId,
-      storageBucket: CONFIG.FIREBASE.storageBucket,
-      messagingSenderId: CONFIG.FIREBASE.messagingSenderId,
-      appId: CONFIG.FIREBASE.appId
+      apiKey: baseConfig.apiKey,
+      authDomain: baseConfig.authDomain,
+      projectId: baseConfig.projectId,
+      storageBucket: baseConfig.storageBucket,
+      messagingSenderId: baseConfig.messagingSenderId,
+      appId: baseConfig.appId
     };
 
     // Utilizamos un sufijo random para que no choque si se ejecuta concurrente
