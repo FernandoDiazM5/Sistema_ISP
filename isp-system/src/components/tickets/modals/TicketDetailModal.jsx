@@ -263,6 +263,11 @@ export default function TicketDetailModal({
                                 <button onClick={() => onStatusChange(ticket.id, 'Abierto')} className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border-none text-xs font-semibold cursor-pointer hover:bg-red-500/30">Reabrir</button>
                             </>
                         )}
+                        {ticket.estado === 'Cancelado' && (
+                            <>
+                                <button onClick={() => onStatusChange(ticket.id, 'Abierto')} className="px-4 py-2 rounded-lg bg-red-500/20 text-red-400 border-none text-xs font-semibold cursor-pointer hover:bg-red-500/30">Reabrir</button>
+                            </>
+                        )}
                     </div>
                 </div>
 
