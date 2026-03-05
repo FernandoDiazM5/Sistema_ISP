@@ -2,33 +2,30 @@ import { useState, useEffect } from 'react';
 import { ArrowUpRight, Wrench, Monitor, Radio, X, CheckCircle2, FileText } from 'lucide-react';
 
 /**
- * Modal to handle ticket escalation with options.
+ * Modal to handle direct client escalation/derivation with options.
  */
-export default function EscalationModal({ open, onClose, onConfirm, ticketId }) {
+export default function EscalarModal({ client, onClose, onConfirm }) {
     const [tipo, setTipo] = useState('visita'); // 'visita', 'soporte', 'planta', 'requerimiento'
     const [motivo, setMotivo] = useState('');
 
-
     useEffect(() => {
-        if (open) {
+        if (client) {
             setMotivo('');
             setTipo('visita');
         }
-    }, [open]);
+    }, [client]);
 
-    if (!open) return null;
+    if (!client) return null;
 
     const handleConfirm = () => {
-        onConfirm({ tipo, motivo: motivo.trim() || 'Escalamiento manual', diagnostico: {} });
-        setMotivo('');
-        setTipo('visita');
+        onConfirm({ tipo, motivo: motivo.trim() || 'Escalamiento manual directo' });
     };
 
     const options = [
-        { id: 'visita', label: 'Derivar a Visita Técnica', icon: Wrench, color: 'text-accent-orange', bg: 'bg-accent-orange/15' },
-        { id: 'soporte', label: 'Derivar a Soporte Remoto', icon: Monitor, color: 'text-accent-cyan', bg: 'bg-accent-cyan/15' },
-        { id: 'planta', label: 'Derivación a Planta Externa', icon: Radio, color: 'text-accent-purple', bg: 'bg-accent-purple/15' },
-        { id: 'requerimiento', label: 'Derivar a Req. Administrativo', icon: FileText, color: 'text-accent-blue', bg: 'bg-accent-blue/15' },
+        { id: 'visita', label: 'Derivar a Visita Técnica', icon: Wrench, color: 'text-accent-orange', bg: 'bg-accent-orange/15', text: 'Agenda una visita técnica al domicilio del cliente.' },
+        { id: 'soporte', label: 'Derivar a Soporte Remoto', icon: Monitor, color: 'text-accent-cyan', bg: 'bg-accent-cyan/15', text: 'Registra una sesión de soporte avanzado.' },
+        { id: 'planta', label: 'Derivación a Planta Externa', icon: Radio, color: 'text-accent-purple', bg: 'bg-accent-purple/15', text: 'Escalamiento por saturación o falla de infraestructura.' },
+        { id: 'requerimiento', label: 'Derivar a Req. Administrativo', icon: FileText, color: 'text-accent-blue', bg: 'bg-accent-blue/15', text: 'Genera un requerimiento administrativo vinculado.' },
     ];
 
     return (
@@ -41,8 +38,8 @@ export default function EscalationModal({ open, onClose, onConfirm, ticketId }) 
                             <ArrowUpRight size={20} className="text-accent-orange" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold">Escalar Ticket</h3>
-                            <p className="text-xs text-text-muted">Ticket: <span className="font-mono">{ticketId}</span></p>
+                            <h3 className="text-lg font-bold">Derivar Cliente</h3>
+                            <p className="text-xs text-text-muted">Cliente: <span className="font-semibold text-text-primary">{client.nombre}</span></p>
                         </div>
                     </div>
                     <button onClick={onClose} className="text-text-muted hover:text-text-primary bg-transparent border-none cursor-pointer">
@@ -71,10 +68,7 @@ export default function EscalationModal({ open, onClose, onConfirm, ticketId }) 
                                         {opt.label}
                                     </p>
                                     <p className="text-[11px] text-text-muted">
-                                        {opt.id === 'visita' ? 'Agenda una visita técnica al domicilio.' :
-                                            opt.id === 'soporte' ? 'Registra una sesión de soporte avanzado.' :
-                                                opt.id === 'planta' ? 'Escalamiento por saturación o falla de infraestructura.' :
-                                                    'Genera un requerimiento administrativo vinculado.'}
+                                        {opt.text}
                                     </p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${tipo === opt.id ? 'border-accent-blue' : 'border-text-muted/30'
@@ -85,10 +79,19 @@ export default function EscalationModal({ open, onClose, onConfirm, ticketId }) 
                         ))}
                     </div>
 
+                    <div>
+                        <label className="text-xs text-text-secondary font-medium mb-1.5 block">Motivo de la derivación</label>
+                        <textarea
+                            value={motivo}
+                            onChange={e => setMotivo(e.target.value)}
+                            className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full"
+                            placeholder="Detalle el motivo o requerimiento del cliente..."
+                        />
+                    </div>
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 mt-5">
                     <button
                         onClick={onClose}
                         className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm font-semibold hover:bg-bg-card-hover transition-colors"
@@ -97,14 +100,14 @@ export default function EscalationModal({ open, onClose, onConfirm, ticketId }) 
                     </button>
                     <button
                         onClick={handleConfirm}
+                        disabled={!motivo.trim()}
                         className="flex-1 py-2.5 rounded-lg bg-accent-orange border-none text-white cursor-pointer text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         <CheckCircle2 size={14} />
-                        Escalar Ticket
+                        Continuar
                     </button>
                 </div>
             </div>
         </div>
-
     );
 }

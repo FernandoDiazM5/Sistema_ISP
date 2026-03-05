@@ -23,7 +23,6 @@ const DashboardPage = lazy(() => import('./components/dashboard/DashboardPage'))
 const ClientesPage = lazy(() => import('./components/clientes/ClientesPage'));
 const ClienteDetalle = lazy(() => import('./components/clientes/ClienteDetalle'));
 const ImportacionPage = lazy(() => import('./components/importacion/ImportacionPage'));
-const TicketsPage = lazy(() => import('./components/tickets/TicketsPage'));
 const AveriasPage = lazy(() => import('./components/averias/AveriasPage'));
 const SoporteRemotoPage = lazy(() => import('./components/soporte/SoporteRemotoPage'));
 const ReportesPage = lazy(() => import('./components/reportes/ReportesPage'));
@@ -84,7 +83,6 @@ function AppContent() {
           {/* Módulos Operativos Generales */}
           <Route path="/clientes" element={<ClientesPage />} />
           <Route path="/clientes/:id" element={<ClienteDetalle />} />
-          <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/averias" element={<AveriasPage />} />
           <Route path="/instalaciones" element={<InstalacionesPage />} />
 

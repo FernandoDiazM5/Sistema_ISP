@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Eye, TicketPlus, ShoppingBag } from 'lucide-react';
+import { Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 
 const columnHelper = createColumnHelper();
@@ -92,21 +92,21 @@ const dataColumns = [
 ];
 
 // Columna unificada de acciones
-export function buildColumns({ onCreateTicket, onCreatePostVenta, onViewDetail } = {}) {
-    const hasActions = onCreateTicket || onCreatePostVenta;
+export function buildColumns({ onEscalar, onCreatePostVenta, onViewDetail } = {}) {
+    const hasActions = onEscalar || onCreatePostVenta;
 
     const actionsColumn = columnHelper.display({
         id: 'actions',
         header: () => hasActions ? <span className="text-[10px]">ACCIONES</span> : '',
         cell: ({ row }) => (
             <div className="flex items-center gap-1.5 justify-center">
-                {onCreateTicket && (
+                {onEscalar && (
                     <button
-                        onClick={(e) => { e.stopPropagation(); onCreateTicket(row.original); }}
-                        className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-accent-blue/50 active:scale-95"
-                        title="Crear Ticket"
+                        onClick={(e) => { e.stopPropagation(); onEscalar(row.original); }}
+                        className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-accent-orange hover:bg-accent-orange/10 transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-accent-orange/50 active:scale-95"
+                        title="Derivar Cliente"
                     >
-                        <TicketPlus size={16} />
+                        <ArrowUpRight size={16} />
                     </button>
                 )}
                 {onCreatePostVenta && (

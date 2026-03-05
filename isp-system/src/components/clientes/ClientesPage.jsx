@@ -5,7 +5,9 @@ import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
 import ClientesTable from './ClientesTable';
 import { buildColumns, columns as defaultColumns } from './columns';
-import TicketCreateModal from '../tickets/modals/TicketCreateModal';
+import EscalarModal from './modals/EscalarModal';
+import InlineVisitaModal from './modals/InlineVisitaModal';
+import InlineSoporteModal from './modals/InlineSoporteModal';
 
 // UI Components
 import Input from '../ui/Input';
@@ -43,14 +45,20 @@ export default function ClientesPage() {
   const addPostVenta = useStore(s => s.addPostVenta);
   const addToast = useStore(s => s.addToast);
   const tecnicos = useStore(s => s.tecnicos);
+  const addRequerimiento = useStore(s => s.addRequerimiento);
+  const tiposRequerimiento = useStore(s => s.tiposRequerimiento);
+  const addDerivacion = useStore(s => s.addDerivacion);
 
   // Search Scope State
   const [searchScope, setSearchScope] = useState(SEARCH_FIELDS.map(f => f.key));
   const [showSearchScope, setShowSearchScope] = useState(false);
   const [showColumnSelector, setShowColumnSelector] = useState(false);
 
-  // Ticket creation modal
-  const [ticketClient, setTicketClient] = useState(null);
+  // Escalar modal
+  const [escalarClient, setEscalarClient] = useState(null);
+  const [inlineVisitaClient, setInlineVisitaClient] = useState(null);
+  const [inlineSoporteClient, setInlineSoporteClient] = useState(null);
+  const [motivoDerivacion, setMotivoDerivacion] = useState('');
 
   // PostVenta quick modal
   const [pvClient, setPvClient] = useState(null);
@@ -73,8 +81,8 @@ export default function ClientesPage() {
   });
 
   // Build columns with action callbacks
-  const onCreateTicket = useCallback((client) => {
-    setTicketClient(client);
+  const onEscalar = useCallback((client) => {
+    setEscalarClient(client);
   }, []);
 
   const onCreatePostVenta = useCallback((client) => {
@@ -91,8 +99,8 @@ export default function ClientesPage() {
   }, [navigate]);
 
   const tableColumns = useMemo(() => {
-    return buildColumns({ onCreateTicket, onCreatePostVenta, onViewDetail });
-  }, [onCreateTicket, onCreatePostVenta, onViewDetail]);
+    return buildColumns({ onEscalar, onCreatePostVenta, onViewDetail });
+  }, [onEscalar, onCreatePostVenta, onViewDetail]);
 
   // Filter visible columns
   const visibleColumns = useMemo(() => {
@@ -127,10 +135,46 @@ export default function ClientesPage() {
     setPvClient(null);
   };
 
-  // Handle Ticket success
-  const handleTicketSuccess = () => {
-    addToast({ type: 'success', message: `Ticket creado para ${ticketClient?.nombre || 'cliente'}` });
-    setTicketClient(null);
+  // Handle Escalar confirm
+  const handleEscalarConfirm = ({ tipo, motivo }) => {
+    if (!escalarClient) return;
+    const client = escalarClient;
+    setMotivoDerivacion(motivo);
+    setEscalarClient(null);
+
+    if (tipo === 'visita') {
+      setInlineVisitaClient(client);
+    } else if (tipo === 'soporte') {
+      setInlineSoporteClient(client);
+    } else if (tipo === 'requerimiento') {
+      const defaultTipo = tiposRequerimiento.length > 0 ? tiposRequerimiento[0].nombre : 'Otro';
+      addRequerimiento({
+        titulo: `[CLIENTE] ${motivo}`,
+        tipo: defaultTipo,
+        prioridad: 'Media',
+        solicitante: client.nombre,
+        descripcion: `Requerimiento generado desde el módulo de Clientes.\nCliente: ${client.nombre}\nMotivo: ${motivo}`,
+        montoEstimado: 0,
+        estado: 'Pendiente',
+        fechaLimite: null,
+        ticketOrigen: '',
+      });
+      addToast({ type: 'success', message: `Requerimiento administrativo creado para ${client.nombre}` });
+    } else if (tipo === 'planta') {
+      addDerivacion({
+        tipo: 'Mantenimiento NAP',
+        zona: client.zona || 'Por confirmar',
+        direccion: client.direccion || 'Sin dirección',
+        tecnicoId: '',
+        tecnicoNombre: 'Pendiente',
+        estado: 'Pendiente',
+        prioridad: 'Media',
+        descripcion: `Derivado desde el módulo de Clientes.\nCliente: ${client.nombre}\nMotivo: ${motivo}`,
+        ticketId: '',
+        clienteRelacionado: client.id,
+      });
+      addToast({ type: 'success', message: `Derivación a planta externa creada para ${client.nombre}` });
+    }
   };
 
   const activeTecnicos = useMemo(() => tecnicos.filter(t => t.estado === 'Activo'), [tecnicos]);
@@ -299,14 +343,35 @@ export default function ClientesPage() {
         setPagination={setPagination}
       />
 
-      {/* ====== MODAL: Crear Ticket desde Cliente ====== */}
-      {ticketClient && (
-        <TicketCreateModal
-          onClose={() => setTicketClient(null)}
-          onSuccess={handleTicketSuccess}
-          initialData={{
-            clienteId: ticketClient.id,
-            clienteNombre: ticketClient.nombre,
+      {/* ====== MODALES DE DERIVACIÓN ====== */}
+      {escalarClient && (
+        <EscalarModal
+          client={escalarClient}
+          onClose={() => setEscalarClient(null)}
+          onConfirm={handleEscalarConfirm}
+        />
+      )}
+
+      {inlineVisitaClient && (
+        <InlineVisitaModal
+          client={inlineVisitaClient}
+          motivo={motivoDerivacion}
+          onClose={() => setInlineVisitaClient(null)}
+          onSuccess={() => {
+            addToast({ type: 'success', message: `Visita técnica agendada para ${inlineVisitaClient.nombre}` });
+            setInlineVisitaClient(null);
+          }}
+        />
+      )}
+
+      {inlineSoporteClient && (
+        <InlineSoporteModal
+          client={inlineSoporteClient}
+          motivo={motivoDerivacion}
+          onClose={() => setInlineSoporteClient(null)}
+          onSuccess={() => {
+            addToast({ type: 'success', message: `Soporte remoto registrado para ${inlineSoporteClient.nombre}` });
+            setInlineSoporteClient(null);
           }}
         />
       )}

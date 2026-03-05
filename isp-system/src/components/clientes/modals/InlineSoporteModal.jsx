@@ -4,7 +4,7 @@ import useStore from '../../../store/useStore';
 import Adjuntos from '../../common/Adjuntos';
 import DiagnosticFields, { getEmptyDiag } from '../../common/DiagnosticFields';
 
-export default function InlineSoporteModal({ ticket, client, onClose, onSuccess }) {
+export default function InlineSoporteModal({ client, motivo, onClose, onSuccess }) {
     const tecnicos = useStore(s => s.tecnicos);
     const addSesionRemoto = useStore(s => s.addSesionRemoto);
     const addVisita = useStore(s => s.addVisita);
@@ -20,17 +20,17 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
 
     // Initialize form
     useEffect(() => {
-        if (ticket) {
+        if (client) {
             setSoporteTipo('Diagnóstico');
             setSoporteTecnico('');
-            setSoporteIP(client?.ip || '');
-            setSoporteObservaciones('');
+            setSoporteIP(client.ip || '');
+            setSoporteObservaciones(`Motivo del reporte: ${motivo}`);
             setSoporteDerivar(false);
             setSoporteAdjuntos([]);
             setDiagnostico(getEmptyDiag());
             setSuccess(false);
         }
-    }, [ticket, client]);
+    }, [client, motivo]);
 
     const activeTecnicos = useMemo(() => {
         return tecnicos.filter(t => t.estado === 'Activo');
@@ -41,40 +41,40 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
         const tec = tecnicos.find(t => t.id === soporteTecnico);
 
         addSesionRemoto({
-            clienteId: ticket.clienteId,
-            clienteNombre: ticket.clienteNombre,
-            ticketId: ticket.id,
+            clienteId: client.id,
+            clienteNombre: client.nombre,
+            ticketId: '', // Ya no hay ticket
             tipo: soporteTipo,
             tecnicoId: soporteTecnico,
             tecnicoNombre: tec ? tec.nombre : '',
             ip: soporteIP,
-            tecnologia: client?.tecnologia || '',
-            diagnosticoCompleto: diagnostico, // Guardamos el objeto completo
-            ...diagnostico, // Y también expandido para búsquedas fáciles si se requiere
+            tecnologia: client.tecnologia || '',
+            diagnosticoCompleto: diagnostico,
+            ...diagnostico,
             observaciones: soporteObservaciones,
             estado: 'Completada',
-            plan: client?.plan || '',
-            nodo: client?.nodo || client?.nodo_router || '',
+            plan: client.plan || '',
+            nodo: client.nodo || client.nodo_router || '',
             adjuntos: soporteAdjuntos,
         });
 
         if (soporteDerivar) {
             addVisita({
-                clienteId: ticket.clienteId,
-                clienteNombre: ticket.clienteNombre,
-                ticketId: ticket.id,
+                clienteId: client.id,
+                clienteNombre: client.nombre,
+                ticketId: '',
                 tecnicoId: soporteTecnico,
                 tecnicoNombre: tec ? tec.nombre : '',
                 tipo: 'Diagnóstico',
                 prioridad: 'Alta',
                 fecha: new Date().toISOString().split('T')[0],
-                horaInicio: '',
-                direccion: client?.direccion || '',
-                descripcion: `Derivado desde soporte remoto — Ticket ${ticket.id}: ${soporteObservaciones || ticket.descripcion}`,
+                horaInicio: '09:00', // Default a una hora o dejar que asigne
+                direccion: client.direccion || '',
+                descripcion: `Derivado desde soporte remoto — Reporte: ${motivo}\nObservaciones: ${soporteObservaciones}`,
                 estado: 'Programada',
-                nodo: client?.nodo || client?.nodo_router || '',
-                plan: client?.plan || '',
-                tecnologia: client?.tecnologia || '',
+                nodo: client.nodo || client.nodo_router || '',
+                plan: client.plan || '',
+                tecnologia: client.tecnologia || '',
                 adjuntos: soporteAdjuntos,
                 diagnosticoCompleto: diagnostico,
                 ...diagnostico,
@@ -88,7 +88,7 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[70]" onClick={onClose}>
             <div className={`bg-bg-card rounded-2xl p-6 w-[640px] border max-h-[90vh] overflow-y-auto transition-colors duration-500 ${success ? 'border-green-500/60' : 'border-border'}`} onClick={e => e.stopPropagation()}>
                 {success ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
@@ -101,21 +101,16 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                         <div className="flex items-center justify-between mb-5">
                             <div className="flex items-center gap-3">
                                 <div className="w-9 h-9 rounded-lg bg-accent-cyan/20 flex items-center justify-center"><Monitor size={18} className="text-accent-cyan" /></div>
-                                <div><h3 className="text-lg font-bold">Generar Soporte Remoto</h3><p className="text-xs text-text-muted">Sesión remota desde ticket</p></div>
+                                <div><h3 className="text-lg font-bold">Registrar Soporte Remoto</h3><p className="text-xs text-text-muted">Asistencia técnica en línea</p></div>
                             </div>
                             <button onClick={onClose} className="text-text-muted hover:text-text-primary text-lg border-none bg-transparent cursor-pointer font-bold leading-none">&times;</button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mb-5">
+                        <div className="grid grid-cols-1 gap-3 mb-5">
                             <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
                                 <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-1.5">Cliente</p>
-                                <p className="text-sm font-medium text-text-primary">{ticket.clienteNombre}</p>
-                                <p className="text-[11px] text-text-muted font-mono mt-0.5">ID: {ticket.clienteId}</p>
-                            </div>
-                            <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
-                                <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-1.5">Ticket</p>
-                                <p className="text-sm font-medium text-text-primary font-mono">{ticket.id}</p>
-                                <p className="text-[11px] text-text-muted mt-0.5">{ticket.estado} — {ticket.prioridad}</p>
+                                <p className="text-sm font-medium text-text-primary">{client.nombre}</p>
+                                <p className="text-[11px] text-text-muted mt-0.5">Motivo Original: {motivo}</p>
                             </div>
                         </div>
 
@@ -134,7 +129,7 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                                     <label className="text-xs text-text-secondary font-medium mb-1.5 block">Técnico *</label>
                                     <select value={soporteTecnico} onChange={e => setSoporteTecnico(e.target.value)} className="w-full">
                                         <option value="">Seleccionar...</option>
-                                        {activeTecnicos.map(t => <option key={t.id} value={t.id}>{t.nombre} — {t.especialidad}</option>)}
+                                        {activeTecnicos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                                     </select>
                                 </div>
                                 <div>
@@ -144,14 +139,14 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                             </div>
 
                             <DiagnosticFields
-                                tecnologia={client?.tecnologia}
+                                tecnologia={client.tecnologia}
                                 value={diagnostico}
                                 onChange={setDiagnostico}
                             />
 
                             <div>
-                                <label className="text-xs text-text-secondary font-medium mb-1.5 block">Observaciones / Resultado</label>
-                                <textarea value={soporteObservaciones} onChange={e => setSoporteObservaciones(e.target.value)} className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full" placeholder="Resultados de la sesión..." />
+                                <label className="text-xs text-text-secondary font-medium mb-1.5 block">Resultados y Observaciones</label>
+                                <textarea value={soporteObservaciones} onChange={e => setSoporteObservaciones(e.target.value)} className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[80px] resize-y outline-none focus:border-accent-blue w-full" placeholder="Detalle lo realizado en el equipo..." />
                             </div>
 
                             <Adjuntos value={soporteAdjuntos} onChange={setSoporteAdjuntos} max={5} />
@@ -160,14 +155,14 @@ export default function InlineSoporteModal({ ticket, client, onClose, onSuccess 
                                 <input type="checkbox" checked={soporteDerivar} onChange={e => setSoporteDerivar(e.target.checked)} className="w-4 h-4 accent-accent-purple cursor-pointer" />
                                 <div>
                                     <p className="text-sm font-medium text-text-primary">Derivar a Visita Técnica</p>
-                                    <p className="text-[11px] text-text-muted">Al guardar, también se creará una visita técnica.</p>
+                                    <p className="text-[11px] text-text-muted">Si el problema no fue resuelto, agenda una visita automática.</p>
                                 </div>
                             </label>
 
                             <div className="flex gap-3 mt-1">
-                                <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm hover:bg-bg-card-hover transition-colors">Cancelar</button>
-                                <button type="button" onClick={handleSubmit} disabled={!soporteTecnico} className="flex-1 py-2.5 rounded-lg bg-accent-cyan border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
-                                    {soporteDerivar ? 'Registrar y Derivar' : 'Registrar Soporte Remoto'}
+                                <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm font-semibold hover:bg-bg-card-hover transition-colors">Cancelar</button>
+                                <button type="button" onClick={handleSubmit} disabled={!soporteTecnico} className="flex-1 py-2.5 rounded-lg bg-accent-cyan border-none text-white cursor-pointer text-sm font-bold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
+                                    {soporteDerivar ? 'Registrar y Derivar' : 'Guardar Sesión'}
                                 </button>
                             </div>
                         </div>

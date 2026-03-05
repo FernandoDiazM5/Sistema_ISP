@@ -1,4 +1,4 @@
-import { Wifi, LayoutDashboard, Users, Ticket, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog, RefreshCw, Settings2 } from 'lucide-react';
+import { Wifi, LayoutDashboard, Users, CloudUpload, Box, Settings, LogOut, AlertTriangle, MonitorSmartphone, BarChart3, MessageSquare, Wrench, HardHat, Calendar, Cable, ShoppingBag, FileText, UserCog, RefreshCw, Settings2 } from 'lucide-react';
 import { useAuth } from '../../auth/GoogleAuthProvider';
 import { ROLES } from '../../auth/roles';
 import { NavLink } from 'react-router-dom';
@@ -15,7 +15,6 @@ const navSections = [
   },
   {
     label: 'Soporte', items: [
-      { to: '/tickets', label: 'Tickets', icon: Ticket },
       { to: '/averias', label: 'Averías', icon: AlertTriangle },
       { to: '/soporte', label: 'Soporte Remoto', icon: MonitorSmartphone },
       { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare },
@@ -46,7 +45,6 @@ const navSections = [
 const ROUTE_TO_MODULE = {
   '/': MODULES.DASHBOARD,
   '/clientes': MODULES.CLIENTES,
-  '/tickets': MODULES.TICKETS,
   '/averias': MODULES.AVERIAS,
   '/soporte': MODULES.SOPORTE_REMOTO,
   '/whatsapp': MODULES.WHATSAPP,
