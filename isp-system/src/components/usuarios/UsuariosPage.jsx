@@ -203,14 +203,21 @@ export default function UsuariosPage() {
         }
 
         // Crear usuario en Firestore
-        await createUser({
+        const newUserObj = {
           email: form.email,
           nombre: form.nombre,
           foto: form.foto,
           rol: form.rol,
           permisos: form.permisos,
           authType: form.authType,
-        }, currentUser?.uid || 'system', authUid);
+        };
+
+        // Si es de tipo email_password, guardamos la contraseña en Firestore
+        if (form.authType === 'email_password') {
+          newUserObj.password = form.password;
+        }
+
+        await createUser(newUserObj, currentUser?.uid || 'system', authUid);
 
         addToast({
           type: 'success',
@@ -527,11 +534,10 @@ export default function UsuariosPage() {
                   <label className="block text-sm font-medium mb-2">Tipo de Autenticación *</label>
                   <div className="grid grid-cols-2 gap-3">
                     <label
-                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        form.authType === 'google_oauth'
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.authType === 'google_oauth'
                           ? 'border-blue-500 bg-blue-500/10'
                           : 'border-dark-border hover:border-gray-500'
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -550,11 +556,10 @@ export default function UsuariosPage() {
                     </label>
 
                     <label
-                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        form.authType === 'email_password'
+                      className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.authType === 'email_password'
                           ? 'border-purple-500 bg-purple-500/10'
                           : 'border-dark-border hover:border-gray-500'
-                      }`}
+                        }`}
                     >
                       <input
                         type="radio"
@@ -681,11 +686,10 @@ export default function UsuariosPage() {
                     return (
                       <label
                         key={rol}
-                        className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          form.rol === rol
+                        className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${form.rol === rol
                             ? (ROLE_COLORS[rol]?.border || 'border-gray-500 bg-gray-500/10')
                             : 'border-border hover:border-text-muted'
-                        }`}
+                          }`}
                       >
                         <input
                           type="radio"
@@ -769,11 +773,10 @@ export default function UsuariosPage() {
                         <button
                           key={level}
                           onClick={() => setCustomPermissions(prev => ({ ...prev, [module]: level }))}
-                          className={`p-2 rounded-lg text-sm transition-all ${
-                            currentPermission === level
+                          className={`p-2 rounded-lg text-sm transition-all ${currentPermission === level
                               ? 'bg-accent-blue text-white'
                               : 'bg-dark hover:bg-dark-lighter text-gray-400'
-                          }`}
+                            }`}
                         >
                           {PERMISSION_LEVEL_LABELS[level].label}
                         </button>

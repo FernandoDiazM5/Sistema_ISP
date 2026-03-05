@@ -7,7 +7,13 @@ import {
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword
 } from 'firebase/auth';
-import { getFirebaseApp } from './firebase';
+import {
+  collection,
+  query,
+  where,
+  getDocs
+} from 'firebase/firestore';
+import { getFirebaseApp, initFirebase } from './firebase';
 import { CONFIG } from '../utils/constants';
 
 // Inicializar Firebase Auth reutilizando la misma instancia de app
@@ -33,96 +39,76 @@ function initAuth() {
 }
 
 /**
- * Crear usuario con email y contraseña en Firebase Auth (Vía REST API)
- * Esto evita totalmente inicializar un App Secundaria y nunca desconecta 
- * al administrador de su propia sesión.
+ * Simulación de creación de Auth, ya que ahora 
+ * el sistema guarda Clave+Usuario directamente en Firestore.
  */
 export async function createUserWithPassword(email, password) {
+  // Ahora Firebase Auth no se toca, el nuevo usuario
+  // será registrado directamente como un documento más por el store.
+
+  // Generamos un ID pseudo-aleatorio que simule el UID de Auth
+  const mockUid = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  return {
+    success: true,
+    uid: mockUid,
+    email: email,
+  };
+}
+
+/**
+ * Iniciar sesión con email y contraseña
+ * [NUEVA LÓGICA] Consulta directamente a Firestore, sin validación en Auth
+ */
+export async function loginWithPassword(email, password) {
   try {
-    const mainApp = getFirebaseApp();
-    if (!mainApp) throw new Error('Firebase Auth no está configurado');
+    const db = initFirebase();
+    if (!db) throw new Error('Base de datos no inicializada');
 
-    const apiKey = mainApp.options.apiKey;
-    if (!apiKey) throw new Error('La API Key no está presente en la aplicación base');
+    // Mantenemos la variable 'email' pero internamente verificamos
+    // si el campo 'email' de Firestore coincide con la cadena provista,
+    // o podríamos buscar por un nuevo campo 'username'.
+    // Por simplicidad, el correo actual funcionará como el "Usuario".
+    const q = query(
+      collection(db, 'usuarios'),
+      where('email', '==', email.trim()),
+      where('password', '==', password)
+    );
 
-    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        password,
-        returnSecureToken: false
-      })
-    });
+    const querySnapshot = await getDocs(q);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Error REST User:', data);
-      const errorMessage = data.error?.message || 'Error desconocido';
-      let translatedMessage = 'Error al crear usuario';
-
-      if (errorMessage.includes('EMAIL_EXISTS')) {
-        translatedMessage = 'Este email ya está registrado';
-      } else if (errorMessage.includes('INVALID_EMAIL')) {
-        translatedMessage = 'Email inválido';
-      } else if (errorMessage.includes('WEAK_PASSWORD')) {
-        translatedMessage = 'La contraseña debe tener al menos 6 caracteres';
-      } else if (errorMessage.includes('API_KEY_INVALID')) {
-        translatedMessage = 'La API Key de Firebase es inválida. Revise su Configuración.';
-      } else {
-        translatedMessage = `Firebase error: ${errorMessage}`;
-      }
-
+    if (querySnapshot.empty) {
       return {
         success: false,
-        error: translatedMessage,
+        error: 'Usuario o clave incorrectos.'
+      };
+    }
+
+    // Como puede haber un solo usuario (esperemos), tomamos el primero
+    let foundUser = null;
+    let uid = null;
+    querySnapshot.forEach((doc) => {
+      foundUser = doc.data();
+      uid = doc.id;
+    });
+
+    if (!foundUser.activo) {
+      return {
+        success: false,
+        error: 'Tu cuenta ha sido desactivada. Contacta al administrador.'
       };
     }
 
     return {
       success: true,
-      uid: data.localId, // En el REST API el UID de firebase viene como localId
-      email: data.email,
+      uid: uid,
+      email: foundUser.email,
     };
   } catch (error) {
-    console.error('Error de fetch al crear usuario:', error);
+    console.error('Error al iniciar sesión con clave:', error);
     return {
       success: false,
-      error: 'Error de red al conectar con Firebase Auth',
-    };
-  }
-}
-
-/**
- * Iniciar sesión con email y contraseña
- */
-export async function loginWithPassword(email, password) {
-  try {
-    const auth = initAuth();
-    if (!auth) throw new Error('Firebase Auth no está configurado');
-
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return {
-      success: true,
-      uid: userCredential.user.uid,
-      email: userCredential.user.email,
-    };
-  } catch (error) {
-    console.error('Error al iniciar sesión:', error);
-
-    let message = 'Error al iniciar sesión';
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-      message = 'Email o contraseña incorrectos';
-    } else if (error.code === 'auth/invalid-email') {
-      message = 'Email inválido';
-    } else if (error.code === 'auth/user-disabled') {
-      message = 'Esta cuenta ha sido desactivada';
-    }
-
-    return {
-      success: false,
-      error: message,
+      error: 'Error de red al consultar credenciales'
     };
   }
 }
