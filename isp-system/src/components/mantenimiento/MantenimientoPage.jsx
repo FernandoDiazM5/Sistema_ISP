@@ -302,6 +302,7 @@ function TabTickets() {
   const deleteSubcategoria = useStore(s => s.deleteSubcategoria);
   const addPrioridadSLA = useStore(s => s.addPrioridadSLA);
   const addEstadoCatalogo = useStore(s => s.addEstadoCatalogo);
+  const updateEstadoCatalogo = useStore(s => s.updateEstadoCatalogo);
   const deleteEstadoCatalogo = useStore(s => s.deleteEstadoCatalogo);
 
   const [expandedCat, setExpandedCat] = useState(null);
@@ -319,6 +320,8 @@ function TabTickets() {
   const [newSLAForm, setNewSLAForm] = useState({ prioridad: 'Media', tiempoLimite: '24 horas', impacto: '' });
   const [addingEstado, setAddingEstado] = useState(false);
   const [newEstadoForm, setNewEstadoForm] = useState({ entidad: 'Ticket', nombre: '', color: '#10b981', orden: 1, esFinal: false });
+  const [editingEstadoId, setEditingEstadoId] = useState(null);
+  const [editEstadoForm, setEditEstadoForm] = useState({});
 
   const PRIORIDADES = ['Crítica', 'Alta', 'Media', 'Baja'];
   const TIPOS_ATENCION = ['Soporte Remoto', 'Visita Técnica', 'Ambos'];
@@ -350,6 +353,12 @@ function TabTickets() {
     addEstadoCatalogo(newEstadoForm);
     setNewEstadoForm({ entidad: 'Ticket', nombre: '', color: '#10b981', orden: 1, esFinal: false });
     setAddingEstado(false);
+  };
+
+  const handleUpdateEstado = (id) => {
+    if (!editEstadoForm.nombre?.trim()) return;
+    updateEstadoCatalogo(id, editEstadoForm);
+    setEditingEstadoId(null);
   };
 
   const byEntidad = estadosCatalogo.reduce((acc, e) => {
@@ -552,14 +561,37 @@ function TabTickets() {
                 <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">{entidad}</span>
               </div>
               {estados.sort((a, b) => a.orden - b.orden).map(est => (
-                <div key={est.id} className="flex items-center gap-3 pl-8 pr-4 py-2 hover:bg-bg-secondary/50 transition-colors group">
-                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: est.color }} />
-                  <span className="flex-1 text-sm text-text-primary">{est.nombre}</span>
-                  <span className="text-xs text-text-muted">#{est.orden}</span>
-                  {est.esFinal && <span className="text-xs text-text-muted bg-bg-secondary border border-border px-2 py-0.5 rounded-full">Final</span>}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => deleteEstadoCatalogo(est.id)} className="p-1 rounded text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-colors"><Trash2 size={12} /></button>
-                  </div>
+                <div key={est.id} className="border-b border-border/30 last:border-0 hover:bg-bg-secondary/50 transition-colors">
+                  {editingEstadoId === est.id ? (
+                    <div className="flex flex-wrap items-center gap-2 pl-4 pr-4 py-2 bg-accent-blue/5">
+                      <div className="flex items-center gap-2 flex-1 min-w-[150px]">
+                        <input type="color" value={editEstadoForm.color || '#000000'} onChange={e => setEditEstadoForm(f => ({ ...f, color: e.target.value }))} className="w-6 h-6 rounded border border-border cursor-pointer shrink-0 bg-transparent p-0" />
+                        <input autoFocus value={editEstadoForm.nombre || ''} onChange={e => setEditEstadoForm(f => ({ ...f, nombre: e.target.value }))} className="flex-1 min-w-0 bg-bg-secondary border border-accent-blue/30 rounded-lg px-2 py-1 text-sm text-text-primary outline-none focus:border-accent-blue" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-text-muted">Ord:</label>
+                        <input type="number" min="1" value={editEstadoForm.orden || 1} onChange={e => setEditEstadoForm(f => ({ ...f, orden: parseInt(e.target.value) }))} className="w-12 bg-bg-secondary border border-border rounded px-2 py-1 text-sm text-text-primary outline-none" />
+                        <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer shrink-0">
+                          <input type="checkbox" checked={editEstadoForm.esFinal || false} onChange={e => setEditEstadoForm(f => ({ ...f, esFinal: e.target.checked }))} className="rounded" /> Fin
+                        </label>
+                      </div>
+                      <div className="flex gap-1 shrink-0 ml-auto">
+                        <button onClick={() => handleUpdateEstado(est.id)} className="p-1.5 rounded-lg bg-accent-green/20 text-accent-green hover:bg-accent-green/30"><Check size={13} /></button>
+                        <button onClick={() => setEditingEstadoId(null)} className="p-1.5 rounded-lg bg-bg-secondary text-text-muted hover:text-text-primary"><X size={13} /></button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 pl-8 pr-4 py-2 group">
+                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: est.color }} />
+                      <span className="flex-1 text-sm text-text-primary">{est.nombre}</span>
+                      <span className="text-xs text-text-muted font-mono bg-bg-card border border-border px-1.5 py-0.5 rounded">#{est.orden}</span>
+                      {est.esFinal && <span className="text-[10px] uppercase font-bold text-text-muted bg-bg-secondary border border-border px-2 py-0.5 rounded-full tracking-wider">Final</span>}
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-auto pl-2">
+                        <button onClick={() => { setEditingEstadoId(est.id); setEditEstadoForm({ nombre: est.nombre, color: est.color, orden: est.orden, esFinal: est.esFinal }); }} className="p-1.5 rounded-lg text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => deleteEstadoCatalogo(est.id)} className="p-1.5 rounded-lg text-text-muted hover:text-accent-red hover:bg-accent-red/10 transition-colors"><Trash2 size={13} /></button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
