@@ -278,7 +278,7 @@ export default function SoporteRemotoPage() {
       clienteNombre: selectedClient.nombre || 'N/A',
       tipo: tipoSesion,
       ip: ipAddress,
-      estado: 'En curso',
+      estado: 'Pendiente',
       tecnico: tecnicoObj?.nombre || 'Sin asignar',
       tecnicoId: tecnicoId,
       duracion: '—',

@@ -52,7 +52,7 @@ export default function InlineSoporteModal({ client, motivo, onClose, onSuccess 
             diagnosticoCompleto: diagnostico,
             ...diagnostico,
             observaciones: soporteObservaciones,
-            estado: 'Completada',
+            estado: 'Pendiente',
             plan: client.plan || '',
             nodo: client.nodo || client.nodo_router || '',
             adjuntos: soporteAdjuntos,
