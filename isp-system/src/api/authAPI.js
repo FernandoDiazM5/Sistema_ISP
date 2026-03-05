@@ -1,3 +1,4 @@
+import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -7,6 +8,7 @@ import {
   updatePassword as firebaseUpdatePassword
 } from 'firebase/auth';
 import { getFirebaseApp } from './firebase';
+import { CONFIG } from '../utils/constants';
 
 // Inicializar Firebase Auth reutilizando la misma instancia de app
 let auth = null;
@@ -31,18 +33,41 @@ function initAuth() {
 }
 
 /**
- * Crear usuario con email y contraseña en Firebase Auth
+ * Crear usuario con email y contraseña en Firebase Auth usando una App Secundaria.
+ * Esto evita que Firebase cierre la sesión del administrador actual 
+ * al registrar a un usuario nuevo.
  */
 export async function createUserWithPassword(email, password) {
+  let tempApp = null;
   try {
-    const auth = initAuth();
-    if (!auth) throw new Error('Firebase Auth no está configurado');
+    const mainApp = getFirebaseApp();
+    if (!mainApp) throw new Error('Firebase Auth no está configurado');
 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    // Extraer propiedades (los getter evaluation lazy se triggerean aquí)
+    const config = {
+      apiKey: CONFIG.FIREBASE.apiKey,
+      authDomain: CONFIG.FIREBASE.authDomain,
+      projectId: CONFIG.FIREBASE.projectId,
+      storageBucket: CONFIG.FIREBASE.storageBucket,
+      messagingSenderId: CONFIG.FIREBASE.messagingSenderId,
+      appId: CONFIG.FIREBASE.appId
+    };
+
+    // Utilizamos un sufijo random para que no choque si se ejecuta concurrente
+    tempApp = initializeApp(config, `TempApp_${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+
+    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+    const uid = userCredential.user.uid;
+    const userEmail = userCredential.user.email;
+
+    // Inmediatamente cerramos la sesión en la app temporal si quedó alguna
+    await signOut(tempAuth);
+
     return {
       success: true,
-      uid: userCredential.user.uid,
-      email: userCredential.user.email,
+      uid: uid,
+      email: userEmail,
     };
   } catch (error) {
     console.error('Error al crear usuario:', error);

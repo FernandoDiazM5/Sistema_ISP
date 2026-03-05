@@ -9,7 +9,7 @@ async function saveToDB(key, data) {
     }
 }
 
-export const createOperationsSlice = (set) => ({
+export const createOperationsSlice = (set, get) => ({
     // ===================== EQUIPOS =====================
     equipos: [],
 
