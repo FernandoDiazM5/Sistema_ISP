@@ -33,63 +33,63 @@ function initAuth() {
 }
 
 /**
- * Crear usuario con email y contraseña en Firebase Auth usando una App Secundaria.
- * Esto evita que Firebase cierre la sesión del administrador actual 
- * al registrar a un usuario nuevo.
+ * Crear usuario con email y contraseña en Firebase Auth (Vía REST API)
+ * Esto evita totalmente inicializar un App Secundaria y nunca desconecta 
+ * al administrador de su propia sesión.
  */
 export async function createUserWithPassword(email, password) {
-  let tempApp = null;
   try {
     const mainApp = getFirebaseApp();
     if (!mainApp) throw new Error('Firebase Auth no está configurado');
 
-    // Extraer propiedades directamente de la aplicación de Firebase principal, que
-    // ya resolvió exitosamente las variables e inicializó su backend local
-    const baseConfig = mainApp.options;
+    const apiKey = mainApp.options.apiKey;
+    if (!apiKey) throw new Error('La API Key no está presente en la aplicación base');
 
-    const config = {
-      apiKey: baseConfig.apiKey,
-      authDomain: baseConfig.authDomain,
-      projectId: baseConfig.projectId,
-      storageBucket: baseConfig.storageBucket,
-      messagingSenderId: baseConfig.messagingSenderId,
-      appId: baseConfig.appId
-    };
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        returnSecureToken: false
+      })
+    });
 
-    // Utilizamos un sufijo random para que no choque si se ejecuta concurrente
-    tempApp = initializeApp(config, `TempApp_${Date.now()}`);
-    const tempAuth = getAuth(tempApp);
+    const data = await response.json();
 
-    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-    const uid = userCredential.user.uid;
-    const userEmail = userCredential.user.email;
+    if (!response.ok) {
+      console.error('Error REST User:', data);
+      const errorMessage = data.error?.message || 'Error desconocido';
+      let translatedMessage = 'Error al crear usuario';
 
-    // Inmediatamente cerramos la sesión en la app temporal si quedó alguna
-    await signOut(tempAuth);
+      if (errorMessage.includes('EMAIL_EXISTS')) {
+        translatedMessage = 'Este email ya está registrado';
+      } else if (errorMessage.includes('INVALID_EMAIL')) {
+        translatedMessage = 'Email inválido';
+      } else if (errorMessage.includes('WEAK_PASSWORD')) {
+        translatedMessage = 'La contraseña debe tener al menos 6 caracteres';
+      } else if (errorMessage.includes('API_KEY_INVALID')) {
+        translatedMessage = 'La API Key de Firebase es inválida. Revise su Configuración.';
+      } else {
+        translatedMessage = `Firebase error: ${errorMessage}`;
+      }
 
-    return {
-      success: true,
-      uid: uid,
-      email: userEmail,
-    };
-  } catch (error) {
-    console.error('Error al crear usuario:', error);
-
-    // Mensajes de error traducidos
-    let message = 'Error al crear usuario';
-    if (error.code === 'auth/email-already-in-use') {
-      message = 'Este email ya está registrado';
-    } else if (error.code === 'auth/invalid-email') {
-      message = 'Email inválido';
-    } else if (error.code === 'auth/weak-password') {
-      message = 'La contraseña debe tener al menos 6 caracteres';
-    } else if (error?.message?.includes('api-key-not-valid')) {
-      message = 'La API Key de Firebase es inválida o no está configurada por este usuario de Firefox. Revise Configuración > Sistema.';
+      return {
+        success: false,
+        error: translatedMessage,
+      };
     }
 
     return {
+      success: true,
+      uid: data.localId, // En el REST API el UID de firebase viene como localId
+      email: data.email,
+    };
+  } catch (error) {
+    console.error('Error de fetch al crear usuario:', error);
+    return {
       success: false,
-      error: message,
+      error: 'Error de red al conectar con Firebase Auth',
     };
   }
 }
