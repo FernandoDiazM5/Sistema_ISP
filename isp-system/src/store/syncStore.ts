@@ -1,17 +1,12 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections, setOfflineQueueCallback, saveDocumentDirect, deleteDocumentDirect } from '../api/firebase';
-
-// ID unico de esta sesion (para no re-aplicar nuestros propios pushes)
-const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-// Debounce timer
-let livePushTimer: any = null;
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, pullLiveCollections, setOfflineQueueCallback, saveDocumentDirect, deleteDocumentDirect } from '../api/firebase';
 
 function getDataSnapshot() {
     const s = useStore.getState();
     return {
         clients: s.clients,
+        tickets: s.tickets,
         averias: s.averias,
         tecnicos: s.tecnicos,
         equipos: s.equipos,
@@ -175,7 +170,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             if (!get().liveEnabled || get().isReceivingRemoteData) return;
 
             const dataKeys = [
-                'clients', 'averias', 'tecnicos', 'equipos',
+                'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
                 'visitas', 'instalaciones', 'derivaciones', 'postVenta',
                 'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
                 'whatsappLogs', 'templates', 'whatsappCategories',

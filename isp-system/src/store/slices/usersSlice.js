@@ -1,4 +1,5 @@
 import * as usersAPI from '../../api/usersAPI';
+import { createUserWithPassword } from '../../api/authAPI';
 import { ROLES, DEFAULT_PERMISSIONS, PERMISSION_LEVELS, MODULES } from '../../types/user';
 
 export const createUsersSlice = (set, get) => ({
@@ -98,7 +99,20 @@ export const createUsersSlice = (set, get) => ({
     try {
       set({ usersLoading: true, usersError: null });
       const currentUser = get().currentUser;
-      const newUser = await usersAPI.createUser(userData, currentUser?.uid || 'system');
+
+      // Si es usuario email/password, registrar en Firebase Auth primero para obtener UID real
+      let authUid = null;
+      if (userData.authType === 'email_password' && userData.password) {
+        const authResult = await createUserWithPassword(userData.email, userData.password);
+        if (!authResult.success) {
+          throw new Error(authResult.error || 'Error al crear credenciales de acceso');
+        }
+        authUid = authResult.uid;
+      }
+
+      // Nunca guardar la contraseña en Firestore
+      const { password: _pw, ...safeUserData } = userData;
+      const newUser = await usersAPI.createUser(safeUserData, currentUser?.uid || 'system', authUid);
 
       // Actualizar lista local
       const allUsers = get().allUsers;

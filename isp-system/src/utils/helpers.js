@@ -39,7 +39,9 @@ export function getNextId(collection, prefix, idField = 'id') {
  */
 export const ISP_KEY_MAP = {
     isp_clients: 'clients',
+    isp_tickets: 'tickets',
     isp_averias: 'averias',
+    isp_tecnicos: 'tecnicos',
     isp_equipos: 'equipos',
     isp_visitas: 'visitas',
     isp_instalaciones: 'instalaciones',
@@ -72,6 +74,10 @@ export const ISP_KEY_MAP = {
     isp_marcasEquipo: 'marcasEquipo',
     isp_planesInstalacion: 'planesInstalacion',
     isp_tecnologiasInstalacion: 'tecnologiasInstalacion',
+    isp_cargosTecnico: 'cargosTecnico',
+    isp_especialidadesTecnico: 'especialidadesTecnico',
+    isp_vehiculosTecnico: 'vehiculosTecnico',
+    isp_zonasTecnico: 'zonasTecnico',
 };
 
 /**

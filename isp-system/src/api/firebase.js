@@ -219,7 +219,7 @@ export const pullLiveCollections = async (lastSyncTimestamp = null, onProgress =
     if (!database) throw new Error('Firebase no configurado');
 
     const collectionsToSync = [
-        'clients', 'averias', 'tecnicos', 'equipos',
+        'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
         'visitas', 'instalaciones', 'derivaciones', 'postVenta',
         'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
         'whatsappLogs', 'templates', 'whatsappCategories',
@@ -280,7 +280,7 @@ export const migrateDataToCollections = async (legacyData) => {
 
     console.log('Iniciando migración de datos...');
     const COLLECTIONS = [
-        'clients', 'averias', 'tecnicos', 'equipos', 'visitas',
+        'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
         'movimientosEquipos', 'whatsappLogs', 'templates'
     ];
@@ -403,7 +403,7 @@ export const pushToCloud = async (data, onProgress = (info) => { }) => {
 
     // 3. Guardar cada colección por separado (evitar superar 1MB por doc)
     const COLLECTION_NAMES = [
-        'averias', 'tecnicos', 'equipos', 'visitas',
+        'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
         'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
     ];
@@ -509,7 +509,7 @@ export const pullBackupVersion = async (versionId) => {
 
     // 3. Leer colecciones (cada una puede tener N chunks)
     const COLLECTION_NAMES = [
-        'averias', 'tecnicos', 'equipos', 'visitas',
+        'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
         'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
     ];
@@ -542,6 +542,7 @@ export const pullBackupVersion = async (versionId) => {
     // 5. Armar resultado completo
     return {
         clients: allClients,
+        tickets: collectionsData.tickets || [],
         averias: collectionsData.averias || [],
         tecnicos: collectionsData.tecnicos || [],
         equipos: collectionsData.equipos || [],
@@ -588,7 +589,7 @@ export const pushLiveData = async (data, pusherId) => {
 
         // 2. Guardar cada coleccion
         const COLLECTIONS = [
-            'averias', 'tecnicos', 'equipos', 'visitas',
+            'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
             'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
             'movimientosEquipos', 'whatsappLogs', 'templates',
         ];
@@ -661,7 +662,7 @@ export const pullLiveData = async () => {
 
         // 3. Leer colecciones
         const COLLECTIONS = [
-            'averias', 'tecnicos', 'equipos', 'visitas',
+            'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
             'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
             'movimientosEquipos', 'whatsappLogs', 'templates',
         ];

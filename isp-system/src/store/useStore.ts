@@ -1,10 +1,11 @@
 import { create } from 'zustand';
-import { subscribeToCollection, saveDocument, deleteDocument, migrateDataToCollections } from '../api/firebase';
+import { saveDocument, deleteDocument, migrateDataToCollections } from '../api/firebase';
 import * as db from '../utils/db'; // Legacy DB access for migration
 import { getNextId, ISP_KEY_MAP, STORE_TO_DB_KEY_MAP } from '../utils/helpers';
 
 // ===================== SLICE IMPORTS =====================
 import { createClientsSlice } from './slices/clientsSlice';
+import { createTicketsSlice } from './slices/ticketsSlice';
 import { createOperationsSlice } from './slices/operationsSlice';
 import { createUISlice } from './slices/uiSlice';
 import { createAuthSlice } from './slices/authSlice';
@@ -350,6 +351,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   // ===================== COMPOSE SLICES =====================
   ...createClientsSlice(set, get),
+  ...createTicketsSlice(set),
   ...createOperationsSlice(set, get),
   ...createUISlice(set, get),
   ...createAuthSlice(set, get),
@@ -443,29 +445,31 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     const s = get();
     const newId = getNextId(s.tecnicos, 'TEC');
     const newTecnico = { ...tecnico, id: newId };
+    const updated = [newTecnico, ...s.tecnicos];
 
-    // Actualización optimista local
-    set(state => ({ tecnicos: [newTecnico, ...state.tecnicos] }));
-    // Persistencia
+    set({ tecnicos: updated });
+    db.set('isp_tecnicos', updated).catch((e: any) => console.error('[IndexedDB] tecnicos:', e));
     saveDocument('tecnicos', newTecnico);
   },
 
   updateTecnico: (id: string, updates: Partial<ITecnico>) => {
-    set((s: any) => ({
-      tecnicos: s.tecnicos.map(t => t.id === id ? { ...t, ...updates } : t)
-    }));
+    const updated = get().tecnicos.map((t: any) => t.id === id ? { ...t, ...updates } : t);
+    set({ tecnicos: updated });
+    db.set('isp_tecnicos', updated).catch((e: any) => console.error('[IndexedDB] tecnicos:', e));
     saveDocument('tecnicos', { id, ...updates });
   },
 
   deleteTecnico: (id: string) => {
-    set((s: any) => ({ tecnicos: s.tecnicos.filter((t: any) => t.id !== id) }));
+    const updated = get().tecnicos.filter((t: any) => t.id !== id);
+    set({ tecnicos: updated });
+    db.set('isp_tecnicos', updated).catch((e: any) => console.error('[IndexedDB] tecnicos:', e));
     deleteDocument('tecnicos', id);
   },
 
   // ===================== APPLY DELTAS (para live sync incremental) =====================
   applyDeltas: (data: any) => {
     const keysToRestore = [
-      'clients', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',
@@ -523,7 +527,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   // ===================== RESTORE SYSTEM (para backups y live sync full) =====================
   restoreSystem: (data: any) => {
     const keysToRestore = [
-      'clients', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',
@@ -533,6 +537,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'averiasTipos', 'clientChanges',
       'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
       'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+      'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
     ];
 
     const catalogKeysToProtect = [
@@ -540,6 +545,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
       'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
       'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+      'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
     ];
 
     const updates: any = {};
@@ -840,36 +846,53 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   catalogoServicios: CATALOGO_SERVICIOS,
   tiposRequerimiento: TIPOS_REQUERIMIENTO,
 
-  addServicioCatalogo: (servicio) => set(s => {
-    const maxId = s.catalogoServicios.reduce((max, srv) => {
+  addServicioCatalogo: (servicio) => {
+    const s = get();
+    const maxId = s.catalogoServicios.reduce((max: number, srv: any) => {
       const num = parseInt(srv.id.split('-')[1] || 0);
       return !isNaN(num) && num > max ? num : max;
     }, 0);
-    const newId = `SRV-${String(maxId + 1).padStart(2, '0')}`;
-    return { catalogoServicios: [...s.catalogoServicios, { ...servicio, id: newId }] };
-  }),
+    const newItem = { ...servicio, id: `SRV-${String(maxId + 1).padStart(2, '0')}` };
+    const updated = [...s.catalogoServicios, newItem];
+    set({ catalogoServicios: updated });
+    db.set('isp_catalogoServicios', updated).catch((e: any) => console.error('[IndexedDB] catalogoServicios:', e));
+    saveDocument('catalogoServicios', newItem);
+  },
 
-  deleteServicioCatalogo: (id) => set(s => ({
-    catalogoServicios: s.catalogoServicios.filter(srv => srv.id !== id),
-  })),
+  deleteServicioCatalogo: (id) => {
+    const updated = get().catalogoServicios.filter((srv: any) => srv.id !== id);
+    set({ catalogoServicios: updated });
+    db.set('isp_catalogoServicios', updated).catch((e: any) => console.error('[IndexedDB] catalogoServicios:', e));
+    deleteDocument('catalogoServicios', id);
+  },
 
   // CRUD para Tipos de Requerimiento
-  addTipoRequerimiento: (tipo) => set(s => {
-    const maxId = s.tiposRequerimiento.reduce((max, t) => {
+  addTipoRequerimiento: (tipo) => {
+    const s = get();
+    const maxId = s.tiposRequerimiento.reduce((max: number, t: any) => {
       const num = parseInt(t.id.split('-')[1] || 0);
       return !isNaN(num) && num > max ? num : max;
     }, 0);
-    const newId = `TREQ-${String(maxId + 1).padStart(2, '0')}`;
-    return { tiposRequerimiento: [...s.tiposRequerimiento, { ...tipo, id: newId }] };
-  }),
+    const newItem = { ...tipo, id: `TREQ-${String(maxId + 1).padStart(2, '0')}` };
+    const updated = [...s.tiposRequerimiento, newItem];
+    set({ tiposRequerimiento: updated });
+    db.set('isp_tiposRequerimiento', updated).catch((e: any) => console.error('[IndexedDB] tiposRequerimiento:', e));
+    saveDocument('tiposRequerimiento', newItem);
+  },
 
-  updateTipoRequerimiento: (id, updates) => set(s => ({
-    tiposRequerimiento: s.tiposRequerimiento.map(t => t.id === id ? { ...t, ...updates } : t),
-  })),
+  updateTipoRequerimiento: (id, updates) => {
+    const updated = get().tiposRequerimiento.map((t: any) => t.id === id ? { ...t, ...updates } : t);
+    set({ tiposRequerimiento: updated });
+    db.set('isp_tiposRequerimiento', updated).catch((e: any) => console.error('[IndexedDB] tiposRequerimiento:', e));
+    saveDocument('tiposRequerimiento', { id, ...updates });
+  },
 
-  deleteTipoRequerimiento: (id) => set(s => ({
-    tiposRequerimiento: s.tiposRequerimiento.filter(t => t.id !== id),
-  })),
+  deleteTipoRequerimiento: (id) => {
+    const updated = get().tiposRequerimiento.filter((t: any) => t.id !== id);
+    set({ tiposRequerimiento: updated });
+    db.set('isp_tiposRequerimiento', updated).catch((e: any) => console.error('[IndexedDB] tiposRequerimiento:', e));
+    deleteDocument('tiposRequerimiento', id);
+  },
 
   // ===================== AVERIAS TIPOS =====================
   averiasTipos: AVERIAS_TIPOS,

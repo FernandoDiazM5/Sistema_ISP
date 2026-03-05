@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -7,13 +7,7 @@ import {
   sendPasswordResetEmail,
   updatePassword as firebaseUpdatePassword
 } from 'firebase/auth';
-import {
-  collection,
-  query,
-  where,
-  getDocs
-} from 'firebase/firestore';
-import { getFirebaseApp, initFirebase } from './firebase';
+import { getFirebaseApp } from './firebase';
 import { CONFIG } from '../utils/constants';
 
 // Inicializar Firebase Auth reutilizando la misma instancia de app
@@ -39,77 +33,54 @@ function initAuth() {
 }
 
 /**
- * Simulación de creación de Auth, ya que ahora 
- * el sistema guarda Clave+Usuario directamente en Firestore.
+ * Crear usuario en Firebase Auth usando una app secundaria para no
+ * cerrar la sesión del administrador actual.
  */
 export async function createUserWithPassword(email, password) {
-  // Ahora Firebase Auth no se toca, el nuevo usuario
-  // será registrado directamente como un documento más por el store.
+  const primaryApp = getFirebaseApp();
+  if (!primaryApp) return { success: false, error: 'Firebase no está configurado' };
 
-  // Generamos un ID pseudo-aleatorio que simule el UID de Auth
-  const mockUid = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  return {
-    success: true,
-    uid: mockUid,
-    email: email,
-  };
+  // App secundaria para que createUserWithEmailAndPassword no afecte la sesión admin
+  const secondaryApp = initializeApp(primaryApp.options, `admin_create_${Date.now()}`);
+  try {
+    const secondaryAuth = getAuth(secondaryApp);
+    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    return { success: true, uid: credential.user.uid, email: credential.user.email };
+  } catch (error) {
+    console.error('Error al crear usuario en Firebase Auth:', error);
+    let message = 'Error al crear usuario';
+    if (error.code === 'auth/email-already-in-use') message = 'Ya existe una cuenta con este email';
+    else if (error.code === 'auth/weak-password') message = 'La contraseña debe tener al menos 6 caracteres';
+    else if (error.code === 'auth/invalid-email') message = 'Email inválido';
+    return { success: false, error: message };
+  } finally {
+    await deleteApp(secondaryApp);
+  }
 }
 
 /**
- * Iniciar sesión con email y contraseña
- * [NUEVA LÓGICA] Consulta directamente a Firestore, sin validación en Auth
+ * Iniciar sesión con email y contraseña via Firebase Auth.
  */
 export async function loginWithPassword(email, password) {
   try {
-    const db = initFirebase();
-    if (!db) throw new Error('Base de datos no inicializada');
+    const auth = initAuth();
+    if (!auth) throw new Error('Firebase Auth no está configurado');
 
-    // Mantenemos la variable 'email' pero internamente verificamos
-    // si el campo 'email' de Firestore coincide con la cadena provista,
-    // o podríamos buscar por un nuevo campo 'username'.
-    // Por simplicidad, el correo actual funcionará como el "Usuario".
-    const q = query(
-      collection(db, 'usuarios'),
-      where('email', '==', email.trim()),
-      where('password', '==', password)
-    );
-
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      return {
-        success: false,
-        error: 'Usuario o clave incorrectos.'
-      };
-    }
-
-    // Como puede haber un solo usuario (esperemos), tomamos el primero
-    let foundUser = null;
-    let uid = null;
-    querySnapshot.forEach((doc) => {
-      foundUser = doc.data();
-      uid = doc.id;
-    });
-
-    if (!foundUser.activo) {
-      return {
-        success: false,
-        error: 'Tu cuenta ha sido desactivada. Contacta al administrador.'
-      };
-    }
-
+    const credential = await signInWithEmailAndPassword(auth, email.trim(), password);
     return {
       success: true,
-      uid: uid,
-      email: foundUser.email,
+      uid: credential.user.uid,
+      email: credential.user.email,
     };
   } catch (error) {
-    console.error('Error al iniciar sesión con clave:', error);
-    return {
-      success: false,
-      error: 'Error de red al consultar credenciales'
-    };
+    console.error('Error al iniciar sesión:', error);
+    let message = 'Usuario o clave incorrectos.';
+    if (error.code === 'auth/user-disabled') {
+      message = 'Tu cuenta ha sido desactivada. Contacta al administrador.';
+    } else if (error.code === 'auth/too-many-requests') {
+      message = 'Demasiados intentos fallidos. Intenta más tarde.';
+    }
+    return { success: false, error: message };
   }
 }
 
