@@ -78,6 +78,7 @@ export const createUser = async (userData, createdBy, authUid = null) => {
     rol: userData.rol || ROLES.VIEWER,
     permisos: userData.permisos || DEFAULT_PERMISSIONS[userData.rol || ROLES.VIEWER],
     authType: userData.authType || 'google_oauth', // 'google_oauth' o 'email_password'
+    password: userData.password || null, // Password para login custom
     activo: true,
     createdAt: now,
     updatedAt: now,
