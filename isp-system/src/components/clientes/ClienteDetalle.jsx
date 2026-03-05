@@ -5,7 +5,7 @@ import StatusBadge from '../common/StatusBadge';
 import Adjuntos from '../common/Adjuntos';
 import NetworkDiagnostics from './historial/NetworkDiagnostics';
 import {
-  ArrowLeft, Ticket, Monitor, Wrench, ShoppingBag, AlertTriangle,
+  ArrowLeft, Monitor, Wrench, ShoppingBag, AlertTriangle,
   Clock, ChevronDown, ChevronUp, CheckCircle2, FileText, MapPin,
   Gauge, Radio, Zap, Paperclip, History
 } from 'lucide-react';
@@ -158,110 +158,6 @@ function HistoryCard({ color, icon: Icon, title, subtitle, status, date, childre
   );
 }
 
-// ========== Ticket Card Content ==========
-function TicketExpandedContent({ t }) {
-  return (
-    <>
-      {/* Detalles principales */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
-        <DetailField label="ID" value={t.id} />
-        <DetailField label="Estado" value={t.estado} />
-        <DetailField label="Prioridad" value={t.prioridad} />
-        <DetailField label="Tipo Atención" value={t.tipoAtencion || t.tipo} />
-        <DetailField label="Categoría" value={t.categoriaNombre} />
-        <DetailField label="Subcategoría" value={t.subcategoriaNombre} />
-        <DetailField label="Técnico Asignado" value={t.asignado || 'Sin asignar'} />
-        <DetailField label="Fecha Creación" value={formatDateTime(t.fecha || t.createdAt)} />
-        <DetailField label="Fecha Resolución" value={t.fechaResolucion ? formatDateTime(t.fechaResolucion) : null} />
-      </div>
-
-      {/* SLA */}
-      {(t.slaTiempoLimite || t.slaImpacto) && (
-        <div className="bg-accent-yellow/10 rounded-lg p-3 border border-accent-yellow/20">
-          <p className="text-[10px] text-accent-yellow uppercase tracking-wide mb-1.5 font-semibold flex items-center gap-1">
-            <Clock size={12} /> SLA
-          </p>
-          <div className="flex items-center gap-4 text-xs">
-            {t.slaTiempoLimite && <div><span className="text-text-muted">Tiempo límite: </span><span className="text-accent-yellow font-semibold">{t.slaTiempoLimite}</span></div>}
-            {t.slaImpacto && <div><span className="text-text-muted">Impacto: </span><span className="text-text-primary font-medium">{t.slaImpacto}</span></div>}
-          </div>
-        </div>
-      )}
-
-      {/* Descripción / Reporte */}
-      {t.descripcion && (
-        <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
-          <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-1.5 flex items-center gap-1"><FileText size={12} /> Reporte</p>
-          <p className="text-[12px] text-text-primary leading-relaxed whitespace-pre-wrap">{t.descripcion}</p>
-        </div>
-      )}
-
-      {/* Adjuntos del reporte */}
-      <AttachmentSection label="Evidencia del Reporte" items={t.adjuntos} />
-
-      {/* Resolución */}
-      {(t.solucion || t.accionesRealizadas || t.adjuntosResolucion?.length > 0) && (
-        <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
-          <p className="text-[10px] text-green-400 uppercase tracking-wide mb-2 font-semibold flex items-center gap-1">
-            <CheckCircle2 size={12} /> Resolución
-          </p>
-          {t.solucion && (
-            <div className="mb-2">
-              <p className="text-[10px] text-text-muted mb-0.5">Solución:</p>
-              <p className="text-[12px] text-text-secondary whitespace-pre-wrap">{t.solucion}</p>
-            </div>
-          )}
-          {t.accionesRealizadas && (
-            <div className="mb-2">
-              <p className="text-[10px] text-text-muted mb-0.5">Acciones Realizadas:</p>
-              <p className="text-[12px] text-text-secondary whitespace-pre-wrap">{t.accionesRealizadas}</p>
-            </div>
-          )}
-          <AttachmentSection label="Evidencia de Resolución" items={t.adjuntosResolucion} />
-        </div>
-      )}
-
-      {/* Reprogramación */}
-      {(t.motivoReprogramacion || t.adjuntosReprogramacion?.length > 0) && (
-        <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3">
-          <p className="text-[10px] text-orange-400 uppercase tracking-wide mb-2 font-semibold flex items-center gap-1">
-            <Clock size={12} /> Reprogramación
-          </p>
-          {t.motivoReprogramacion && (
-            <div className="mb-2">
-              <p className="text-[10px] text-text-muted mb-0.5">Motivo:</p>
-              <p className="text-[12px] text-text-secondary whitespace-pre-wrap">{t.motivoReprogramacion}</p>
-            </div>
-          )}
-          {t.fechaReprogramacion && <DetailField label="Nueva Fecha" value={formatDateTime(t.fechaReprogramacion)} />}
-          <AttachmentSection label="Evidencia de Reprogramación" items={t.adjuntosReprogramacion} />
-        </div>
-      )}
-
-      {/* Historial de cambios */}
-      {t.historial && t.historial.length > 0 && (
-        <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
-          <p className="text-[10px] text-text-muted uppercase tracking-wide mb-2 font-semibold">Historial de Cambios</p>
-          <div className="space-y-1.5">
-            {[...t.historial].reverse().map((h, i) => (
-              <div key={i} className="flex items-center gap-2 text-[11px]">
-                <span className={`w-2 h-2 rounded-full shrink-0 ${h.estadoNuevo === 'Abierto' ? 'bg-red-400' :
-                  h.estadoNuevo === 'En Proceso' ? 'bg-yellow-400' :
-                    h.estadoNuevo.startsWith('Escalado') ? 'bg-orange-400' :
-                      h.estadoNuevo === 'Resuelto' ? 'bg-green-400' : 'bg-gray-400'
-                  }`}></span>
-                <span className="text-text-primary font-medium">{h.estadoNuevo}</span>
-                <span className="text-text-muted">—</span>
-                <span className="text-text-muted truncate">{h.motivo || 'Sin motivo'}</span>
-                <span className="text-text-muted font-mono text-[9px] ml-auto shrink-0">{formatDate(h.fecha)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 // ========== Soporte Remoto Card Content ==========
 function SoporteExpandedContent({ s, ticket }) {
@@ -273,9 +169,8 @@ function SoporteExpandedContent({ s, ticket }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={s.id} />
         <DetailField label="Estado" value={s.estado} />
-        <DetailField label="Ticket Asociado" value={s.ticketId} />
         <DetailField label="Tipo" value={s.tipo} />
-        <DetailField label="Técnico" value={s.tecnicoNombre || s.tecnico || ticket?.asignado} />
+        <DetailField label="Técnico" value={s.tecnicoNombre || s.tecnico} />
         <DetailField label="Fecha" value={formatDateTime(s.fecha)} />
         <DetailField label="Hora Inicio" value={s.horaInicio} />
         <DetailField label="Hora Fin" value={s.horaFin} />
@@ -317,10 +212,9 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={v.id} />
         <DetailField label="Estado" value={v.estado} />
-        <DetailField label="Ticket Asociado" value={v.ticketId} />
         <DetailField label="Tipo" value={v.tipo} />
         <DetailField label="Prioridad" value={v.prioridad} />
-        <DetailField label="Técnico" value={v.tecnicoNombre || v.tecnico || ticket?.asignado} />
+        <DetailField label="Técnico" value={v.tecnicoNombre || v.tecnico} />
         <DetailField label="Fecha" value={formatDateTime(v.fecha)} />
         <DetailField label="Hora Inicio" value={v.horaInicio} />
         <DetailField label="Hora Fin" value={v.horaFin} />
@@ -385,7 +279,6 @@ function AveriaExpandedContent({ a }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
         <DetailField label="ID" value={a.id} />
         <DetailField label="Estado" value={a.estado} />
-        <DetailField label="Ticket Asociado" value={a.ticketId} />
         <DetailField label="Tipo" value={a.tipo} />
         <DetailField label="Zona Afectada" value={a.zona} />
         <DetailField label="Técnico" value={a.tecnicoNombre || a.tecnico} />
@@ -437,15 +330,10 @@ function CambioExpandedContent({ c }) {
 export default function ClienteDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const clients = useStore(s => s.clients);
-  const tickets = useStore(s => s.tickets);
-  const visitas = useStore(s => s.visitas);
-  const sesionesRemoto = useStore(s => s.sesionesRemoto);
-  const postVenta = useStore(s => s.postVenta);
   const averias = useStore(s => s.averias);
   const clientChangesDb = useStore(s => s.clientChanges) || [];
 
-  const [activeTab, setActiveTab] = useState('tickets');
+  const [activeTab, setActiveTab] = useState('soporte');
 
   const c = clients.find(client => client.id === id);
 
@@ -455,22 +343,14 @@ export default function ClienteDetalle() {
     }
   }, [c, clients, navigate]);
 
-  // --- Data filtered by client ---
-  const clientTickets = useMemo(() =>
-    tickets.filter(t => t.clienteId === id).sort((a, b) => new Date(b.fecha || b.createdAt || 0) - new Date(a.fecha || a.createdAt || 0)),
-    [tickets, id]
-  );
-
-  const clientTicketIds = useMemo(() => new Set(clientTickets.map(t => t.id)), [clientTickets]);
-
   const clientVisitas = useMemo(() =>
-    visitas.filter(v => clientTicketIds.has(v.ticketId)).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
-    [visitas, clientTicketIds]
+    visitas.filter(v => v.clienteId === id).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
+    [visitas, id]
   );
 
   const clientSesiones = useMemo(() =>
-    sesionesRemoto.filter(s => clientTicketIds.has(s.ticketId)).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
-    [sesionesRemoto, clientTicketIds]
+    sesionesRemoto.filter(s => s.clienteId === id).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
+    [sesionesRemoto, id]
   );
 
   const clientPostVenta = useMemo(() =>
@@ -479,8 +359,8 @@ export default function ClienteDetalle() {
   );
 
   const clientAverias = useMemo(() =>
-    averias.filter(a => clientTicketIds.has(a.ticketId)).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
-    [averias, clientTicketIds]
+    averias.filter(a => a.clientesAsociados?.some(ca => ca.id === id)).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)),
+    [averias, id]
   );
 
   const clientChangesLogs = useMemo(() =>
@@ -491,7 +371,6 @@ export default function ClienteDetalle() {
   if (!c) return <div className="p-8 text-center text-text-muted">Cargando cliente o no encontrado...</div>;
 
   const tabs = [
-    { key: 'tickets', label: 'Tickets', icon: Ticket, count: clientTickets.length, color: '#3b82f6' },
     { key: 'soporte', label: 'Soporte Remoto', icon: Monitor, count: clientSesiones.length, color: '#06b6d4' },
     { key: 'visitas', label: 'Visitas Técnicas', icon: Wrench, count: clientVisitas.length, color: '#f97316' },
     { key: 'postventa', label: 'Post-Venta', icon: ShoppingBag, count: clientPostVenta.length, color: '#a855f7' },
@@ -499,7 +378,7 @@ export default function ClienteDetalle() {
     { key: 'cambios', label: 'Cambios', icon: History, count: clientChangesLogs.length, color: '#8b5cf6' },
   ];
 
-  const totalHistorial = clientTickets.length + clientSesiones.length + clientVisitas.length + clientPostVenta.length + clientAverias.length + clientChangesLogs.length;
+  const totalHistorial = clientSesiones.length + clientVisitas.length + clientPostVenta.length + clientAverias.length + clientChangesLogs.length;
 
   return (
     <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
@@ -609,34 +488,20 @@ export default function ClienteDetalle() {
         <div className="p-5">
           <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto pr-1">
 
-            {/* TICKETS */}
-            {activeTab === 'tickets' && (
-              clientTickets.length === 0
-                ? <EmptyState icon={Ticket} text="No hay tickets registrados para este cliente" />
-                : clientTickets.map(t => (
-                  <HistoryCard key={t.id} color="#3b82f6" icon={Ticket}
-                    title={`${t.id} — ${t.categoriaNombre || t.tipo || 'Ticket'}`}
-                    subtitle={t.descripcion?.substring(0, 100) || 'Sin descripción'}
-                    status={t.estado} date={t.fecha || t.createdAt}
-                  >
-                    <TicketExpandedContent t={t} />
-                  </HistoryCard>
-                ))
-            )}
+
 
             {/* SOPORTE REMOTO */}
             {activeTab === 'soporte' && (
               clientSesiones.length === 0
                 ? <EmptyState icon={Monitor} text="No hay sesiones de soporte remoto registradas" />
                 : clientSesiones.map(s => {
-                  const ticket = tickets.find(t => t.id === s.ticketId);
                   return (
                     <HistoryCard key={s.id} color="#06b6d4" icon={Monitor}
                       title={`${s.id} — Soporte Remoto`}
-                      subtitle={`Ticket: ${s.ticketId} • ${s.descripcion?.substring(0, 80) || ''}`}
+                      subtitle={s.descripcion?.substring(0, 80) || ''}
                       status={s.estado} date={s.fecha}
                     >
-                      <SoporteExpandedContent s={s} ticket={ticket} />
+                      <SoporteExpandedContent s={s} />
                     </HistoryCard>
                   );
                 })
@@ -647,14 +512,13 @@ export default function ClienteDetalle() {
               clientVisitas.length === 0
                 ? <EmptyState icon={Wrench} text="No hay visitas técnicas registradas" />
                 : clientVisitas.map(v => {
-                  const ticket = tickets.find(t => t.id === v.ticketId);
                   return (
                     <HistoryCard key={v.id} color="#f97316" icon={Wrench}
                       title={`${v.id} — Visita Técnica`}
-                      subtitle={`Ticket: ${v.ticketId} • ${v.descripcion?.substring(0, 80) || ''}`}
+                      subtitle={v.descripcion?.substring(0, 80) || ''}
                       status={v.estado} date={v.fecha}
                     >
-                      <VisitaExpandedContent v={v} ticket={ticket} clientDir={c.direccion} />
+                      <VisitaExpandedContent v={v} clientDir={c.direccion} />
                     </HistoryCard>
                   );
                 })

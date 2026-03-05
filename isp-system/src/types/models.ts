@@ -14,23 +14,8 @@ export interface IClient {
     updatedAt?: string;
 }
 
-export interface ITicket {
-    id: string;
-    clienteId: string;
-    categoriaId: string;
-    subcategoriaId: string;
-    prioridadId: string;
-    estado: string;
-    tecnicoId?: string;
-    descripcion: string;
-    fechaReporte: string;
-    fechaResolucion?: string;
-    updatedAt?: string;
-}
-
 export interface IAveria {
     id: string;
-    ticketId?: string;
     descripcion: string;
     estado: string;
     fechaReporte: string;
@@ -58,7 +43,6 @@ export interface ITecnico {
 
 export interface IVisita {
     id: string;
-    ticketId?: string;
     clienteId: string;
     tecnicoId: string;
     fechaProgramada: string;

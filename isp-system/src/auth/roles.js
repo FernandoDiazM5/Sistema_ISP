@@ -22,7 +22,7 @@ export const ROLES = {
   TECNICO: {
     label: 'Técnico',
     color: '#10b981', // Verde
-    permissions: ['visitas', 'equipos', 'tickets', 'clientes', 'averias', 'instalaciones'],
+    permissions: ['visitas', 'equipos', 'clientes', 'averias', 'instalaciones'],
   },
   VIEWER: {
     label: 'Visualizador',

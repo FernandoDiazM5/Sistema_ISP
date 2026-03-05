@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import useStore from './useStore';
-import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections, subscribeToOpenTickets, setOfflineQueueCallback, saveDocumentDirect, deleteDocumentDirect } from '../api/firebase';
+import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, deleteBackupVersion, saveDocument, deleteDocument, subscribeToCollection, pullLiveCollections, setOfflineQueueCallback, saveDocumentDirect, deleteDocumentDirect } from '../api/firebase';
 
 // ID unico de esta sesion (para no re-aplicar nuestros propios pushes)
 const SESSION_ID = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -12,7 +12,6 @@ function getDataSnapshot() {
     const s = useStore.getState();
     return {
         clients: s.clients,
-        tickets: s.tickets,
         averias: s.averias,
         tecnicos: s.tecnicos,
         equipos: s.equipos,
@@ -169,27 +168,14 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
         const unsubscribers: (() => void)[] = [];
 
         // 1. Suscripciones Híbridas (Lecturas Activas pero Controladas)
-        // Escuchamos SÓLO los tickets abiertos en Firestore.
-        // Cada vez que hay un nuevo ticket o se edita en la nube, entra silenciosamente aquí.
-        const unsubTickets = subscribeToOpenTickets((liveOpenTickets: any[]) => {
-            const storeState = useStore.getState();
-            if (storeState.applyDeltas && liveOpenTickets.length > 0) {
-                // Bloqueamos el hook de auto-push local para no generar The Ping Pong Loop
-                set({ isReceivingRemoteData: true });
-                // Sobrescribe el store local con estos mini-cambios y los guarda en IndexedDB.
-                storeState.applyDeltas({ tickets: liveOpenTickets });
-                // Liberamos el candado una vez inyectada la mutación
-                set({ isReceivingRemoteData: false });
-            }
-        });
-        unsubscribers.push(unsubTickets as () => void);
+        // Ya no se escuchan tickets
 
         // 2. Suscribirse a cambios locales del store para auto-push NATIVO (Escritura delta)
         const storeUnsub = useStore.subscribe((state: any, prevState: any) => {
             if (!get().liveEnabled || get().isReceivingRemoteData) return;
 
             const dataKeys = [
-                'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
+                'clients', 'averias', 'tecnicos', 'equipos',
                 'visitas', 'instalaciones', 'derivaciones', 'postVenta',
                 'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
                 'whatsappLogs', 'templates', 'whatsappCategories',

@@ -5,7 +5,6 @@ import { getNextId, ISP_KEY_MAP, STORE_TO_DB_KEY_MAP } from '../utils/helpers';
 
 // ===================== SLICE IMPORTS =====================
 import { createClientsSlice } from './slices/clientsSlice';
-import { createTicketsSlice } from './slices/ticketsSlice';
 import { createOperationsSlice } from './slices/operationsSlice';
 import { createUISlice } from './slices/uiSlice';
 import { createAuthSlice } from './slices/authSlice';
@@ -77,12 +76,6 @@ const PRIORIDADES_SLA = [
 ];
 
 const ESTADOS_CATALOGO = [
-  { id: 'EST-01', entidad: 'Ticket', nombre: 'Abierto', color: '#ef4444', orden: 1, esFinal: false },
-  { id: 'EST-02', entidad: 'Ticket', nombre: 'En Proceso', color: '#f59e0b', orden: 2, esFinal: false },
-  { id: 'EST-03', entidad: 'Ticket', nombre: 'Escalado', color: '#f97316', orden: 3, esFinal: false },
-  { id: 'EST-04', entidad: 'Ticket', nombre: 'Resuelto', color: '#10b981', orden: 4, esFinal: true },
-  { id: 'EST-05', entidad: 'Ticket', nombre: 'Cerrado', color: '#6b7280', orden: 5, esFinal: true },
-  { id: 'EST-06', entidad: 'Ticket', nombre: 'Cancelado', color: '#9ca3af', orden: 6, esFinal: true },
   { id: 'EST-07', entidad: 'Cliente', nombre: 'Activo', color: '#10b981', orden: 1, esFinal: false },
   { id: 'EST-08', entidad: 'Cliente', nombre: 'Suspendido', color: '#f59e0b', orden: 2, esFinal: false },
   { id: 'EST-09', entidad: 'Cliente', nombre: 'Retirado', color: '#ef4444', orden: 3, esFinal: true },
@@ -357,7 +350,6 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   // ===================== COMPOSE SLICES =====================
   ...createClientsSlice(set, get),
-  ...createTicketsSlice(set, get),
   ...createOperationsSlice(set, get),
   ...createUISlice(set, get),
   ...createAuthSlice(set, get),
@@ -473,7 +465,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   // ===================== APPLY DELTAS (para live sync incremental) =====================
   applyDeltas: (data: any) => {
     const keysToRestore = [
-      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'clients', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',
@@ -531,7 +523,7 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   // ===================== RESTORE SYSTEM (para backups y live sync full) =====================
   restoreSystem: (data: any) => {
     const keysToRestore = [
-      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'clients', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',

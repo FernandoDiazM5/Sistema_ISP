@@ -169,7 +169,6 @@ function BackupHistorySection() {
                 {/* Stats */}
                 <div className="flex flex-wrap gap-3 mb-3">
                   <Stat label="Clientes" value={version.totalClients} />
-                  <Stat label="Tickets" value={version.totalTickets} />
                   <Stat label="Averías" value={version.totalAverias} />
                   <Stat label="Equipos" value={version.totalEquipos} />
                   <Stat label="Visitas" value={version.totalVisitas} />
@@ -275,7 +274,6 @@ export default function ConfiguracionPage() {
 
   const clients = useStore(s => s.clients);
   const dataSource = useStore(s => s.dataSource);
-  const tickets = useStore(s => s.tickets);
   const averias = useStore(s => s.averias);
   const equipos = useStore(s => s.equipos);
   const theme = useStore(s => s.theme);
@@ -621,7 +619,6 @@ export default function ConfiguracionPage() {
             <h3 className="text-sm font-semibold mb-4 text-text-secondary">Resumen del Sistema</h3>
             <div className="flex flex-col gap-3">
               <StatRow label="Clientes registrados" value={clients.length} color="text-accent-blue" />
-              <StatRow label="Tickets" value={tickets.length} color="text-accent-purple" />
               <StatRow label="Averías registradas" value={averias.length} color="text-accent-red" />
               <StatRow label="Equipos en inventario" value={equipos.length} color="text-accent-yellow" />
               <StatRow label="Fuente de datos" value={dataSource === 'demo' ? 'Demo (30 registros)' : 'Excel importado'} color="text-text-secondary" />

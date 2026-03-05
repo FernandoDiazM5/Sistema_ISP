@@ -10,7 +10,6 @@ import Badge from '../ui/Badge';
 
 export default function ReportesPage() {
   const clients = useStore(s => s.clients);
-  const tickets = useStore(s => s.tickets);
   const averias = useStore(s => s.averias);
 
   const cobranza = useMemo(() => {
@@ -90,8 +89,8 @@ export default function ReportesPage() {
           subtitle={`${cobranza.conDeuda} clientes morosos`} icon={<AlertTriangle size={20} />} color="#ef4444" />
         <KPICard title="Cortados" value={cobranza.cortados}
           subtitle="Por deuda" icon={<Users size={20} />} color="#f59e0b" />
-        <KPICard title="Tickets Abiertos" value={tickets.filter(t => t.estado === 'Abierto').length}
-          subtitle={`${averias.filter(a => a.estado !== 'Resuelta').length} averías activas`} icon={<TrendingUp size={20} />} color="#8b5cf6" />
+        <KPICard title="Averías Activas" value={averias.filter(a => a.estado !== 'Resuelta').length}
+          subtitle="En proceso" icon={<TrendingUp size={20} />} color="#8b5cf6" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

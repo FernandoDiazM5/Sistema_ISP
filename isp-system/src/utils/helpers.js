@@ -39,7 +39,6 @@ export function getNextId(collection, prefix, idField = 'id') {
  */
 export const ISP_KEY_MAP = {
     isp_clients: 'clients',
-    isp_tickets: 'tickets',
     isp_averias: 'averias',
     isp_equipos: 'equipos',
     isp_visitas: 'visitas',
