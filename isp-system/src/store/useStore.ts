@@ -233,6 +233,7 @@ export interface StoreState {
   tiposRequerimiento: any[];
 
   addServicioCatalogo: (servicio: Omit<ICatalogoServicio, 'id'>) => void;
+  updateServicioCatalogo: (id: string, updates: Partial<ICatalogoServicio>) => void;
   deleteServicioCatalogo: (id: string) => void;
   addTipoRequerimiento: (tipo: any) => void;
   updateTipoRequerimiento: (id: string, updates: any) => void;
@@ -857,6 +858,13 @@ const useStore = create<StoreState>((set: any, get: any) => ({
     set({ catalogoServicios: updated });
     db.set('isp_catalogoServicios', updated).catch((e: any) => console.error('[IndexedDB] catalogoServicios:', e));
     saveDocument('catalogoServicios', newItem);
+  },
+
+  updateServicioCatalogo: (id: string, updates: Partial<ICatalogoServicio>) => {
+    const updated = get().catalogoServicios.map((srv: any) => srv.id === id ? { ...srv, ...updates } : srv);
+    set({ catalogoServicios: updated });
+    db.set('isp_catalogoServicios', updated).catch((e: any) => console.error('[IndexedDB] catalogoServicios:', e));
+    saveDocument('catalogoServicios', { id, ...updates });
   },
 
   deleteServicioCatalogo: (id) => {

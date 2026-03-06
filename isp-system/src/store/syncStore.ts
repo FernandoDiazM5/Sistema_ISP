@@ -196,6 +196,11 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
                 'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
             ];
 
+            // Salida rápida: si ninguna colección de datos cambió de referencia, no hay nada
+            // que pushear. Evita el costo O(n×m) de JSON.stringify en cambios puramente de UI.
+            const anyDataChanged = dataKeys.some(key => prevState[key] !== state[key]);
+            if (!anyDataChanged) return;
+
             const deltas: any[] = [];
             dataKeys.forEach(key => {
                 const prevArray = prevState[key] || [];

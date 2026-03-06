@@ -56,7 +56,10 @@ export default function PostVentaPage() {
         setSelectedPV(updated);
       }
     }
-  }, [postVenta, selectedPV]);
+  // selectedPV intencionalmente excluido: este efecto ESCRIBE selectedPV,
+  // incluirlo causaría re-renders en cascada. Solo reaccionamos a cambios en postVenta.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postVenta]);
 
   // --- New request form state ---
   const [clientSearch, setClientSearch] = useState('');
@@ -269,7 +272,7 @@ export default function PostVentaPage() {
     }
 
     updatePostVenta(selectedPV.id, updates);
-    setSelectedPV({ ...selectedPV, ...updates });
+    // selectedPV se sincroniza automáticamente via el useEffect que escucha postVenta
 
     // Reset cierre
     setCierreMetraje(0);
