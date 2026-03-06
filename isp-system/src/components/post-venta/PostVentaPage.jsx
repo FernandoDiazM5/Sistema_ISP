@@ -76,11 +76,25 @@ export default function PostVentaPage() {
 
   // --- Catalog Management ---
   const [showCatalog, setShowCatalog] = useState(false);
-  const [catalogForm, setCatalogForm] = useState({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+  const [catalogForm, setCatalogForm] = useState({
+    nombre: '', tipo: 'Presencial', descripcion: '',
+    costoManoObraBase: '', costoPorPuntoAdicional: '15',
+    costoPorMetro: '1', costoPorConector: '1',
+    materiales: []
+  });
   const [editingCatalogId, setEditingCatalogId] = useState(null);
   const [newMaterialName, setNewMaterialName] = useState('');
   const [newMaterialUnit, setNewMaterialUnit] = useState('unidad');
   const [newMaterialPrice, setNewMaterialPrice] = useState('');
+
+  // --- Cierre Servicio State ---
+  const [cierreMetraje, setCierreMetraje] = useState(0);
+  const [cierreConectores, setCierreConectores] = useState(0);
+  const [cierrePuntos, setCierrePuntos] = useState(1);
+  const [cierreOtrosMateriales, setCierreOtrosMateriales] = useState([]);
+  const [cierreOtroNombre, setCierreOtroNombre] = useState('');
+  const [cierreOtroPrecio, setCierreOtroPrecio] = useState('');
+  const [cierreOtroCantidad, setCierreOtroCantidad] = useState(1);
 
   // ===================== COMPUTED =====================
 
@@ -223,21 +237,45 @@ export default function PostVentaPage() {
 
     if (newEstado === 'Ejecutada') {
       updates.fechaEjecucion = new Date().toISOString().split('T')[0];
-      const parsedCosto = parseFloat(detailCostoReal);
-      if (!isNaN(parsedCosto)) {
-        updates.costoReal = parsedCosto;
-      } else {
-        updates.costoReal = selectedPV.costoEstimado;
-      }
-      if (detailMateriales.length > 0) {
-        updates.materialesUsados = detailMateriales;
-        updates.costoMateriales = detailMateriales.reduce((sum, m) => sum + (m.cantidad * m.precioUnitario), 0);
-      }
-      updates._historyComment = 'Servicio ejecutado con registro de costos';
+
+      // Get catalog tarifas
+      const srv = catalogoServicios.find(s => s.nombre === selectedPV.tipoServicio);
+      const tarifas = {
+        costoManoObraBase: srv?.costoManoObraBase || 0,
+        costoPorPuntoAdicional: srv?.costoPorPuntoAdicional || 15,
+        costoPorMetro: srv?.costoPorMetro || 1,
+        costoPorConector: srv?.costoPorConector || 1,
+      };
+
+      const costoManoObra = tarifas.costoManoObraBase + (Math.max(0, cierrePuntos - 1) * tarifas.costoPorPuntoAdicional);
+      const costoMetraje = cierreMetraje * tarifas.costoPorMetro;
+      const costoConectores = cierreConectores * tarifas.costoPorConector;
+      const costoOtros = cierreOtrosMateriales.reduce((sum, m) => sum + (m.cantidad * m.precioUnitario), 0);
+      const costoTotal = costoManoObra + costoMetraje + costoConectores + costoOtros;
+
+      updates.costoReal = costoTotal;
+      updates.detalleCierre = {
+        metraje: cierreMetraje,
+        conectores: cierreConectores,
+        puntos: cierrePuntos,
+        costoManoObra,
+        costoMetraje,
+        costoConectores,
+        costoOtros,
+        otrosMateriales: cierreOtrosMateriales,
+        tarifasAplicadas: tarifas,
+      };
+      updates._historyComment = `Servicio ejecutado — Total: S/ ${costoTotal.toFixed(2)} (M.Obra: ${costoManoObra.toFixed(2)}, ${cierreMetraje}m cable, ${cierreConectores} conect., ${cierrePuntos} puntos)`;
     }
 
     updatePostVenta(selectedPV.id, updates);
     setSelectedPV({ ...selectedPV, ...updates });
+
+    // Reset cierre
+    setCierreMetraje(0);
+    setCierreConectores(0);
+    setCierrePuntos(1);
+    setCierreOtrosMateriales([]);
   };
 
   const getNextEstado = (current) => {
@@ -286,9 +324,13 @@ export default function PostVentaPage() {
     const item = {
       nombre: catalogForm.nombre,
       tipo: catalogForm.tipo,
-      precio: parseFloat(catalogForm.precio) || 0,
       descripcion: catalogForm.descripcion,
-      costoManoObra: parseFloat(catalogForm.costoManoObra) || 0,
+      costoManoObraBase: parseFloat(catalogForm.costoManoObraBase) || 0,
+      costoPorPuntoAdicional: parseFloat(catalogForm.costoPorPuntoAdicional) || 15,
+      costoPorMetro: parseFloat(catalogForm.costoPorMetro) || 1,
+      costoPorConector: parseFloat(catalogForm.costoPorConector) || 1,
+      precio: parseFloat(catalogForm.costoManoObraBase) || 0, // precio base = mano de obra base (referencia)
+      costoManoObra: parseFloat(catalogForm.costoManoObraBase) || 0,
       materiales: catalogForm.materiales,
     };
     if (editingCatalogId) {
@@ -296,7 +338,7 @@ export default function PostVentaPage() {
     } else {
       addServicioCatalogo(item);
     }
-    setCatalogForm({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+    setCatalogForm({ nombre: '', tipo: 'Presencial', descripcion: '', costoManoObraBase: '', costoPorPuntoAdicional: '15', costoPorMetro: '1', costoPorConector: '1', materiales: [] });
     setEditingCatalogId(null);
   };
 
@@ -304,9 +346,11 @@ export default function PostVentaPage() {
     setCatalogForm({
       nombre: srv.nombre,
       tipo: srv.tipo,
-      precio: String(srv.precio || 0),
       descripcion: srv.descripcion || '',
-      costoManoObra: String(srv.costoManoObra || 0),
+      costoManoObraBase: String(srv.costoManoObraBase || srv.costoManoObra || 0),
+      costoPorPuntoAdicional: String(srv.costoPorPuntoAdicional || 15),
+      costoPorMetro: String(srv.costoPorMetro || 1),
+      costoPorConector: String(srv.costoPorConector || 1),
       materiales: srv.materiales || [],
     });
     setEditingCatalogId(srv.id);
@@ -809,24 +853,121 @@ export default function PostVentaPage() {
               )}
             </div>
 
-            {/* Costo Real input for En Ejecucion state */}
-            {selectedPV.estado === 'En Ejecución' && (
-              <div className="mb-4">
-                <label className="text-xs text-text-muted mb-1.5 block font-medium">
-                  Costo Real (S/) - se registra al marcar Ejecutada
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={detailCostoReal}
-                  onChange={e => setDetailCostoReal(e.target.value)}
-                  placeholder={`Estimado: ${selectedPV.costoEstimado}`}
-                  className="w-full py-2.5 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
-                />
+            {/* Desglose de Cierre (si ya fue ejecutada) */}
+            {selectedPV.detalleCierre && (
+              <div className="bg-bg-secondary rounded-lg p-4 mb-4 border border-border">
+                <p className="text-xs text-text-muted mb-3 font-medium uppercase tracking-wide">Desglose del Servicio Ejecutado</p>
+                <div className="grid grid-cols-2 gap-2 text-[12px]">
+                  <span className="text-text-muted">Mano de Obra ({selectedPV.detalleCierre.puntos} punto{selectedPV.detalleCierre.puntos !== 1 ? 's' : ''}):</span>
+                  <span className="text-right font-mono font-bold">S/ {selectedPV.detalleCierre.costoManoObra?.toFixed(2)}</span>
+                  <span className="text-text-muted">Metraje ({selectedPV.detalleCierre.metraje}m):</span>
+                  <span className="text-right font-mono font-bold">S/ {selectedPV.detalleCierre.costoMetraje?.toFixed(2)}</span>
+                  <span className="text-text-muted">Conectores ({selectedPV.detalleCierre.conectores}):</span>
+                  <span className="text-right font-mono font-bold">S/ {selectedPV.detalleCierre.costoConectores?.toFixed(2)}</span>
+                  {selectedPV.detalleCierre.costoOtros > 0 && (<>
+                    <span className="text-text-muted">Otros materiales:</span>
+                    <span className="text-right font-mono font-bold">S/ {selectedPV.detalleCierre.costoOtros?.toFixed(2)}</span>
+                  </>)}
+                  <span className="text-text-primary font-bold border-t border-border pt-1">TOTAL:</span>
+                  <span className="text-right font-mono font-bold text-accent-green border-t border-border pt-1">S/ {selectedPV.costoReal?.toFixed(2)}</span>
+                </div>
               </div>
             )}
+
+            {/* Formulario de Cierre con cantidades (En Ejecución) */}
+            {selectedPV.estado === 'En Ejecución' && (() => {
+              const srv = catalogoServicios.find(s => s.nombre === selectedPV.tipoServicio);
+              const tarifas = {
+                costoManoObraBase: srv?.costoManoObraBase || srv?.costoManoObra || 0,
+                costoPorPuntoAdicional: srv?.costoPorPuntoAdicional || 15,
+                costoPorMetro: srv?.costoPorMetro || 1,
+                costoPorConector: srv?.costoPorConector || 1,
+              };
+              const costoMO = tarifas.costoManoObraBase + (Math.max(0, cierrePuntos - 1) * tarifas.costoPorPuntoAdicional);
+              const costoMet = cierreMetraje * tarifas.costoPorMetro;
+              const costoConn = cierreConectores * tarifas.costoPorConector;
+              const costoOtros = cierreOtrosMateriales.reduce((sum, m) => sum + (m.cantidad * m.precioUnitario), 0);
+              const totalCalculado = costoMO + costoMet + costoConn + costoOtros;
+
+              return (
+                <div className="mb-4 bg-accent-green/5 border border-accent-green/20 rounded-lg p-4">
+                  <p className="text-xs text-accent-green uppercase tracking-wide font-semibold mb-3">Registro de Cierre — Cantidades Reales</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label className="text-[10px] text-text-muted block mb-1">Puntos de red instalados</label>
+                      <input type="number" min="1" step="1" value={cierrePuntos}
+                        onChange={e => setCierrePuntos(parseInt(e.target.value) || 1)}
+                        className="w-full py-2 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-green" />
+                      <p className="text-[9px] text-text-muted mt-0.5">1er punto: S/ {tarifas.costoManoObraBase.toFixed(2)} | Adicional: +S/ {tarifas.costoPorPuntoAdicional.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-text-muted block mb-1">Metraje de cable (m)</label>
+                      <input type="number" min="0" step="1" value={cierreMetraje}
+                        onChange={e => setCierreMetraje(parseInt(e.target.value) || 0)}
+                        className="w-full py-2 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-green" />
+                      <p className="text-[9px] text-text-muted mt-0.5">S/ {tarifas.costoPorMetro.toFixed(2)} por metro</p>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-text-muted block mb-1">Cantidad de conectores</label>
+                      <input type="number" min="0" step="1" value={cierreConectores}
+                        onChange={e => setCierreConectores(parseInt(e.target.value) || 0)}
+                        className="w-full py-2 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-green" />
+                      <p className="text-[9px] text-text-muted mt-0.5">S/ {tarifas.costoPorConector.toFixed(2)} por conector</p>
+                    </div>
+                  </div>
+
+                  {/* Otros materiales extras */}
+                  {cierreOtrosMateriales.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-[10px] text-text-muted mb-1">Materiales adicionales:</p>
+                      {cierreOtrosMateriales.map((m, i) => (
+                        <div key={i} className="flex items-center justify-between bg-bg-secondary rounded px-2 py-1 text-[11px] mb-1">
+                          <span>{m.nombre} × {m.cantidad}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-accent-green font-bold">S/ {(m.cantidad * m.precioUnitario).toFixed(2)}</span>
+                            <button onClick={() => setCierreOtrosMateriales(prev => prev.filter((_, idx) => idx !== i))}
+                              className="text-accent-red cursor-pointer border-none bg-transparent hover:opacity-70"><X size={10} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 mb-3">
+                    <input value={cierreOtroNombre} onChange={e => setCierreOtroNombre(e.target.value)}
+                      placeholder="Material extra" className="flex-1 py-1.5 px-2 bg-bg-secondary border border-border rounded text-[11px] text-text-primary outline-none" />
+                    <input type="number" min="1" value={cierreOtroCantidad} onChange={e => setCierreOtroCantidad(parseInt(e.target.value) || 1)}
+                      className="w-14 py-1.5 px-2 bg-bg-secondary border border-border rounded text-[11px] text-text-primary outline-none" />
+                    <input type="number" step="0.5" min="0" value={cierreOtroPrecio} onChange={e => setCierreOtroPrecio(e.target.value)}
+                      placeholder="S/" className="w-16 py-1.5 px-2 bg-bg-secondary border border-border rounded text-[11px] text-text-primary outline-none" />
+                    <button type="button" onClick={() => {
+                      if (!cierreOtroNombre || !cierreOtroPrecio) return;
+                      setCierreOtrosMateriales(prev => [...prev, { nombre: cierreOtroNombre, cantidad: cierreOtroCantidad, precioUnitario: parseFloat(cierreOtroPrecio) || 0 }]);
+                      setCierreOtroNombre(''); setCierreOtroPrecio(''); setCierreOtroCantidad(1);
+                    }} className="py-1.5 px-3 rounded bg-accent-green/20 text-accent-green border-none text-[11px] font-semibold cursor-pointer hover:bg-accent-green/30">+</button>
+                  </div>
+
+                  {/* Resumen de cálculo en vivo */}
+                  <div className="bg-bg-card rounded-lg p-3 border border-border">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wide mb-2 font-semibold">Cálculo en Tiempo Real</p>
+                    <div className="grid grid-cols-2 gap-1 text-[12px]">
+                      <span className="text-text-muted">Mano de obra ({cierrePuntos} punto{cierrePuntos !== 1 ? 's' : ''}):</span>
+                      <span className="text-right font-mono">S/ {costoMO.toFixed(2)}</span>
+                      <span className="text-text-muted">Cable ({cierreMetraje}m × S/{tarifas.costoPorMetro}):</span>
+                      <span className="text-right font-mono">S/ {costoMet.toFixed(2)}</span>
+                      <span className="text-text-muted">Conectores ({cierreConectores} × S/{tarifas.costoPorConector}):</span>
+                      <span className="text-right font-mono">S/ {costoConn.toFixed(2)}</span>
+                      {costoOtros > 0 && (<>
+                        <span className="text-text-muted">Otros materiales:</span>
+                        <span className="text-right font-mono">S/ {costoOtros.toFixed(2)}</span>
+                      </>)}
+                      <span className="text-text-primary font-bold border-t border-border pt-1 mt-1">TOTAL A COBRAR:</span>
+                      <span className="text-right font-mono font-bold text-accent-green text-lg border-t border-border pt-1 mt-1">S/ {totalCalculado.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Status Change Buttons */}
             <div className="flex gap-2">
@@ -901,9 +1042,15 @@ export default function PostVentaPage() {
                       <span className="text-xs text-accent-green font-bold">
                         {srv.precio > 0 ? `S/ ${srv.precio.toFixed(2)}` : 'Gratis'}
                       </span>
-                      {srv.costoManoObra > 0 && (
-                        <span className="text-[10px] text-text-muted">Mano de obra: S/ {srv.costoManoObra.toFixed(2)}</span>
+                      {srv.costoManoObraBase > 0 && (
+                        <span className="text-[10px] text-text-muted">Base: S/ {srv.costoManoObraBase.toFixed(2)}</span>
                       )}
+                      {srv.costoManoObra > 0 && !srv.costoManoObraBase && (
+                        <span className="text-[10px] text-text-muted">M.Obra: S/ {srv.costoManoObra.toFixed(2)}</span>
+                      )}
+                      <span className="text-[10px] text-text-muted">+S/{srv.costoPorPuntoAdicional || 15}/pto</span>
+                      <span className="text-[10px] text-text-muted">S/{srv.costoPorMetro || 1}/m</span>
+                      <span className="text-[10px] text-text-muted">S/{srv.costoPorConector || 1}/conect</span>
                       {srv.materiales && srv.materiales.length > 0 && (
                         <span className="text-[10px] text-text-muted">{srv.materiales.length} material(es)</span>
                       )}
@@ -953,25 +1100,54 @@ export default function PostVentaPage() {
                     <option value="Remoto">Remoto</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Tarifas */}
+              <p className="text-[10px] text-accent-purple uppercase tracking-wide font-semibold mb-2 mt-1">Tarifas Unitarias</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                 <div>
-                  <label className="text-[10px] text-text-muted block mb-1">Precio Total (S/)</label>
+                  <label className="text-[10px] text-text-muted block mb-1">Mano de obra base (S/)</label>
                   <input
-                    type="number" step="0.01" min="0"
-                    value={catalogForm.precio}
-                    onChange={e => setCatalogForm(p => ({ ...p, precio: e.target.value }))}
-                    placeholder="0.00"
+                    type="number" step="0.5" min="0"
+                    value={catalogForm.costoManoObraBase}
+                    onChange={e => setCatalogForm(p => ({ ...p, costoManoObraBase: e.target.value }))}
+                    placeholder="15"
                     className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
                   />
+                  <p className="text-[8px] text-text-muted mt-0.5">Para 1 punto</p>
                 </div>
                 <div>
-                  <label className="text-[10px] text-text-muted block mb-1">Costo Mano de Obra (S/)</label>
+                  <label className="text-[10px] text-text-muted block mb-1">+ Punto adicional (S/)</label>
                   <input
-                    type="number" step="0.01" min="0"
-                    value={catalogForm.costoManoObra}
-                    onChange={e => setCatalogForm(p => ({ ...p, costoManoObra: e.target.value }))}
-                    placeholder="0.00"
+                    type="number" step="0.5" min="0"
+                    value={catalogForm.costoPorPuntoAdicional}
+                    onChange={e => setCatalogForm(p => ({ ...p, costoPorPuntoAdicional: e.target.value }))}
+                    placeholder="15"
                     className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
                   />
+                  <p className="text-[8px] text-text-muted mt-0.5">Por c/punto extra</p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Costo por metro (S/)</label>
+                  <input
+                    type="number" step="0.1" min="0"
+                    value={catalogForm.costoPorMetro}
+                    onChange={e => setCatalogForm(p => ({ ...p, costoPorMetro: e.target.value }))}
+                    placeholder="1"
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                  <p className="text-[8px] text-text-muted mt-0.5">Cable/metro</p>
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Costo por conector (S/)</label>
+                  <input
+                    type="number" step="0.1" min="0"
+                    value={catalogForm.costoPorConector}
+                    onChange={e => setCatalogForm(p => ({ ...p, costoPorConector: e.target.value }))}
+                    placeholder="1"
+                    className="w-full py-2 px-3 bg-bg-card border border-border rounded-lg text-xs text-text-primary outline-none focus:border-accent-purple placeholder:text-text-muted"
+                  />
+                  <p className="text-[8px] text-text-muted mt-0.5">Por unidad</p>
                 </div>
               </div>
               <div className="mb-3">
@@ -1052,7 +1228,7 @@ export default function PostVentaPage() {
                 {editingCatalogId && (
                   <button
                     onClick={() => {
-                      setCatalogForm({ nombre: '', tipo: 'Presencial', precio: '', descripcion: '', costoManoObra: '', materiales: [] });
+                      setCatalogForm({ nombre: '', tipo: 'Presencial', descripcion: '', costoManoObraBase: '', costoPorPuntoAdicional: '15', costoPorMetro: '1', costoPorConector: '1', materiales: [] });
                       setEditingCatalogId(null);
                     }}
                     className="py-2 px-4 rounded-lg bg-bg-card border border-border text-text-muted text-xs cursor-pointer hover:text-text-primary"
