@@ -937,15 +937,21 @@ export default function SoporteRemotoPage() {
                   )}
 
                   {/* ============ Full Diagnostic Report (via Component) ============ */}
-                  {hasDiag && (
+                  {(hasDiag || s.estado === 'En curso') && (
                     <div className="border-t border-border pt-4">
                       <DiagnosticFields
                         tecnologia={s.tecnologia}
                         value={d}
-                        onChange={() => { }} // Read-only
-                        onTecnologiaChange={null} // Read-only
+                        onChange={(newVal) => {
+                          const updatedS = { ...s, diagnosticos: typeof newVal === 'function' ? newVal(d) : newVal };
+                          updateSesionRemoto(updatedS.id, updatedS);
+                        }}
+                        onTecnologiaChange={(t) => {
+                          const updatedS = { ...s, tecnologia: t };
+                          updateSesionRemoto(updatedS.id, updatedS);
+                        }}
                         warnings={warns}
-                        readOnly={true}
+                        readOnly={s.estado === 'Completada' || s.estado === 'Fallida'}
                       />
                     </div>
                   )}
