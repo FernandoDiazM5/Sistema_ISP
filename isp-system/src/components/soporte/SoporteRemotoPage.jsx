@@ -117,6 +117,7 @@ export default function SoporteRemotoPage() {
   const prefillSoporte = useStore(s => s.prefillSoporte);
   const clearPrefillSoporte = useStore(s => s.clearPrefillSoporte);
   const deleteSesionRemoto = useStore(s => s.deleteSesionRemoto);
+  const deleteSesionCascade = useStore(s => s.deleteSesionCascade);
 
   const [showForm, setShowForm] = useState(false);
   const [selectedSesion, setSelectedSesion] = useState(null);
@@ -137,6 +138,8 @@ export default function SoporteRemotoPage() {
   const [derivarVisita, setDerivarVisita] = useState(false);
   const [adjuntos, setAdjuntos] = useState([]);
   const [tecnologiaSesion, setTecnologiaSesion] = useState('');
+  const [fechaAlta, setFechaAlta] = useState(new Date().toISOString().split('T')[0]);
+  const [horaAlta, setHoraAlta] = useState(new Date().toTimeString().slice(0, 5));
 
   /* ---- Resolution Modal State ---- */
   const [showResolutionModal, setShowResolutionModal] = useState(false);
@@ -243,6 +246,8 @@ export default function SoporteRemotoPage() {
     setAdjuntos([]);
     setTecnologiaSesion('');
     setDiag(getEmptyDiag());
+    setFechaAlta(new Date().toISOString().split('T')[0]);
+    setHoraAlta(new Date().toTimeString().slice(0, 5));
   };
 
   /* ---- Ticket autocomplete handlers ---- */
@@ -286,8 +291,11 @@ export default function SoporteRemotoPage() {
       tipo: tipoSesion,
       ip: ipAddress,
       estado: 'En curso',
-      fechaInicio: new Date().toISOString(),
+      fecha: fechaAlta,
+      horaInicio: horaAlta,
+      fechaInicio: `${fechaAlta}T${horaAlta}:00`,
       tecnico: tecnicoObj?.nombre || 'Sin asignar',
+      tecnicoNombre: tecnicoObj?.nombre || 'Sin asignar',
       tecnicoId: tecnicoId,
       duracion: '—',
       resultado: resultado,
@@ -447,29 +455,13 @@ export default function SoporteRemotoPage() {
   const handleDeleteSesion = (id) => {
     if (!window.confirm('¿Estás seguro de eliminar esta sesión remota?\n\n¡Atención! Esta acción borrará también cualquier Visita Técnica o Derivación a Planta Externa que haya nacido a partir de esta sesión.')) return;
 
-    // Borrado en CASCADA (Soporte -> Visita -> Planta)
-    const store = useStore.getState();
-    const {
-      deleteVisita,
-      deleteDerivacion,
-      visitas = [],
-      derivaciones = []
-    } = store;
-
-    // Buscar y eliminar Visitas Hijas
-    const visitasHijas = visitas.filter(v => v.sesionOrigenId === id);
-    if (deleteVisita) {
-      visitasHijas.forEach(v => deleteVisita(v.id));
+    // Borrado en CASCADA (Soporte -> Visita -> Planta) de forma atómica a través del Store
+    if (deleteSesionCascade) {
+      deleteSesionCascade(id);
+    } else {
+      if (deleteSesionRemoto) deleteSesionRemoto(id);
     }
 
-    // Buscar y eliminar Plantas Externas Hijas
-    const plantasHijas = derivaciones.filter(d => d.sesionOrigenId === id);
-    if (deleteDerivacion) {
-      plantasHijas.forEach(d => deleteDerivacion(d.id));
-    }
-
-    // Finalmente eliminar el Soporte Remoto actual
-    if (deleteSesionRemoto) deleteSesionRemoto(id);
     setSelectedSesion(null);
   };
 
@@ -806,6 +798,20 @@ export default function SoporteRemotoPage() {
                     <option key={t.id} value={t.id}>{t.nombre} — {t.especialidad} ({t.zona})</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Fecha y Hora de Alta */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-secondary font-medium mb-1.5 block">Fecha de atención</label>
+                  <input type="date" value={fechaAlta} onChange={(e) => setFechaAlta(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-cyan/50" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-secondary font-medium mb-1.5 block">Hora de inicio</label>
+                  <input type="time" value={horaAlta} onChange={(e) => setHoraAlta(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg bg-bg-secondary border border-border text-sm text-text-primary focus:outline-none focus:border-accent-cyan/50" />
+                </div>
               </div>
 
               {/* ========================= DIAGNOSTIC PARAMETERS ========================= */}

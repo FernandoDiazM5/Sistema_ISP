@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Cable, Wifi, MapPin, AlertTriangle, CheckCircle2, Clock, Wrench, X } from 'lucide-react';
+import { Plus, Search, Cable, Wifi, MapPin, AlertTriangle, CheckCircle2, Clock, Wrench, X, Eye, Edit3, Trash2 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
@@ -123,6 +123,8 @@ export default function PlantaExternaPage() {
       estado: 'Pendiente',
       prioridad: form.get('prioridad'),
       descripcion: form.get('descripcion'),
+      fecha: form.get('fecha') || new Date().toISOString().split('T')[0],
+      horaInicio: form.get('horaInicio') || null,
       instalacionId: form.get('instalacionId') || null,
       clienteRelacionado: form.get('instalacionId') || null,
       metraje: parseInt(form.get('metraje')) || 0,
@@ -392,7 +394,7 @@ export default function PlantaExternaPage() {
             <div
               key={d.id}
               onClick={() => setSelectedDerivacion(d)}
-              className={`bg-bg-card rounded-xl p-5 border cursor-pointer transition-all hover:bg-bg-card-hover ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-purple/40'
+              className={`bg-bg-card rounded-xl p-5 border cursor-pointer transition-all group hover:bg-bg-card-hover ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-purple/40'
                 }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -422,7 +424,39 @@ export default function PlantaExternaPage() {
                     <p className="text-sm font-semibold mt-0.5">{d.tipo}</p>
                   </div>
                 </div>
-                <span className="text-[11px] text-text-muted">{d.fecha}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-text-muted">{d.fecha}</span>
+                  {/* Quick Action Buttons */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedDerivacion(d); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-text-primary hover:bg-bg-secondary hover:border-border transition-colors cursor-pointer"
+                      title="Ver Detalles"
+                    >
+                      <Eye size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedDerivacion(d); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-accent-purple hover:bg-accent-purple/10 hover:border-accent-purple/30 transition-colors cursor-pointer"
+                      title="Editar"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`¿Eliminar la derivación ${d.id}? Esta acción no se puede deshacer.`)) {
+                          const deleteDerivacion = useStore.getState().deleteDerivacion;
+                          if (deleteDerivacion) deleteDerivacion(d.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center gap-1.5 text-xs text-text-secondary mb-2">
@@ -507,6 +541,17 @@ export default function PlantaExternaPage() {
               <div>
                 <label className="text-xs text-text-muted block mb-1">Dirección</label>
                 <input name="direccion" placeholder="Dirección o ubicación del trabajo" required className="w-full" />
+              </div>
+              {/* Fecha y Hora */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted block mb-1">Fecha programada</label>
+                  <input name="fecha" type="date" defaultValue={new Date().toISOString().split('T')[0]} required className="w-full" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted block mb-1">Hora de inicio</label>
+                  <input name="horaInicio" type="time" defaultValue="09:00" className="w-full" />
+                </div>
               </div>
               <div>
                 <label className="text-xs text-text-muted block mb-1">Técnico asignado</label>
@@ -631,6 +676,9 @@ export default function PlantaExternaPage() {
                   <StatusBadge status={selectedDerivacion.estado} />
                 </div>
                 <h3 className="text-lg font-bold">{selectedDerivacion.tipo}</h3>
+                {selectedDerivacion.clienteNombre && (
+                  <p className="text-sm text-text-secondary mt-0.5">Cliente: <span className="font-medium text-text-primary">{selectedDerivacion.clienteNombre}</span></p>
+                )}
               </div>
               <button
                 onClick={() => { setSelectedDerivacion(null); setShowCompletionForm(false); }}

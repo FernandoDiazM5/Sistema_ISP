@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info, Edit3, Trash2, AlertTriangle, Activity, History, ArrowRight } from 'lucide-react';
+import { Plus, Search, Calendar, List, Clock, ChevronLeft, ChevronRight, MapPin, User, X, FileText, CheckCircle2, Info, Edit3, Trash2, AlertTriangle, Activity, History, ArrowRight, Eye } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
@@ -837,7 +837,7 @@ export default function VisitasTecnicasPage() {
               <div
                 key={v.id}
                 onClick={() => setSelectedVisita(v)}
-                className={`bg-bg-card rounded-xl p-4 border cursor-pointer transition-all ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-blue/50 hover:bg-bg-card/80'
+                className={`bg-bg-card rounded-xl p-4 border cursor-pointer transition-all group ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-blue/50 hover:bg-bg-card/80'
                   }`}
               >
                 <div className="flex items-start justify-between mb-2">
@@ -871,6 +871,36 @@ export default function VisitasTecnicasPage() {
                       <span className="text-[11px] text-text-secondary font-mono">
                         {v.horaInicio}{v.horaFin ? ` - ${v.horaFin}` : ''}
                       </span>
+                    </div>
+                    {/* Quick Action Buttons */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedVisita(v); }}
+                        className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-text-primary hover:bg-bg-secondary hover:border-border transition-colors cursor-pointer"
+                        title="Ver Detalles"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSelectedVisita(v); }}
+                        className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 hover:border-accent-blue/30 transition-colors cursor-pointer"
+                        title="Editar"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`¿Eliminar la visita ${v.id}? Esta acción no se puede deshacer.`)) {
+                            const deleteVisita = useStore.getState().deleteVisita;
+                            if (deleteVisita) deleteVisita(v.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1414,8 +1444,6 @@ export default function VisitasTecnicasPage() {
                 </div>
               )}
             </div>
-
-            {/* Resolución Técnica (Solución + Fotos Cierre) */}
 
             {/* Resolución Técnica (Solución + Fotos Cierre) */}
             {(selectedVisita.resultado || selectedVisita.solucion || selectedVisita.accionesRealizadas || (selectedVisita.adjuntosResolucion && selectedVisita.adjuntosResolucion.length > 0)) && (

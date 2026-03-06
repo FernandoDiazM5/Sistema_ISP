@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Kanban, ArrowUpRight, ShieldAlert, Search, Pencil } from 'lucide-react';
+import { Plus, Zap, AlertTriangle, Wrench, CheckCircle2, Users, X, MapPin, Calendar, Kanban, ArrowUpRight, ShieldAlert, Search, Pencil, Eye, Edit3, Trash2 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
@@ -25,6 +25,7 @@ export default function AveriasPage() {
   // Selector reactivo — reemplaza useStore.getState() en render (bug #10)
   const tecnicos = useStore(s => s.tecnicos);
   const averiasTipos = useStore(s => s.averiasTipos);
+  const deleteAveria = useStore(s => s.deleteAveria);
   const toast = useToast();
 
   const [showForm, setShowForm] = useState(false);
@@ -98,6 +99,8 @@ export default function AveriasPage() {
       reportadoPor: form.get('reportado'),
       tecnicoAsignado: form.get('tecnico'),
       descripcion: form.get('descripcion'),
+      fecha: form.get('fechaReporte') || new Date().toISOString().split('T')[0],
+      horaReporte: form.get('horaReporte') || null,
       adjuntos: newAdjuntos,
     };
 
@@ -262,6 +265,35 @@ export default function AveriasPage() {
                 <div className="flex items-center gap-2">
                   <CopyButton getTextFn={() => formatAveria(a, null)} />
                   <span className="text-[11px] text-text-muted">{a.fecha}</span>
+                  {/* Quick Action Buttons */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedAveria(a); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-text-primary hover:bg-bg-secondary hover:border-border transition-colors cursor-pointer"
+                      title="Ver Detalles"
+                    >
+                      <Eye size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); openEditForm(a); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-accent-blue hover:bg-accent-blue/10 hover:border-accent-blue/30 transition-colors cursor-pointer"
+                      title="Editar"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`¿Eliminar la avería ${a.id}? Esta acción no se puede deshacer.`)) {
+                          if (deleteAveria) deleteAveria(a.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -297,6 +329,18 @@ export default function AveriasPage() {
               </div>
 
               <input name="afectados" defaultValue={editingAveria?.clientesAfectados || ''} type="number" min="0" step="1" placeholder="Clientes afectados (estimado)" required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+
+              {/* Fecha y Hora de Reporte */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted block mb-1">Fecha de reporte</label>
+                  <input name="fechaReporte" type="date" defaultValue={editingAveria?.fecha || new Date().toISOString().split('T')[0]} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted block mb-1">Hora de reporte</label>
+                  <input name="horaReporte" type="time" defaultValue={editingAveria?.horaReporte || new Date().toTimeString().slice(0, 5)} className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue" />
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <select name="prioridad" defaultValue={editingAveria?.prioridad || 'Crítica'} required className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg p-2.5 text-sm outline-none focus:border-accent-blue">

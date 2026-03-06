@@ -178,11 +178,19 @@ function SoporteExpandedContent({ s, ticket }) {
         <DetailField label="Herramienta" value={s.herramienta} />
         <DetailField label="Duración" value={s.duracion ? `${s.duracion} min` : null} />
         <DetailField label="Tecnología" value={s.tecnologia} />
+        {s.ticketId && <DetailField label="Ticket Vinculado" value={s.ticketId} />}
       </div>
 
-      <DetailBlock label="Descripción" value={s.descripcion} />
-      <DetailBlock label="Resultado / Observaciones" value={s.resultado || s.observaciones} color="green-400" />
+      {/* 1. PROBLEMA / MOTIVO (primero) */}
+      <DetailBlock label="Descripción / Motivo del Problema" value={s.descripcion || s.resultado || s.observaciones} />
 
+      {/* 2. EVIDENCIA INICIAL */}
+      <AttachmentSection label="Evidencia Inicial" items={s.adjuntos} />
+
+      {/* 3. DIAGNÓSTICOS */}
+      <NetworkDiagnostics data={d} type={techStr} />
+
+      {/* 4. RESOLUCIÓN (al final) */}
       {(s.solucion || s.accionesRealizadas || s.adjuntosResolucion?.length > 0) && (
         <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
           <p className="text-[10px] text-green-400 uppercase tracking-wide mb-2 font-semibold flex items-center gap-1">
@@ -193,11 +201,6 @@ function SoporteExpandedContent({ s, ticket }) {
           <AttachmentSection label="Evidencia de Resolución" items={s.adjuntosResolucion} />
         </div>
       )}
-
-      {/* Diagnósticos */}
-      <NetworkDiagnostics data={d} type={techStr} />
-
-      <AttachmentSection label="Evidencia Inicial" items={s.adjuntos} />
     </>
   );
 }
@@ -218,6 +221,8 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
         <DetailField label="Fecha" value={formatDateTime(v.fecha)} />
         <DetailField label="Hora Inicio" value={v.horaInicio} />
         <DetailField label="Hora Fin" value={v.horaFin} />
+        {v.ticketId && <DetailField label="Ticket Vinculado" value={v.ticketId} />}
+        {v.sesionOrigenId && <DetailField label="Derivado de" value={v.sesionOrigenId} />}
       </div>
 
       {(v.direccion || clientDir) && (
@@ -227,24 +232,46 @@ function VisitaExpandedContent({ v, ticket, clientDir }) {
         </div>
       )}
 
-      <DetailBlock label="Descripción" value={v.descripcion} />
-      <DetailBlock label="Resultado / Observaciones" value={v.resultado || v.observaciones} color="green-400" />
+      {/* Coordinación */}
+      {v.coordinado !== undefined && (
+        <div className={`rounded-lg p-3 border ${v.coordinado ? 'bg-green-500/5 border-green-500/20' : 'bg-orange-500/5 border-orange-500/20'}`}>
+          <p className={`text-[10px] uppercase tracking-wide mb-1 font-semibold ${v.coordinado ? 'text-green-400' : 'text-orange-400'}`}>
+            {v.coordinado ? 'Visita Coordinada con Cliente' : 'Visita No Coordinada'}
+          </p>
+          {v.coordinado ? (
+            <div className="flex items-center gap-4 mt-1">
+              <div><span className="text-[10px] text-text-muted block">Día</span><span className="text-[12px] font-medium">{v.fechaCoordinada || '—'}</span></div>
+              <div><span className="text-[10px] text-text-muted block">Hora</span><span className="text-[12px] font-medium">{v.horaCoordinada || '—'}</span></div>
+            </div>
+          ) : (
+            <div className="mt-1">
+              <span className="text-[10px] text-text-muted block">Motivo</span>
+              <span className="text-[12px] text-text-secondary italic">{v.motivoNoCoordinado || 'Sin motivo'}</span>
+            </div>
+          )}
+        </div>
+      )}
 
-      {(v.solucion || v.accionesRealizadas || v.adjuntosResolucion?.length > 0) && (
+      {/* 1. PROBLEMA / DESCRIPCIÓN (primero) */}
+      <DetailBlock label="Descripción / Motivo del Problema" value={v.descripcion} />
+
+      {/* 2. EVIDENCIA INICIAL */}
+      <AttachmentSection label="Evidencia Inicial" items={v.adjuntos} />
+
+      {/* 3. DIAGNÓSTICOS */}
+      <NetworkDiagnostics data={d} type={techStr} />
+
+      {/* 4. RESOLUCIÓN (al final) */}
+      {(v.solucion || v.accionesRealizadas || v.resultado || v.adjuntosResolucion?.length > 0) && (
         <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3">
           <p className="text-[10px] text-green-400 uppercase tracking-wide mb-2 font-semibold flex items-center gap-1">
-            <CheckCircle2 size={12} /> Resolución
+            <CheckCircle2 size={12} /> Resolución Técnica
           </p>
-          {v.solucion && <div className="mb-2"><p className="text-[10px] text-text-muted mb-0.5">Solución:</p><p className="text-[12px] text-text-secondary whitespace-pre-wrap">{v.solucion}</p></div>}
+          {(v.solucion || v.resultado) && <div className="mb-2"><p className="text-[10px] text-text-muted mb-0.5">Solución / Resultado:</p><p className="text-[12px] text-text-secondary whitespace-pre-wrap">{v.solucion || v.resultado}</p></div>}
           {v.accionesRealizadas && <div className="mb-2"><p className="text-[10px] text-text-muted mb-0.5">Acciones:</p><p className="text-[12px] text-text-secondary whitespace-pre-wrap">{v.accionesRealizadas}</p></div>}
           <AttachmentSection label="Evidencia de Resolución" items={v.adjuntosResolucion} />
         </div>
       )}
-
-      {/* Diagnósticos */}
-      <NetworkDiagnostics data={d} type={techStr} />
-
-      <AttachmentSection label="Evidencia Inicial" items={v.adjuntos} />
     </>
   );
 }
@@ -281,7 +308,7 @@ function AveriaExpandedContent({ a }) {
         <DetailField label="Estado" value={a.estado} />
         <DetailField label="Tipo" value={a.tipo} />
         <DetailField label="Zona Afectada" value={a.zona} />
-        <DetailField label="Técnico" value={a.tecnicoNombre || a.tecnico} />
+        <DetailField label="Técnico" value={a.tecnicoAsignado || a.tecnicoNombre || a.tecnico} />
         <DetailField label="Fecha Reporte" value={formatDateTime(a.fecha)} />
         <DetailField label="Fecha Resolución" value={a.fechaResolucion ? formatDateTime(a.fechaResolucion) : null} />
         <DetailField label="Clientes Afectados" value={a.clientesAfectados} />
@@ -501,8 +528,8 @@ export default function ClienteDetalle() {
                 : clientSesiones.map(s => {
                   return (
                     <HistoryCard key={s.id} color="#06b6d4" icon={Monitor}
-                      title={`${s.id} — Soporte Remoto`}
-                      subtitle={s.descripcion?.substring(0, 80) || ''}
+                      title={`${s.id} — ${s.tipo || 'Soporte Remoto'}`}
+                      subtitle={`Técnico: ${s.tecnicoNombre || s.tecnico || 'N/A'} • IP: ${s.ip || '—'} • ${s.duracion || '—'}${s.ticketId ? ` • ${s.ticketId}` : ''}`}
                       status={s.estado} date={s.fecha}
                     >
                       <SoporteExpandedContent s={s} />
@@ -518,8 +545,8 @@ export default function ClienteDetalle() {
                 : clientVisitas.map(v => {
                   return (
                     <HistoryCard key={v.id} color="#f97316" icon={Wrench}
-                      title={`${v.id} — Visita Técnica`}
-                      subtitle={v.descripcion?.substring(0, 80) || ''}
+                      title={`${v.id} — ${v.tipo || 'Visita Técnica'}`}
+                      subtitle={`Técnico: ${v.tecnicoNombre || 'N/A'} • ${v.fecha || ''} ${v.horaInicio || ''}${v.coordinado !== undefined ? (v.coordinado ? ' • Coordinado' : ' • No Coordinado') : ''}${v.sesionOrigenId ? ` • De: ${v.sesionOrigenId}` : ''}${v.ticketId ? ` • ${v.ticketId}` : ''}`}
                       status={v.estado} date={v.fecha}
                     >
                       <VisitaExpandedContent v={v} clientDir={c.direccion} />
@@ -535,7 +562,7 @@ export default function ClienteDetalle() {
                 : clientPostVenta.map(p => (
                   <HistoryCard key={p.id} color="#a855f7" icon={ShoppingBag}
                     title={`${p.id} — ${p.tipoServicio || 'Post-Venta'}`}
-                    subtitle={p.descripcion?.substring(0, 100) || 'Sin descripción'}
+                    subtitle={`Técnico: ${p.tecnicoNombre || 'Sin asignar'}${p.costoEstimado ? ` • Est: S/. ${formatMoney(p.costoEstimado)}` : ''}`}
                     status={p.estado} date={p.fecha}
                   >
                     <PostVentaExpandedContent p={p} />
@@ -550,7 +577,7 @@ export default function ClienteDetalle() {
                 : clientAverias.map(a => (
                   <HistoryCard key={a.id} color="#ef4444" icon={AlertTriangle}
                     title={`${a.id} — ${a.tipo || 'Avería'}`}
-                    subtitle={a.descripcion?.substring(0, 100) || 'Sin descripción'}
+                    subtitle={`Zona: ${a.zona || '—'} • Nodo: ${a.nodo || '—'} • ${a.clientesAfectados || 0} afectados • Técnico: ${a.tecnicoAsignado || 'N/A'}`}
                     status={a.estado} date={a.fecha}
                   >
                     <AveriaExpandedContent a={a} />

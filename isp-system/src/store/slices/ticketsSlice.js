@@ -274,6 +274,12 @@ export const createTicketsSlice = (set) => ({
         return { averias: newAverias };
     }),
 
+    deleteAveria: (id) => set(s => {
+        const newAverias = s.averias.filter(a => a.id !== id);
+        saveToDB('isp_averias', newAverias);
+        return { averias: newAverias };
+    }),
+
     // ===================== SOPORTE REMOTO =====================
     sesionesRemoto: [],
 
@@ -310,6 +316,23 @@ export const createTicketsSlice = (set) => ({
         const newSesiones = s.sesionesRemoto.filter(sr => sr.id !== id);
         saveToDB('isp_sesionesRemoto', newSesiones);
         return { sesionesRemoto: newSesiones };
+    }),
+
+    // Eliminación en cascada desde Soporte Remoto (Soporte -> Visitas -> Planta)
+    deleteSesionCascade: (sesionId) => set(s => {
+        const newSesiones = s.sesionesRemoto.filter(sr => sr.id !== sesionId);
+        const newVisitas = s.visitas.filter(v => v.sesionOrigenId !== sesionId);
+        const newDerivaciones = s.derivaciones ? s.derivaciones.filter(d => d.sesionOrigenId !== sesionId) : [];
+
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        saveToDB('isp_visitas', newVisitas);
+        if (s.derivaciones) saveToDB('isp_derivaciones', newDerivaciones);
+
+        return {
+            sesionesRemoto: newSesiones,
+            visitas: newVisitas,
+            ...(s.derivaciones && { derivaciones: newDerivaciones })
+        };
     }),
 
     // ===================== VISITAS TÉCNICAS =====================
