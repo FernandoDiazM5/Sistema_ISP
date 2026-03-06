@@ -435,7 +435,30 @@ export default function SoporteRemotoPage() {
   };
 
   const handleDeleteSesion = (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar esta sesión remota? Esta acción no se puede deshacer.')) return;
+    if (!window.confirm('¿Estás seguro de eliminar esta sesión remota?\n\n¡Atención! Esta acción borrará también cualquier Visita Técnica o Derivación a Planta Externa que haya nacido a partir de esta sesión.')) return;
+
+    // Borrado en CASCADA (Soporte -> Visita -> Planta)
+    const store = useStore.getState();
+    const {
+      deleteVisita,
+      deleteDerivacion,
+      visitas = [],
+      derivaciones = []
+    } = store;
+
+    // Buscar y eliminar Visitas Hijas
+    const visitasHijas = visitas.filter(v => v.sesionOrigenId === id);
+    if (deleteVisita) {
+      visitasHijas.forEach(v => deleteVisita(v.id));
+    }
+
+    // Buscar y eliminar Plantas Externas Hijas
+    const plantasHijas = derivaciones.filter(d => d.sesionOrigenId === id);
+    if (deleteDerivacion) {
+      plantasHijas.forEach(d => deleteDerivacion(d.id));
+    }
+
+    // Finalmente eliminar el Soporte Remoto actual
     if (deleteSesionRemoto) deleteSesionRemoto(id);
     setSelectedSesion(null);
   };
