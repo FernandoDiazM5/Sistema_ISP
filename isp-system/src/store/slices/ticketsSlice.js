@@ -162,8 +162,8 @@ export const createTicketsSlice = (set) => ({
         // 3. Reabrir Visitas Técnicas intermedias
         const newVisitas = s.visitas.map(v => {
             if (v.ticketId === ticketId && (v.estado === 'Completada' || v.estado === 'Cancelada' || v.estado === 'Fallida')) {
-                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'En Progreso', motivo: motivoReapertura || 'Reapertura en cascada' };
-                return { ...v, estado: 'En Progreso', resultado: 'Reapertura en cascada.', historial: [historyItem, ...(v.historial || [])] };
+                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'Programada', motivo: motivoReapertura || 'Reapertura en cascada' };
+                return { ...v, estado: 'Programada', resultado: 'Reapertura en cascada.', historial: [historyItem, ...(v.historial || [])] };
             }
             return v;
         });
@@ -217,8 +217,8 @@ export const createTicketsSlice = (set) => ({
         // 2. Reabrir Visitas hijas directas
         const newVisitas = s.visitas.map(v => {
             if (v.sesionOrigenId === sesionId && (v.estado === 'Completada' || v.estado === 'Cancelada' || v.estado === 'Fallida')) {
-                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'En Progreso', motivo: motivoReapertura || 'Reapertura descendente' };
-                return { ...v, estado: 'En Progreso', resultado: 'Reapertura descendente.', historial: [historyItem, ...(v.historial || [])] };
+                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'Programada', motivo: motivoReapertura || 'Reapertura descendente' };
+                return { ...v, estado: 'Programada', resultado: 'Reapertura descendente.', historial: [historyItem, ...(v.historial || [])] };
             }
             return v;
         });

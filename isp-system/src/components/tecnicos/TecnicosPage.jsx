@@ -199,8 +199,8 @@ export default function TecnicosPage() {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Comprimir a JPEG con calidad al 50%
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+          // Comprimir a JPEG con calidad al 75%
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
 
           setForm(f => ({ ...f, foto: compressedDataUrl }));
           setIsUploadingPhoto(false);

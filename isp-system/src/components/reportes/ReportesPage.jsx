@@ -13,11 +13,12 @@ export default function ReportesPage() {
   const averias = useStore(s => s.averias);
 
   const cobranza = useMemo(() => {
-    const conDeuda = clients.filter(c => (c.deuda_monto || 0) > 0);
+    const activeClients = clients.filter(c => c.estado_cuenta !== 'RETIRADO');
+    const conDeuda = activeClients.filter(c => (c.deuda_monto || 0) > 0);
     const totalDeuda = conDeuda.reduce((s, c) => s + (c.deuda_monto || 0), 0);
-    const ingresoMensual = clients.reduce((s, c) => s + (c.precio || 0), 0);
-    const cortados = clients.filter(c => c.estado_servicio === 'Cortado').length;
-    const suspendidos = clients.filter(c => c.estado_cuenta === 'SUSPENDIDO').length;
+    const ingresoMensual = activeClients.reduce((s, c) => s + (c.precio || 0), 0);
+    const cortados = activeClients.filter(c => c.estado_servicio === 'Cortado').length;
+    const suspendidos = activeClients.filter(c => c.estado_cuenta === 'SUSPENDIDO').length;
 
     // Deuda por zona
     const porZona = {};
@@ -28,9 +29,9 @@ export default function ReportesPage() {
     });
     const zonas = Object.entries(porZona).sort((a, b) => b[1].monto - a[1].monto);
 
-    // Por tecnología
-    const radioClients = clients.filter(c => c.tecnologia === 'Radio Enlace');
-    const fibraClients = clients.filter(c => c.tecnologia === 'Fibra Óptica');
+    // Por tecnología (solo clientes activos)
+    const radioClients = activeClients.filter(c => c.tecnologia === 'Radio Enlace');
+    const fibraClients = activeClients.filter(c => c.tecnologia === 'Fibra Óptica');
     const ingresoRadio = radioClients.reduce((s, c) => s + (c.precio || 0), 0);
     const ingresoFibra = fibraClients.reduce((s, c) => s + (c.precio || 0), 0);
 

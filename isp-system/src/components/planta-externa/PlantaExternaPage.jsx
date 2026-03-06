@@ -26,6 +26,7 @@ export default function PlantaExternaPage() {
   const derivaciones = useStore(s => s.derivaciones);
   const addDerivacion = useStore(s => s.addDerivacion);
   const updateDerivacion = useStore(s => s.updateDerivacion);
+  const deleteDerivacion = useStore(s => s.deleteDerivacion);
   const tecnicos = useStore(s => s.tecnicos);
   const tiposDerivacion = useStore(s => s.tiposDerivacion);
   const instalaciones = useStore(s => s.instalaciones);
@@ -353,23 +354,23 @@ export default function PlantaExternaPage() {
             placeholder="Buscar por ID, tipo, zona, dirección, técnico, material..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9"
+            className="w-full pl-9 py-2.5 pr-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary placeholder:text-text-muted outline-none focus:border-accent-purple/50 transition-colors"
           />
         </div>
-        <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="min-w-[140px]">
+        <select value={filterZona} onChange={e => setFilterZona(e.target.value)} className="min-w-[140px] h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-purple/50 cursor-pointer">
           <option value="all">Todas las zonas</option>
           {zonas.map(z => (
             <option key={z} value={z}>{z}</option>
           ))}
         </select>
-        <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="min-w-[140px]">
+        <select value={filterEstado} onChange={e => setFilterEstado(e.target.value)} className="min-w-[140px] h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-purple/50 cursor-pointer">
           <option value="all">Todos los estados</option>
           <option value="Pendiente">Pendiente</option>
           <option value="En progreso">En progreso</option>
           <option value="Completada">Completada</option>
           <option value="Cancelada">Cancelada</option>
         </select>
-        <select value={filterPrioridad} onChange={e => setFilterPrioridad(e.target.value)} className="min-w-[120px]">
+        <select value={filterPrioridad} onChange={e => setFilterPrioridad(e.target.value)} className="min-w-[120px] h-[42px] px-3 rounded-xl bg-bg-secondary border border-border text-sm text-text-primary outline-none focus:border-accent-purple/50 cursor-pointer">
           <option value="all">Prioridad</option>
           <option value="Crítica">Crítica</option>
           <option value="Alta">Alta</option>
@@ -446,8 +447,7 @@ export default function PlantaExternaPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (window.confirm(`¿Eliminar la derivación ${d.id}? Esta acción no se puede deshacer.`)) {
-                          const deleteDerivacion = useStore.getState().deleteDerivacion;
-                          if (deleteDerivacion) deleteDerivacion(d.id);
+                          deleteDerivacion(d.id);
                         }
                       }}
                       className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"

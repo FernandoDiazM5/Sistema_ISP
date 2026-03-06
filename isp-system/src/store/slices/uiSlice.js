@@ -1,5 +1,5 @@
 import * as db from '../../utils/db';
-import { pushSettings, pullSettings } from '../../api/firebase';
+import { pushSettings, pullSettings, saveDocument, deleteDocument } from '../../api/firebase';
 import { getNextId } from '../../utils/helpers';
 
 async function saveToDB(key, data) {
@@ -91,34 +91,42 @@ export const createUISlice = (set, get) => ({
 
     addTemplate: (tpl) => set(s => {
         const newId = getNextId(s.templates, 'TPL');
-        const newTemplates = [{ ...tpl, id: newId, uso: 0 }, ...s.templates];
+        const newTpl = { ...tpl, id: newId, uso: 0 };
+        const newTemplates = [newTpl, ...s.templates];
         saveToDB('isp_templates', newTemplates);
+        saveDocument('templates', newTpl).catch(e => console.error('[Firebase] templates add:', e));
         return { templates: newTemplates };
     }),
 
     updateTemplate: (id, updates) => set(s => {
         const newTemplates = s.templates.map(t => t.id === id ? { ...t, ...updates } : t);
         saveToDB('isp_templates', newTemplates);
+        saveDocument('templates', { id, ...updates }).catch(e => console.error('[Firebase] templates update:', e));
         return { templates: newTemplates };
     }),
 
     deleteTemplate: (id) => set(s => {
         const newTemplates = s.templates.filter(t => t.id !== id);
         saveToDB('isp_templates', newTemplates);
+        deleteDocument('templates', id).catch(e => console.error('[Firebase] templates delete:', e));
         return { templates: newTemplates };
     }),
 
     incrementTemplateUse: (id) => set(s => {
         const newTemplates = s.templates.map(t => t.id === id ? { ...t, uso: (t.uso || 0) + 1 } : t);
         saveToDB('isp_templates', newTemplates);
+        const tpl = newTemplates.find(t => t.id === id);
+        if (tpl) saveDocument('templates', { id, uso: tpl.uso }).catch(e => console.error('[Firebase] templates uso:', e));
         return { templates: newTemplates };
     }),
 
     whatsappLogs: [],
     addWhatsappLog: (log) => set(s => {
         const newId = getNextId(s.whatsappLogs, 'WA');
-        const newLogs = [{ ...log, id: newId, fecha: new Date().toISOString() }, ...s.whatsappLogs];
+        const newLog = { ...log, id: newId, fecha: new Date().toISOString() };
+        const newLogs = [newLog, ...s.whatsappLogs];
         saveToDB('isp_whatsappLogs', newLogs);
+        saveDocument('whatsappLogs', newLog).catch(e => console.error('[Firebase] whatsappLogs add:', e));
         return { whatsappLogs: newLogs };
     }),
 

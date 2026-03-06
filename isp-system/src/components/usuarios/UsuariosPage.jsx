@@ -210,11 +210,6 @@ export default function UsuariosPage() {
           authType: form.authType,
         };
 
-        // Si es de tipo email_password, guardamos la contraseña en Firestore
-        if (form.authType === 'email_password') {
-          newUserObj.password = form.password;
-        }
-
         await createUser(newUserObj, currentUser?.uid || 'system', authUid);
 
         addToast({

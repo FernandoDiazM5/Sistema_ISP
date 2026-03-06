@@ -313,6 +313,8 @@ export default function SoporteRemotoPage() {
     toast.success(`Sesión ${tipoSesion} iniciada para ${selectedClient.nombre}`);
 
     if (derivarVisita && selectedClient) {
+      // Zustand set() es síncrono: la sesión recién creada es el primer elemento del array
+      const nuevaSesion = useStore.getState().sesionesRemoto[0];
       addVisita({
         clienteId: selectedClient.id,
         clienteNombre: selectedClient.nombre,
@@ -327,6 +329,7 @@ export default function SoporteRemotoPage() {
         horaInicio: null,
         horaFin: null,
         ticketId: selectedTicket?.id || null,
+        sesionOrigenId: nuevaSesion?.id || null,
       });
     }
 

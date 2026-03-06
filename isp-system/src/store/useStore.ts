@@ -445,7 +445,13 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   addTecnico: (tecnico: Omit<ITecnico, 'id'>) => {
     const s = get();
     const newId = getNextId(s.tecnicos, 'TEC');
-    const newTecnico = { ...tecnico, id: newId };
+    const toSave: any = tecnico;
+    const normalized = {
+      ...toSave,
+      especialidad: Array.isArray(toSave.especialidad) ? toSave.especialidad : (toSave.especialidad ? [toSave.especialidad] : []),
+      zona: Array.isArray(toSave.zona) ? toSave.zona : (toSave.zona ? [toSave.zona] : []),
+    };
+    const newTecnico = { ...normalized, id: newId };
     const updated = [newTecnico, ...s.tecnicos];
 
     set({ tecnicos: updated });
@@ -454,10 +460,13 @@ const useStore = create<StoreState>((set: any, get: any) => ({
   },
 
   updateTecnico: (id: string, updates: Partial<ITecnico>) => {
-    const updated = get().tecnicos.map((t: any) => t.id === id ? { ...t, ...updates } : t);
+    const norm: any = { ...updates };
+    if ('especialidad' in updates) norm.especialidad = Array.isArray(updates.especialidad) ? updates.especialidad : (updates.especialidad ? [updates.especialidad] : []);
+    if ('zona' in updates) norm.zona = Array.isArray(updates.zona) ? updates.zona : (updates.zona ? [updates.zona] : []);
+    const updated = get().tecnicos.map((t: any) => t.id === id ? { ...t, ...norm } : t);
     set({ tecnicos: updated });
     db.set('isp_tecnicos', updated).catch((e: any) => console.error('[IndexedDB] tecnicos:', e));
-    saveDocument('tecnicos', { id, ...updates });
+    saveDocument('tecnicos', { id, ...norm });
   },
 
   deleteTecnico: (id: string) => {
@@ -469,37 +478,37 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   // ===================== APPLY DELTAS (para live sync incremental) =====================
   applyDeltas: (data: any) => {
-    const keysToRestore = [
+    // Colecciones de entidades (arrays con .id): se fusionan por ID
+    const arrayKeysWithId = [
       'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
-      'columnPrefs', 'cleaningOptions', 'importHistory',
-      'branding', 'customRolePermissions', 'whatsappCategories',
+      'columnPrefs', 'cleaningOptions', 'importHistory', 'clientChanges',
       'categorias', 'subcategorias', 'prioridadesSLA',
       'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento',
-      'averiasTipos', 'clientChanges',
+      'averiasTipos',
       'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
       'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
-      'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico'
+      'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
     ];
+
+    // Arrays de escalares (sin .id): se reemplazan directamente si hay datos
+    const arrayKeysScalar = ['whatsappCategories'];
+
+    // Valores no-array (objetos, strings): se reemplazan directamente si vienen en el delta
+    const scalarKeys = ['branding', 'customRolePermissions'];
 
     set((state: any) => {
       const updates: any = {};
-      for (const key of keysToRestore) {
-        if (data[key] && Array.isArray(data[key])) {
 
-          // Nunca reemplazar con arreglos vacíos (protege catálogos y cualquier colección)
-          if (data[key].length === 0) {
-            continue;
-          }
-
+      // 1. Fusión de entidades por ID
+      for (const key of arrayKeysWithId) {
+        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
           const incomingItems = data[key];
           const existingItems = state[key] || [];
-
           if (!Array.isArray(existingItems)) {
             updates[key] = incomingItems;
           } else {
-            // Fusionar arrays por ID, el incoming sobreescribe al local existente
             const mergedMap = new Map(existingItems.map((item: any) => [item.id, item]));
             for (const incoming of incomingItems) {
               mergedMap.set(incoming.id, incoming);
@@ -508,13 +517,39 @@ const useStore = create<StoreState>((set: any, get: any) => ({
           }
         }
       }
+
+      // 2. Reemplazo directo de arrays escalares
+      for (const key of arrayKeysScalar) {
+        if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+          updates[key] = data[key];
+        }
+      }
+
+      // 3. Reemplazo directo de valores no-array
+      for (const key of scalarKeys) {
+        if (data[key] !== undefined && data[key] !== null) {
+          updates[key] = data[key];
+        }
+      }
+
       return updates;
     });
 
-    // Guardar en DB de forma síncrona dentro del mismo ciclo de actualización
+    // Aplicar tema si viene en el delta
+    if (data.theme) {
+      set({ theme: data.theme });
+      if (data.theme === 'default') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', data.theme);
+      }
+    }
+
+    // Persistir en IndexedDB
     const state = get();
-    for (const key of keysToRestore) {
-      if (data[key] && Array.isArray(data[key]) && data[key].length > 0) {
+    const allKeys = [...arrayKeysWithId, ...arrayKeysScalar, ...scalarKeys];
+    for (const key of allKeys) {
+      if (data[key] !== undefined && data[key] !== null) {
         const dbKey = (STORE_TO_DB_KEY_MAP as any)[key];
         if (dbKey && state[key] !== undefined) {
           db.set(dbKey, state[key]).catch((err: any) => {

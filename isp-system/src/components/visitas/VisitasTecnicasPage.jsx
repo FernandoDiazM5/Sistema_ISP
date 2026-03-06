@@ -512,8 +512,8 @@ export default function VisitasTecnicasPage() {
     // 2. Create derivación
     addDerivacion({
       clienteId: selectedVisita.clienteId,
-      clienteNombre: selectedVisita.clienteNombre || client?.NOMBRE || '',
-      zona: client?.NODO || '',
+      clienteNombre: selectedVisita.clienteNombre || client?.nombre || '',
+      zona: client?.nodo || '',
       tipo: 'Fibra Óptica',
       prioridad: selectedVisita.prioridad || 'Alta',
       estado: 'Pendiente',

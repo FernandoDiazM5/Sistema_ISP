@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Box, Plus, Monitor, Wifi, Router, Server, Wrench, Package, X, Edit2, Save, Search } from 'lucide-react';
+import { Box, Plus, Monitor, Wifi, Router, Server, Wrench, Package, X, Edit2, Trash2, Save, Search } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { useFilters } from '../../hooks/useFilters';
 import KPICard from '../common/KPICard';
@@ -35,6 +35,7 @@ export default function EquiposPage() {
   const equipos = useStore(s => s.equipos);
   const addEquipo = useStore(s => s.addEquipo);
   const updateEquipo = useStore(s => s.updateEquipo);
+  const deleteEquipo = useStore(s => s.deleteEquipo);
   const clients = useStore(s => s.clients);
   const tiposEquipo = useStore(s => s.tiposEquipo);
   const marcasEquipo = useStore(s => s.marcasEquipo);
@@ -95,6 +96,11 @@ export default function EquiposPage() {
       addEquipo({ ...form, fechaAsignacion: form.estado === 'En uso' ? new Date().toISOString().split('T')[0] : null });
     }
     setShowModal(false);
+  };
+
+  const handleDelete = (eq) => {
+    if (!window.confirm(`¿Eliminar equipo ${eq.tipo} ${eq.marca} (${eq.serial})?`)) return;
+    deleteEquipo(eq.id);
   };
 
   const handleClientSelect = (e) => {
@@ -222,6 +228,14 @@ export default function EquiposPage() {
                           onClick={() => openEdit(eq)}
                         >
                           <Edit2 size={14} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(eq)}
+                          className="text-red-400 hover:text-red-500"
+                        >
+                          <Trash2 size={14} />
                         </Button>
                       </div>
                     </td>

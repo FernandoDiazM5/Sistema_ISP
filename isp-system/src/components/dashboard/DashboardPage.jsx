@@ -10,7 +10,7 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const total = clients.length;
-    const online = clients.filter(c => c.status === 'ONLINE').length;
+    const online = clients.filter(c => c.status ? c.status === 'ONLINE' : c.estado_cuenta === 'ACTIVO').length;
     const offline = total - online;
     const radio = clients.filter(c => c.tecnologia === 'Radio Enlace').length;
     const fibra = clients.filter(c => c.tecnologia === 'Fibra Óptica').length;
@@ -18,7 +18,10 @@ export default function DashboardPage() {
     const totalDeuda = clients.reduce((s, c) => s + (c.deuda_monto || 0), 0);
     const activos = clients.filter(c => c.estado_cuenta === 'ACTIVO').length;
     const suspendidos = clients.filter(c => c.estado_cuenta === 'SUSPENDIDO').length;
-    const conTV = clients.filter(c => c.servicios_adicionales?.length > 0).length;
+    const conTV = clients.filter(c => {
+      const sa = c.servicios_adicionales;
+      return Array.isArray(sa) ? sa.length > 0 : (sa && typeof sa === 'object' && Object.keys(sa).length > 0);
+    }).length;
 
     const nodos = {};
     clients.forEach(c => { if (c.nodo_router) nodos[c.nodo_router] = (nodos[c.nodo_router] || 0) + 1; });

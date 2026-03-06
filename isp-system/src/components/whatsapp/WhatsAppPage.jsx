@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MessageSquare, Send, Plus, Edit3, Trash2, Copy, Star, Search, Users, Sparkles, Play, Square, ChevronRight, X, Phone, Upload, Mic, Image, Download, Settings, Check, Filter, Eye } from 'lucide-react';
 import useStore from '../../store/useStore';
+import useToast from '../../hooks/useToast';
 import { rewriteWithAI, generateWithAI, TONES } from '../../api/geminiAI';
 import KPICard from '../common/KPICard';
 import CopyButton from '../common/CopyButton';
@@ -61,6 +62,7 @@ const VARIABLES = [
 ];
 
 export default function WhatsAppPage() {
+  const toast = useToast();
   const clients = useStore(s => s.clients);
   const templates = useStore(s => s.templates);
   const addTemplate = useStore(s => s.addTemplate);
@@ -193,6 +195,11 @@ export default function WhatsAppPage() {
     if (!phone) return;
 
     const cleanPhone = phone.replace(/\D/g, '');
+    const isValid = cleanPhone.length === 9 || (cleanPhone.length === 11 && cleanPhone.startsWith('51'));
+    if (!isValid) {
+      toast.warning('El número debe tener 9 dígitos (ej: 987654321)');
+      return;
+    }
     // Evitar doble código de país: si ya empieza con 51 y tiene 11+ dígitos, no agregar
     const fullPhone = cleanPhone.startsWith('51') && cleanPhone.length >= 11 ? cleanPhone : `51${cleanPhone}`;
     const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(messageText)}`;
