@@ -444,7 +444,8 @@ export default function SoporteRemotoPage() {
   const getDiagWarnings = (d) => {
     if (!d) return {};
     const w = {};
-    if (d.ping && parseFloat(d.ping) > 80) w.ping = true;
+    if (d.pingMax && parseFloat(d.pingMax) > 80) w.pingMax = true;
+    if (d.perdidaPaquetes && parseFloat(d.perdidaPaquetes) > 5) w.perdidaPaquetes = true;
     if (d.velocidadBajada && parseFloat(d.velocidadBajada) < 10) w.velocidadBajada = true;
     if (d.velocidadSubida && parseFloat(d.velocidadSubida) < 5) w.velocidadSubida = true;
     // Señal radio
@@ -601,19 +602,24 @@ export default function SoporteRemotoPage() {
               {hasDiag && (
                 <div className="mt-2 p-2 bg-bg-secondary rounded-lg flex items-center gap-4 text-[11px] flex-wrap">
                   <span className="text-text-muted font-semibold uppercase tracking-wide flex items-center gap-1"><Gauge size={10} /> Diag:</span>
-                  {s.diagnosticos.ping && (
-                    <span className={warns.ping ? 'text-accent-orange' : 'text-text-secondary'}>
-                      Ping: <span className="font-mono">{s.diagnosticos.ping}ms</span>
+                  {s.diagnosticos.pingMax && (
+                    <span className={warns.pingMax ? 'text-accent-orange' : 'text-text-secondary'}>
+                      Ping: <span className="font-mono">{s.diagnosticos.pingMax}ms</span>
                     </span>
                   )}
-                  {s.diagnosticos.download && (
-                    <span className={warns.download ? 'text-accent-orange' : 'text-text-secondary'}>
-                      DL: <span className="font-mono">{s.diagnosticos.download}Mbps</span>
+                  {s.diagnosticos.perdidaPaquetes && (
+                    <span className={warns.perdidaPaquetes ? 'text-accent-orange' : 'text-text-secondary'}>
+                      PL: <span className="font-mono">{s.diagnosticos.perdidaPaquetes}%</span>
                     </span>
                   )}
-                  {s.diagnosticos.upload && (
-                    <span className={warns.upload ? 'text-accent-orange' : 'text-text-secondary'}>
-                      UL: <span className="font-mono">{s.diagnosticos.upload}Mbps</span>
+                  {s.diagnosticos.velocidadBajada && (
+                    <span className={warns.velocidadBajada ? 'text-accent-orange' : 'text-text-secondary'}>
+                      DL: <span className="font-mono">{s.diagnosticos.velocidadBajada}Mbps</span>
+                    </span>
+                  )}
+                  {s.diagnosticos.velocidadSubida && (
+                    <span className={warns.velocidadSubida ? 'text-accent-orange' : 'text-text-secondary'}>
+                      UL: <span className="font-mono">{s.diagnosticos.velocidadSubida}Mbps</span>
                     </span>
                   )}
                   {s.diagnosticos.senalRecibida && (

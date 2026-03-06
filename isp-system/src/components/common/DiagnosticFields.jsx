@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight, Activity, Radio, Wifi } from 'lucide-react';
 
 const EMPTY_DIAG = {
-    ping: '',
+    pingMin: '',
+    pingMax: '',
+    pingAvg: '', // ping promedio
     velocidadBajada: '',
     velocidadSubida: '',
+    perdidaPaquetes: '',
     // Fibra
     nivelOLT: '',
     nivelONT: '',
@@ -78,8 +81,8 @@ export default function DiagnosticFields({ tecnologia, value, onChange, onTecnol
                                     <button
                                         type="button"
                                         className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md font-bold text-[10px] border transition-colors cursor-pointer ${tecnologia
-                                                ? 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20 hover:bg-accent-cyan/20'
-                                                : 'bg-bg-card text-text-muted border-dashed border-border hover:text-text-primary hover:border-text-secondary'
+                                            ? 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20 hover:bg-accent-cyan/20'
+                                            : 'bg-bg-card text-text-muted border-dashed border-border hover:text-text-primary hover:border-text-secondary'
                                             }`}
                                     >
                                         {tecnologia || 'Seleccionar Tecnología'}
@@ -122,13 +125,37 @@ export default function DiagnosticFields({ tecnologia, value, onChange, onTecnol
                         <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
                             <Wifi size={12} className="text-slate-500" /> CONECTIVIDAD
                         </p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             <div>
-                                <label className={labelClass}>Ping (ms)</label>
+                                <label className={labelClass}>Ping Mín. (ms)</label>
+                                <input
+                                    type="number" step="0.1" min="0" placeholder="Ej: 8.5"
+                                    value={value.pingMin} onChange={e => upd('pingMin', e.target.value)}
+                                    className={getInputClass('pingMin')} readOnly={readOnly}
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Ping Máx. (ms)</label>
+                                <input
+                                    type="number" step="0.1" min="0" placeholder="Ej: 45.2"
+                                    value={value.pingMax} onChange={e => upd('pingMax', e.target.value)}
+                                    className={getInputClass('pingMax')} readOnly={readOnly}
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Ping Promedio (ms)</label>
                                 <input
                                     type="number" step="0.1" min="0" placeholder="Ej: 12.5"
-                                    value={value.ping} onChange={e => upd('ping', e.target.value)}
-                                    className={getInputClass('ping')} readOnly={readOnly}
+                                    value={value.pingAvg} onChange={e => upd('pingAvg', e.target.value)}
+                                    className={getInputClass('pingAvg')} readOnly={readOnly}
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Pérdida de Paquetes (%)</label>
+                                <input
+                                    type="number" step="0.1" min="0" max="100" placeholder="Ej: 2.5"
+                                    value={value.perdidaPaquetes} onChange={e => upd('perdidaPaquetes', e.target.value)}
+                                    className={getInputClass('perdidaPaquetes')} readOnly={readOnly}
                                 />
                             </div>
                             <div>
@@ -136,7 +163,7 @@ export default function DiagnosticFields({ tecnologia, value, onChange, onTecnol
                                 <input
                                     type="number" step="0.1" min="0" placeholder="Ej: 45.2"
                                     value={value.velocidadBajada} onChange={e => upd('velocidadBajada', e.target.value)}
-                                    className={getInputClass('download')} readOnly={readOnly}
+                                    className={getInputClass('velocidadBajada')} readOnly={readOnly}
                                 />
                             </div>
                             <div>
@@ -144,7 +171,7 @@ export default function DiagnosticFields({ tecnologia, value, onChange, onTecnol
                                 <input
                                     type="number" step="0.1" min="0" placeholder="Ej: 22.8"
                                     value={value.velocidadSubida} onChange={e => upd('velocidadSubida', e.target.value)}
-                                    className={getInputClass('upload')} readOnly={readOnly}
+                                    className={getInputClass('velocidadSubida')} readOnly={readOnly}
                                 />
                             </div>
                         </div>
@@ -280,8 +307,8 @@ export default function DiagnosticFields({ tecnologia, value, onChange, onTecnol
                             value={value.observaciones}
                             onChange={e => upd('observaciones', e.target.value)}
                             className={`w-full p-3 rounded-lg text-xs min-h-[80px] resize-y outline-none transition-all placeholder:text-slate-600 ${readOnly
-                                    ? 'bg-slate-800/50 border border-transparent text-slate-300'
-                                    : 'bg-[#1e293b]/50 border border-slate-700 text-slate-200 focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/20'
+                                ? 'bg-slate-800/50 border border-transparent text-slate-300'
+                                : 'bg-[#1e293b]/50 border border-slate-700 text-slate-200 focus:border-accent-cyan focus:ring-1 focus:ring-accent-cyan/20'
                                 }`}
                             readOnly={readOnly}
                         />
