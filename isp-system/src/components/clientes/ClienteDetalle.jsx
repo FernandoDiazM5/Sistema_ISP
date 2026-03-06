@@ -330,7 +330,11 @@ function CambioExpandedContent({ c }) {
 export default function ClienteDetalle() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const clients = useStore(s => s.clients);
   const averias = useStore(s => s.averias);
+  const visitas = useStore(s => s.visitas);
+  const sesionesRemoto = useStore(s => s.sesionesRemoto);
+  const postVenta = useStore(s => s.postVenta);
   const clientChangesDb = useStore(s => s.clientChanges) || [];
 
   const [activeTab, setActiveTab] = useState('soporte');
