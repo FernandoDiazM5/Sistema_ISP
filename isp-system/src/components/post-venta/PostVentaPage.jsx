@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X, Settings, Pencil, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Search, ShoppingBag, Tv, Wifi, ArrowUpDown, MapPin, X, Settings, Pencil, Trash2, DollarSign, Eye, Edit3 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import CopyButton from '../common/CopyButton';
 import { formatPostVenta } from '../../utils/whatsappFormats';
@@ -42,6 +42,7 @@ export default function PostVentaPage() {
   const addServicioCatalogo = useStore(s => s.addServicioCatalogo);
   const updateServicioCatalogo = useStore(s => s.updateServicioCatalogo);
   const deleteServicioCatalogo = useStore(s => s.deleteServicioCatalogo);
+  const deletePostVenta = useStore(s => s.deletePostVenta);
 
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('Todas');
@@ -65,6 +66,9 @@ export default function PostVentaPage() {
   const [formTecnico, setFormTecnico] = useState('');
   const [formDescripcion, setFormDescripcion] = useState('');
   const [formObservaciones, setFormObservaciones] = useState('');
+  const [formFecha, setFormFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [formHora, setFormHora] = useState(new Date().toTimeString().slice(0, 5));
+  const [editingPV, setEditingPV] = useState(null);
 
   // --- Detail modal state ---
   const [detailCostoReal, setDetailCostoReal] = useState('');
@@ -125,6 +129,9 @@ export default function PostVentaPage() {
     setFormTecnico('');
     setFormDescripcion('');
     setFormObservaciones('');
+    setFormFecha(new Date().toISOString().split('T')[0]);
+    setFormHora(new Date().toTimeString().slice(0, 5));
+    setEditingPV(null);
   };
 
   const openNewModal = () => {
@@ -152,11 +159,10 @@ export default function PostVentaPage() {
 
     const tecnicoObj = formTecnico ? tecnicos.find(t => t.id === formTecnico) : null;
 
-    addPostVenta({
+    const data = {
       clienteId: selectedClient.id,
       clienteNombre: selectedClient.nombre,
       tipoServicio: servicio.nombre,
-      estado: 'Pendiente',
       tecnicoId: tecnicoObj?.id || null,
       tecnicoNombre: tecnicoObj?.nombre || null,
       descripcion: formDescripcion,
@@ -164,9 +170,40 @@ export default function PostVentaPage() {
       costoReal: null,
       fechaEjecucion: null,
       observaciones: formObservaciones,
-    });
+      fecha: formFecha,
+      hora: formHora,
+    };
+
+    if (editingPV) {
+      updatePostVenta(editingPV.id, { ...data, _historyComment: 'Solicitud editada manualmente' });
+    } else {
+      addPostVenta({ ...data, estado: 'Pendiente' });
+    }
 
     closeNewModal();
+  };
+
+  const handleEditFromList = (pv) => {
+    // Pre-fill the form with existing data
+    const client = clients.find(c => c.id === pv.clienteId);
+    if (client) {
+      setSelectedClient(client);
+      setClientSearch(client.nombre);
+    }
+    const servicioMatch = catalogoServicios.find(s => s.nombre === pv.tipoServicio);
+    setFormServicio(servicioMatch?.id || '');
+    setFormTecnico(pv.tecnicoId || '');
+    setFormDescripcion(pv.descripcion || '');
+    setFormObservaciones(pv.observaciones || '');
+    setFormFecha(pv.fecha || new Date().toISOString().split('T')[0]);
+    setFormHora(pv.hora || '');
+    setEditingPV(pv);
+    setShowNewModal(true);
+  };
+
+  const handleDeleteFromList = (id) => {
+    if (!confirm('¿Seguro que deseas eliminar esta solicitud?')) return;
+    deletePostVenta(id);
   };
 
   const openDetail = (pv) => {
@@ -385,8 +422,30 @@ export default function PostVentaPage() {
             <div
               key={pv.id}
               onClick={() => openDetail(pv)}
-              className="bg-bg-card rounded-xl p-4 border border-border cursor-pointer transition-all hover:border-accent-purple/40 hover:bg-bg-card-hover"
+              className="bg-bg-card rounded-xl p-4 border border-border cursor-pointer transition-all hover:border-accent-purple/40 hover:bg-bg-card-hover group relative"
             >
+              {/* Quick Action Buttons */}
+              <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                <button
+                  onClick={(e) => { e.stopPropagation(); openDetail(pv); }}
+                  className="p-1.5 rounded-lg bg-accent-blue/15 text-accent-blue hover:bg-accent-blue/25 cursor-pointer border-none transition-colors" title="Ver"
+                >
+                  <Eye size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleEditFromList(pv); }}
+                  className="p-1.5 rounded-lg bg-accent-yellow/15 text-accent-yellow hover:bg-accent-yellow/25 cursor-pointer border-none transition-colors" title="Editar"
+                >
+                  <Edit3 size={14} />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteFromList(pv.id); }}
+                  className="p-1.5 rounded-lg bg-accent-red/15 text-accent-red hover:bg-accent-red/25 cursor-pointer border-none transition-colors" title="Eliminar"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent-purple/15 text-accent-purple">
@@ -404,7 +463,7 @@ export default function PostVentaPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <CopyButton getTextFn={() => formatPostVenta(pv, clients.find(c => c.id === pv.clienteId))} />
-                  <span className="text-[11px] text-text-muted">{pv.fecha}</span>
+                  <span className="text-[11px] text-text-muted">{pv.fecha}{pv.hora ? ` ${pv.hora}` : ''}</span>
                 </div>
               </div>
 
@@ -438,7 +497,7 @@ export default function PostVentaPage() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-5">
-              <h3 className="text-lg font-bold">Nueva Solicitud Post-Venta</h3>
+              <h3 className="text-lg font-bold">{editingPV ? 'Editar Solicitud Post-Venta' : 'Nueva Solicitud Post-Venta'}</h3>
               <button
                 onClick={closeNewModal}
                 className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted cursor-pointer hover:text-text-primary transition-colors"
@@ -594,6 +653,29 @@ export default function PostVentaPage() {
                 />
               </div>
 
+              {/* Fecha y Hora de Solicitud */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-text-muted mb-1.5 block font-medium">Fecha de solicitud</label>
+                  <input
+                    type="date"
+                    value={formFecha}
+                    onChange={e => setFormFecha(e.target.value)}
+                    required
+                    className="w-full py-2.5 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-purple"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-text-muted mb-1.5 block font-medium">Hora de solicitud</label>
+                  <input
+                    type="time"
+                    value={formHora}
+                    onChange={e => setFormHora(e.target.value)}
+                    className="w-full py-2.5 px-3 bg-bg-secondary border border-border rounded-lg text-sm text-text-primary outline-none focus:border-accent-purple"
+                  />
+                </div>
+              </div>
+
               {/* Buttons */}
               <div className="flex gap-3 mt-1">
                 <button
@@ -608,7 +690,7 @@ export default function PostVentaPage() {
                   disabled={!selectedClient || !formServicio}
                   className="flex-1 py-2.5 rounded-lg bg-accent-purple border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Crear Solicitud
+                  {editingPV ? 'Guardar Cambios' : 'Crear Solicitud'}
                 </button>
               </div>
             </form>
