@@ -833,14 +833,20 @@ export default function SoporteRemotoPage() {
                   {/* Client Info Section */}
                   <div className="mb-4">
                     <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Información del cliente</p>
-                    <div className="bg-bg-secondary rounded-lg p-3 border border-border/50">
-                      <p className="text-sm font-semibold text-text-primary mb-1">{s.clienteNombre}</p>
-                      <div className="flex items-center gap-4 flex-wrap text-[11px] text-text-muted">
-                        <span>ID: <span className="text-text-secondary font-mono">{s.clienteId}</span></span>
-                        {s.tecnologia && <span>Tecnología: <span className="text-accent-cyan font-semibold">{s.tecnologia}</span></span>}
-                        {s.plan && <span>Plan: <span className="text-text-secondary">{s.plan}</span></span>}
-                        {s.direccion && <span>Dir: <span className="text-text-secondary">{s.direccion}</span></span>}
-                        {s.nodo && <span>Nodo: <span className="text-text-secondary font-mono">{s.nodo}</span></span>}
+                    <div className="bg-bg-secondary/60 rounded-xl p-4 border border-border/50 shadow-sm">
+                      <p className="text-[15px] font-bold text-text-primary mb-1.5">{s.clienteNombre}</p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-4 flex-wrap text-[11px] text-text-muted">
+                          <span>ID: <span className="text-text-secondary font-mono">{s.clienteId}</span></span>
+                          {s.tecnologia && <span>Tecnología: <span className="text-accent-cyan font-semibold">{s.tecnologia}</span></span>}
+                          {s.plan && <span>Plan: <span className="text-text-secondary">{s.plan}</span></span>}
+                          {s.nodo && <span>Nodo: <span className="text-text-secondary font-mono">{s.nodo}</span></span>}
+                        </div>
+                        {s.direccion && (
+                          <div className="text-[11px] text-text-muted pt-1 border-t border-border/30">
+                            Dirección: <span className="text-text-secondary">{s.direccion}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -858,75 +864,52 @@ export default function SoporteRemotoPage() {
                   )}
 
                   {/* Session details */}
-                  <div className="mb-6">
-                    <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-3 flex items-center gap-1.5">
+                  <div className="mb-4">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2 flex items-center gap-1.5">
                       <Activity size={12} /> Detalles de sesión
                     </p>
-                    <div className="grid grid-cols-2 gap-y-4 gap-x-2 px-1">
-                      <div>
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Tipo</p>
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Dirección IP</p>
-                        <p className="text-[13px] font-mono font-medium text-accent-cyan">{s.ip || '—'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Técnico Asignado</p>
-                        <p className="text-[13px] font-medium text-text-primary flex items-center gap-1.5"><Monitor size={12} className="text-text-muted" /> {s.tecnico}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Duración</p>
-                        <p className="text-[13px] font-medium text-text-secondary flex items-center gap-1.5"><Clock size={12} className="text-text-muted" /> {s.duracion}</p>
+                    <div className="bg-bg-secondary/40 rounded-xl p-4 border border-border/50 shadow-sm">
+                      <div className="grid grid-cols-2 gap-y-5 gap-x-4">
+                        <div>
+                          <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1.5">Tipo</p>
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1.5">Dirección IP</p>
+                          <p className="text-[14px] font-mono font-medium text-accent-cyan">{s.ip || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1.5">Técnico Asignado</p>
+                          <p className="text-[13px] font-medium text-text-primary flex items-center gap-1.5"><Monitor size={12} className="text-text-muted" /> {s.tecnico}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1.5">Duración</p>
+                          <p className="text-[13px] font-medium text-text-secondary flex items-center gap-1.5"><Clock size={12} className="text-text-muted" /> {s.duracion}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Resultado */}
                   {s.resultado && (
-                    <div className="mb-6">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Motivo / Resultado</p>
-                      <div className="relative">
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-border rounded-l-md"></div>
-                        <div className="pl-4 py-1 text-[13px] text-text-secondary leading-relaxed bg-gradient-to-r from-bg-secondary/40 to-transparent">
-                          {s.resultado}
+                    <div className="mb-4">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Motivo / Resultado (Reporte Inicial)</p>
+                      <div className="bg-bg-secondary/40 rounded-xl p-4 border border-border/50 shadow-sm">
+                        <div className="relative">
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent-blue/50 rounded-l-md"></div>
+                          <div className="pl-4 py-1 text-[13px] text-text-secondary leading-relaxed">
+                            {s.resultado}
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Resolution Info */}
-                  {(s.solucion || s.accionesRealizadas) && (
-                    <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 mb-4">
-                      <p className="text-[10px] text-green-400 uppercase tracking-wide mb-2 font-semibold flex items-center gap-1">
-                        <CheckCircle2 size={12} />
-                        Resolución
-                      </p>
-                      {s.solucion && (
-                        <div className="mb-2">
-                          <p className="text-[10px] text-text-muted mb-0.5">Solución:</p>
-                          <p className="text-sm text-text-secondary">{s.solucion}</p>
-                        </div>
-                      )}
-                      {s.accionesRealizadas && (
-                        <div className="mb-2">
-                          <p className="text-[10px] text-text-muted mb-0.5">Acciones Realizadas:</p>
-                          <p className="text-sm text-text-secondary">{s.accionesRealizadas}</p>
-                        </div>
-                      )}
-                      {s.adjuntosResolucion && s.adjuntosResolucion.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-[10px] text-text-muted mb-1">Evidencia:</p>
-                          <Adjuntos value={s.adjuntosResolucion} onChange={() => { }} readOnly max={5} />
-                        </div>
-                      )}
-                    </div>
-                  )}
 
-                  {/* Adjuntos */}
+                  {/* Adjuntos del Ticket / Motivo original */}
                   {s.adjuntos && s.adjuntos.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Adjuntos / Evidencia</p>
+                    <div className="mb-6">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Evidencia de Origen</p>
                       <Adjuntos value={s.adjuntos} onChange={() => { }} readOnly max={5} />
                     </div>
                   )}
@@ -957,6 +940,36 @@ export default function SoporteRemotoPage() {
                         warnings={warns}
                         readOnly={s.estado === 'Completada' || s.estado === 'Fallida'}
                       />
+                    </div>
+                  )}
+
+                  {/* Resolution Info */}
+                  {(s.solucion || s.accionesRealizadas) && (
+                    <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4 mb-6">
+                      <p className="text-[10px] text-green-400 uppercase tracking-wide mb-3 font-semibold flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        Resolución de Incidencia
+                      </p>
+                      <div className="space-y-3">
+                        {s.solucion && (
+                          <div>
+                            <p className="text-[10px] text-text-muted mb-0.5 font-medium">Solución aplicada:</p>
+                            <p className="text-sm text-text-primary leading-relaxed">{s.solucion}</p>
+                          </div>
+                        )}
+                        {s.accionesRealizadas && (
+                          <div>
+                            <p className="text-[10px] text-text-muted mb-0.5 font-medium">Acciones Realizadas:</p>
+                            <p className="text-sm text-text-secondary leading-relaxed">{s.accionesRealizadas}</p>
+                          </div>
+                        )}
+                        {s.adjuntosResolucion && s.adjuntosResolucion.length > 0 && (
+                          <div className="pt-2 border-t border-green-500/10">
+                            <p className="text-[10px] text-text-muted mb-2 font-medium">Evidencia fotográfica:</p>
+                            <Adjuntos value={s.adjuntosResolucion} onChange={() => { }} readOnly max={5} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
