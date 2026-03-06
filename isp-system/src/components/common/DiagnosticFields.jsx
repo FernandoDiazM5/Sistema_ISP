@@ -35,14 +35,14 @@ export function getEmptyDiag() {
  * @param {function} onChange - Setter del estado
  */
 export default function DiagnosticFields({ tecnologia, value, onChange, onTecnologiaChange, readOnly = false, warnings = {} }) {
-    // Solo expandir automáticamente si ESTAMOS editando y HAY tecnología seleccionada
-    // Si estamos en modo readOnly (viendo detalles en la tabla), SIEMPRE nace cerrado.
-    const [expanded, setExpanded] = useState(!!tecnologia && !readOnly);
+    // Si queremos que el panel nazca SIEMPRE contraído para no estorbar en la vista,
+    // forzamos el inicio en false. Solo abrirá si el usuario lo expande o si
+    // cambia la tecnología usando el selector (lo que asume intencionalidad).
+    const [expanded, setExpanded] = useState(false);
 
-    // Auto-expand when technology changes or is detected (SOLO en edición)
-    useState(() => {
-        if (tecnologia && !readOnly) setExpanded(true);
-    }, [tecnologia, readOnly]);
+    // Auto-expand SOLO cuando el usuario interactúa y cambia manualmente 
+    // la tecnología desde el combobox interno, NO al cargar el componente inicial.
+    // Esto previene que se abra solo al seleccionar un ticket del grid de la izquierda.
 
     const isFibra = tecnologia?.toLowerCase().includes('fibra');
     const isRadio = tecnologia?.toLowerCase().includes('radio');

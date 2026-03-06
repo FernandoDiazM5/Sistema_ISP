@@ -830,16 +830,6 @@ export default function SoporteRemotoPage() {
                     </div>
                   </div>
 
-                  {/* Warnings banner */}
-                  {hasWarnings && (
-                    <div className="bg-accent-orange/10 border border-accent-orange/30 rounded-lg p-3 mb-4 flex items-center gap-2">
-                      <AlertTriangle size={16} className="text-accent-orange flex-shrink-0" />
-                      <p className="text-xs text-accent-orange font-medium">
-                        Se detectaron valores fuera de rango en los parámetros de diagnóstico. Revise los indicadores marcados.
-                      </p>
-                    </div>
-                  )}
-
                   {/* Client Info Section */}
                   <div className="mb-4">
                     <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Información del cliente</p>
@@ -868,34 +858,39 @@ export default function SoporteRemotoPage() {
                   )}
 
                   {/* Session details */}
-                  <div className="mb-4">
-                    <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Detalles de sesión</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="bg-bg-secondary rounded-lg p-2.5 border border-border/50">
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">Tipo</p>
-                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>
+                  <div className="mb-6">
+                    <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-3 flex items-center gap-1.5">
+                      <Activity size={12} /> Detalles de sesión
+                    </p>
+                    <div className="grid grid-cols-2 gap-y-4 gap-x-2 px-1">
+                      <div>
+                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Tipo</p>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${ts.bg} ${ts.text}`}>{s.tipo}</span>
                       </div>
-                      <div className="bg-bg-secondary rounded-lg p-2.5 border border-border/50">
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">IP</p>
-                        <p className="text-sm font-mono text-accent-cyan">{s.ip || '—'}</p>
+                      <div>
+                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Dirección IP</p>
+                        <p className="text-[13px] font-mono font-medium text-accent-cyan">{s.ip || '—'}</p>
                       </div>
-                      <div className="bg-bg-secondary rounded-lg p-2.5 border border-border/50">
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">Técnico</p>
-                        <p className="text-sm text-text-primary">{s.tecnico}</p>
+                      <div>
+                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Técnico Asignado</p>
+                        <p className="text-[13px] font-medium text-text-primary flex items-center gap-1.5"><Monitor size={12} className="text-text-muted" /> {s.tecnico}</p>
                       </div>
-                      <div className="bg-bg-secondary rounded-lg p-2.5 border border-border/50">
-                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-0.5">Duración</p>
-                        <p className="text-sm text-text-primary font-mono">{s.duracion}</p>
+                      <div>
+                        <p className="text-[10px] text-text-muted uppercase tracking-wide font-medium mb-1">Duración</p>
+                        <p className="text-[13px] font-medium text-text-secondary flex items-center gap-1.5"><Clock size={12} className="text-text-muted" /> {s.duracion}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Resultado */}
                   {s.resultado && (
-                    <div className="mb-4">
-                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Resultado</p>
-                      <div className="bg-bg-secondary rounded-lg p-3 border border-border/50 text-sm text-text-secondary leading-relaxed">
-                        {s.resultado}
+                    <div className="mb-6">
+                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Motivo / Resultado</p>
+                      <div className="relative">
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-border rounded-l-md"></div>
+                        <div className="pl-4 py-1 text-[13px] text-text-secondary leading-relaxed bg-gradient-to-r from-bg-secondary/40 to-transparent">
+                          {s.resultado}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -938,7 +933,16 @@ export default function SoporteRemotoPage() {
 
                   {/* ============ Full Diagnostic Report (via Component) ============ */}
                   {(hasDiag || s.estado === 'En curso') && (
-                    <div className="border-t border-border pt-4">
+                    <div className="border-t border-border pt-4 mb-4">
+                      {/* Warnings banner (Movido aquí para contexto) */}
+                      {hasWarnings && (
+                        <div className="bg-accent-orange/5 border border-accent-orange/20 rounded-lg p-3 mb-4 flex items-start gap-2 animate-fade-in shadow-sm">
+                          <AlertTriangle size={14} className="text-accent-orange mt-0.5 flex-shrink-0" />
+                          <p className="text-[11px] text-accent-orange/90 font-medium leading-tight">
+                            Se detectaron valores fuera de rango en los parámetros técnicos reportados. Compruebe los indicadores correspondientes.
+                          </p>
+                        </div>
+                      )}
                       <DiagnosticFields
                         tecnologia={s.tecnologia}
                         value={d}
@@ -970,29 +974,37 @@ export default function SoporteRemotoPage() {
 
                   {/* Status change actions */}
                   {s.estado === 'En curso' && (
-                    <div className="mb-3">
-                      <div className="flex gap-2 mb-2">
+                    <div className="mb-4">
+                      {/* ==== SECCIÓN 1: RESOLUCIÓN DIRECTA ==== */}
+                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Resolución de Sesión</p>
+                      <div className="flex gap-3 mb-4">
                         <button
                           onClick={() => handleStatusChange(s.id, 'Completada')}
-                          className="flex-1 py-2 rounded-lg bg-accent-green/20 text-accent-green border-none text-xs font-semibold cursor-pointer hover:bg-accent-green/30"
+                          className="flex-1 py-2.5 rounded-lg bg-accent-green/10 text-accent-green border border-accent-green/20 text-xs font-bold cursor-pointer hover:bg-accent-green hover:text-white transition-all flex justify-center items-center gap-2 shadow-sm"
                         >
-                          Marcar Completada
+                          <CheckCircle2 size={14} /> Marcar Completada
                         </button>
                         <button
                           onClick={() => handleStatusChange(s.id, 'Fallida')}
-                          className="flex-1 py-2 rounded-lg bg-accent-red/20 text-accent-red border-none text-xs font-semibold cursor-pointer hover:bg-accent-red/30"
+                          className="flex-1 py-2.5 rounded-lg bg-transparent text-accent-red border border-accent-red/40 text-xs font-semibold cursor-pointer hover:bg-accent-red/10 transition-all flex justify-center items-center gap-2"
                         >
-                          Marcar Fallida
+                          <X size={14} /> Marcar Fallida
                         </button>
                       </div>
 
+                      {/* ==== SECCIÓN 2: ESCALAMIENTO ==== */}
+                      <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2 flex items-center gap-1"><Terminal size={12} /> Escalar Ticket</p>
+
                       {/* Campos de diagnóstico para derivación (MOVIDO AL MODAL DE DERIVACION) */}
                       {confirmDerivacion ? (
-                        <div className="bg-accent-orange/10 border border-accent-orange/30 rounded-lg p-3">
-                          <p className="text-xs text-accent-orange font-semibold mb-1">
-                            ¿Derivar a {confirmDerivacion.type === 'visita' ? 'Visita Técnica' : 'Planta Externa'}?
+                        <div className="bg-accent-orange/5 border border-accent-orange/20 rounded-xl p-4 shadow-sm animate-fade-in">
+                          <p className="text-sm text-accent-orange font-bold mb-1 flex items-center gap-2">
+                            <AlertTriangle size={14} /> ¿Derivar a {confirmDerivacion.type === 'visita' ? 'Visita Técnica' : 'Planta Externa'}?
                           </p>
-                          <div className="mb-3">
+                          <p className="text-[11px] text-text-secondary mb-4 leading-relaxed">
+                            Esta acción cerrará la sesión actual y creará un nuevo ticket de campo adjuntando todo el diagnóstico actual.
+                          </p>
+                          <div className="mb-4 bg-bg-primary/50 rounded-lg p-2 border border-border">
                             <DiagnosticFields
                               tecnologia={derivacionTecnologia}
                               onTecnologiaChange={setDerivacionTecnologia}
@@ -1000,11 +1012,10 @@ export default function SoporteRemotoPage() {
                               onChange={setDerivacionDiag}
                             />
                           </div>
-                          <p className="text-[11px] text-text-muted mb-3">Se creará un nuevo registro y se actualizará el estado del ticket vinculado.</p>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 justify-end">
                             <button
                               onClick={() => setConfirmDerivacion(null)}
-                              className="flex-1 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs text-text-secondary cursor-pointer hover:bg-bg-secondary/80"
+                              className="px-4 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs text-text-primary font-medium cursor-pointer hover:bg-bg-secondary/80"
                             >
                               Cancelar
                             </button>
@@ -1013,25 +1024,25 @@ export default function SoporteRemotoPage() {
                                 confirmDerivacion.type === 'visita' ? handleDerivarVisita(s) : handleDerivarPlanta(s);
                                 setConfirmDerivacion(null);
                               }}
-                              className="flex-1 py-1.5 rounded-lg bg-accent-orange/30 text-accent-orange border-none text-xs font-semibold cursor-pointer hover:bg-accent-orange/40"
+                              className="px-4 py-1.5 rounded-lg bg-accent-orange text-white border-none text-xs font-bold cursor-pointer hover:bg-accent-orange/90 shadow-sm"
                             >
-                              Confirmar derivación
+                              Confirmar Derivación
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <button
                             onClick={() => setConfirmDerivacion({ type: 'visita' })}
-                            className="flex-1 py-2 rounded-lg bg-purple-500/20 text-purple-400 border-none text-xs font-semibold cursor-pointer hover:bg-purple-500/30"
+                            className="flex-1 py-2.5 rounded-lg bg-bg-secondary text-text-primary border border-border text-xs font-semibold cursor-pointer hover:border-purple-500/50 hover:text-purple-400 transition-all flex justify-center items-center gap-2"
                           >
-                            Derivar a Visita Técnica
+                            Derivar a Visita
                           </button>
                           <button
                             onClick={() => setConfirmDerivacion({ type: 'planta' })}
-                            className="flex-1 py-2 rounded-lg bg-orange-500/20 text-orange-400 border-none text-xs font-semibold cursor-pointer hover:bg-orange-500/30"
+                            className="flex-1 py-2.5 rounded-lg bg-bg-secondary text-text-primary border border-border text-xs font-semibold cursor-pointer hover:border-orange-500/50 hover:text-orange-400 transition-all flex justify-center items-center gap-2"
                           >
-                            Derivar a Planta Externa
+                            Derivar a Planta
                           </button>
                         </div>
                       )}
