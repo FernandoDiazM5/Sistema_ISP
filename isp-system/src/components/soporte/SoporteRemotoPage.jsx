@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Monitor, Plus, Wifi, Terminal, Activity, CheckCircle2,
-  Search, ArrowRight, Gauge, Signal, Radio, X, Eye,
-  AlertTriangle, Zap, Clock, FileText, ChevronDown
+  Search, Gauge, Signal, X, Eye,
+  AlertTriangle, Clock, FileText
 } from 'lucide-react';
 import useStore from '../../store/useStore';
+import useToast from '../../hooks/useToast';
 import Adjuntos, { AdjuntosCount } from '../common/Adjuntos';
 import ResolutionModal from '../common/ResolutionModal';
 import DiagnosticFields, { getEmptyDiag } from '../common/DiagnosticFields';
@@ -13,7 +14,6 @@ import StatusBadge from '../ui/StatusBadge';
 import { formatSoporteRemoto } from '../../utils/whatsappFormats';
 
 /* ========================= CONSTANTS ========================= */
-/* ========================= CONSTANTS ========================= */
 const TIPO_STYLE = {
   'Diagnóstico': { bg: 'bg-accent-cyan/15', text: 'text-accent-cyan' },
   'Configuración': { bg: 'bg-accent-purple/15', text: 'text-accent-purple' },
@@ -21,11 +21,7 @@ const TIPO_STYLE = {
   'Reinicio remoto': { bg: 'bg-accent-orange/15', text: 'text-accent-orange' },
 };
 
-// TIPOS_SESION ahora viene del store (ver tiposSesionSoporte)
-
-const FRECUENCIAS = ['2.4', '5.8'];
-const ANCHOS_BANDA = ['20MHz', '40MHz'];
-const ESTADOS_ONU = ['Online', 'Offline', 'LOS', 'Dying Gasp'];
+// TIPOS_SESION viene del store (tiposSesionSoporte)
 
 /* ========================= AUTOCOMPLETE COMPONENT ========================= */
 function Autocomplete({ label, placeholder, items, value, onChange, renderItem, filterFn, disabled, readOnlyDisplay }) {
@@ -104,6 +100,7 @@ function Autocomplete({ label, placeholder, items, value, onChange, renderItem, 
 
 /* ========================= MAIN COMPONENT ========================= */
 export default function SoporteRemotoPage() {
+  const toast = useToast();
   const sesiones = useStore(s => s.sesionesRemoto);
   const addSesion = useStore(s => s.addSesionRemoto);
   const updateSesion = useStore(s => s.updateSesionRemoto);
@@ -145,6 +142,9 @@ export default function SoporteRemotoPage() {
   const [derivacionDiag, setDerivacionDiag] = useState(getEmptyDiag());
   const [derivacionTecnologia, setDerivacionTecnologia] = useState('');
 
+  /* ---- Confirmación de derivación ---- */
+  const [confirmDerivacion, setConfirmDerivacion] = useState(null); // null | { type: 'visita'|'planta' }
+
   /* ---- Diagnostic State ---- */
   const [diag, setDiag] = useState(getEmptyDiag());
 
@@ -178,8 +178,10 @@ export default function SoporteRemotoPage() {
   }, [selectedClient]);
 
   const stats = useMemo(() => ({
+    pendiente: sesiones.filter(s => s.estado === 'Pendiente').length,
     enCurso: sesiones.filter(s => s.estado === 'En curso').length,
     completadas: sesiones.filter(s => s.estado === 'Completada').length,
+    fallidas: sesiones.filter(s => s.estado === 'Fallida' || s.estado?.startsWith('Derivado')).length,
     total: sesiones.length,
   }), [sesiones]);
 
@@ -233,7 +235,6 @@ export default function SoporteRemotoPage() {
     setResultado('');
     setDerivarVisita(false);
     setAdjuntos([]);
-    setAdjuntos([]);
     setTecnologiaSesion('');
     setDiag(getEmptyDiag());
   };
@@ -278,7 +279,8 @@ export default function SoporteRemotoPage() {
       clienteNombre: selectedClient.nombre || 'N/A',
       tipo: tipoSesion,
       ip: ipAddress,
-      estado: 'Pendiente',
+      estado: 'En curso',
+      fechaInicio: new Date().toISOString(),
       tecnico: tecnicoObj?.nombre || 'Sin asignar',
       tecnicoId: tecnicoId,
       duracion: '—',
@@ -294,6 +296,7 @@ export default function SoporteRemotoPage() {
     };
 
     addSesion(sesionData);
+    toast.success(`Sesión ${tipoSesion} iniciada para ${selectedClient.nombre}`);
 
     if (derivarVisita && selectedClient) {
       addVisita({
@@ -319,15 +322,17 @@ export default function SoporteRemotoPage() {
 
   /* ---- Status Change Handler ---- */
   const handleStatusChange = (sesionId, newEstado) => {
-    if (newEstado === 'Completada') {
+    if (newEstado === 'Completada' || newEstado === 'Fallida') {
+      // Ambos estados usan el modal para capturar motivo/solución
       setResolutionTarget({ sesionId, newEstado });
       setShowResolutionModal(true);
     } else {
-      updateSesion(sesionId, { estado: newEstado, _historyComment: 'Cambio de estado manual' });
-      const updated = sesiones.find(s => s.id === sesionId);
-      if (updated) {
-        setSelectedSesion({ ...updated, estado: newEstado });
-      }
+      const extras = { estado: newEstado, _historyComment: 'Cambio de estado manual' };
+      if (newEstado === 'En curso') extras.fechaInicio = new Date().toISOString();
+      updateSesion(sesionId, extras);
+      // Leer estado fresco del store (la actualización de Zustand es síncrona)
+      const fresh = useStore.getState().sesionesRemoto.find(s => s.id === sesionId);
+      if (fresh) setSelectedSesion(fresh);
     }
   };
 
@@ -336,10 +341,12 @@ export default function SoporteRemotoPage() {
     // 1. Update soporte session state + history
     updateSesion(sesion.id, {
       estado: 'Derivado a Visita',
+      fechaFin: new Date().toISOString(),
       _historyComment: 'Derivado a Visita Técnica - requiere atención presencial'
     });
     // 2. Create the Visita Técnica
     const client = clients.find(c => c.id === sesion.clienteId);
+    const tecnicoObj = tecnicos.find(t => t.id === sesion.tecnicoId);
     addVisita({
       clienteId: sesion.clienteId,
       clienteNombre: sesion.clienteNombre || client?.nombre || '',
@@ -348,10 +355,11 @@ export default function SoporteRemotoPage() {
       prioridad: 'Alta',
       estado: 'Programada',
       tecnicoId: sesion.tecnicoId || null,
+      tecnicoNombre: tecnicoObj?.nombre || sesion.tecnico || '',
       descripcion: `Derivado de Soporte Remoto (${sesion.id}). ${sesion.resultado || ''}`,
       ticketId: sesion.ticketId || null,
       sesionOrigenId: sesion.id,
-      tecnologia: derivacionTecnologia, // Pass updated technology
+      tecnologia: derivacionTecnologia,
       diagnosticoCompleto: derivacionDiag,
       ...derivacionDiag,
     });
@@ -363,13 +371,15 @@ export default function SoporteRemotoPage() {
         _historyComment: `Derivado desde Soporte Remoto (${sesion.id}) a Visita Técnica`
       });
     }
-    setSelectedSesion({ ...sesion, estado: 'Derivado a Visita' });
+    const fresh = useStore.getState().sesionesRemoto.find(s => s.id === sesion.id);
+    setSelectedSesion(fresh || { ...sesion, estado: 'Derivado a Visita' });
   };
 
   const handleDerivarPlanta = (sesion) => {
     // 1. Update soporte session
     updateSesion(sesion.id, {
       estado: 'Derivado a Planta Externa',
+      fechaFin: new Date().toISOString(),
       _historyComment: 'Derivado a Planta Externa - problema de infraestructura'
     });
     // 2. Create derivación in Planta Externa
@@ -384,7 +394,7 @@ export default function SoporteRemotoPage() {
       descripcion: `Derivado de Soporte Remoto (${sesion.id}). ${sesion.resultado || ''}`,
       ticketId: sesion.ticketId || null,
       sesionOrigenId: sesion.id,
-      tecnologia: derivacionTecnologia, // Pass updated technology
+      tecnologia: derivacionTecnologia,
       diagnosticoCompleto: derivacionDiag,
       ...derivacionDiag,
     });
@@ -396,24 +406,30 @@ export default function SoporteRemotoPage() {
         _historyComment: `Derivado desde Soporte Remoto (${sesion.id}) a Planta Externa`
       });
     }
-    setSelectedSesion({ ...sesion, estado: 'Derivado a Planta Externa' });
+    const fresh = useStore.getState().sesionesRemoto.find(s => s.id === sesion.id);
+    setSelectedSesion(fresh || { ...sesion, estado: 'Derivado a Planta Externa' });
   };
 
   const handleResolutionConfirm = (resolutionData) => {
     if (!resolutionTarget) return;
+    // Buscar la sesión ANTES del update para obtener ticketId
+    const sesionPrev = sesiones.find(s => s.id === resolutionTarget.sesionId);
+    const esFallida = resolutionTarget.newEstado === 'Fallida';
     updateSesion(resolutionTarget.sesionId, {
       estado: resolutionTarget.newEstado,
+      fechaFin: new Date().toISOString(),
       ...resolutionData,
-      _historyComment: resolutionData.solucion || 'Sesión completada'
+      _historyComment: esFallida
+        ? resolutionData.solucion || 'Sesión fallida'
+        : resolutionData.solucion || 'Sesión completada'
     });
-    // Propagate resolution to parent ticket
-    const sesion = sesiones.find(s => s.id === resolutionTarget.sesionId);
-    if (sesion?.ticketId) {
-      resolveTicketChain(sesion.ticketId, `Resuelto desde Soporte Remoto (${sesion.id})`);
+    // Solo propagar al ticket si se completó exitosamente, no si falló
+    if (!esFallida && sesionPrev?.ticketId) {
+      resolveTicketChain(sesionPrev.ticketId, `Resuelto desde Soporte Remoto (${sesionPrev.id})`);
     }
-    if (sesion) {
-      setSelectedSesion({ ...sesion, estado: resolutionTarget.newEstado, ...resolutionData });
-    }
+    // Leer estado fresco del store
+    const fresh = useStore.getState().sesionesRemoto.find(s => s.id === resolutionTarget.sesionId);
+    if (fresh) setSelectedSesion(fresh);
     setShowResolutionModal(false);
     setResolutionTarget(null);
   };
@@ -429,16 +445,29 @@ export default function SoporteRemotoPage() {
     if (!d) return {};
     const w = {};
     if (d.ping && parseFloat(d.ping) > 80) w.ping = true;
-    if (d.download && parseFloat(d.download) < 10) w.download = true;
-    if (d.upload && parseFloat(d.upload) < 5) w.upload = true;
-    if (d.packetLoss && parseFloat(d.packetLoss) > 2) w.packetLoss = true;
-    if (d.jitter && parseFloat(d.jitter) > 15) w.jitter = true;
-    if (d.senalRecibida && parseFloat(d.senalRecibida) < -75) w.senalRecibida = true;
+    if (d.velocidadBajada && parseFloat(d.velocidadBajada) < 10) w.velocidadBajada = true;
+    if (d.velocidadSubida && parseFloat(d.velocidadSubida) < 5) w.velocidadSubida = true;
+    // Señal radio
+    if (d.senalAP && parseFloat(d.senalAP) < -75) w.senalAP = true;
+    if (d.senalCPE && parseFloat(d.senalCPE) < -75) w.senalCPE = true;
     if (d.ccq && parseFloat(d.ccq) < 85) w.ccq = true;
-    if (d.potenciaRx && parseFloat(d.potenciaRx) < -25) w.potenciaRx = true;
+    // Fibra
+    if (d.nivelONT && parseFloat(d.nivelONT) < -27) w.nivelONT = true;
+    if (d.nivelOLT && parseFloat(d.nivelOLT) < -27) w.nivelOLT = true;
     if (d.atenuacion && parseFloat(d.atenuacion) > 28) w.atenuacion = true;
-    if (d.estadoONU && d.estadoONU !== 'Online') w.estadoONU = true;
     return w;
+  };
+
+  /* ---- Duración calculada ---- */
+  const calcDuracion = (fechaInicio, fechaFin) => {
+    if (!fechaInicio) return '—';
+    const fin = fechaFin ? new Date(fechaFin) : new Date();
+    const mins = Math.round((fin - new Date(fechaInicio)) / 60000);
+    if (mins < 1) return '< 1 min';
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m > 0 ? `${h}h ${m}min` : `${h}h`;
   };
 
   /* ========================= RENDER ========================= */
@@ -457,7 +486,11 @@ export default function SoporteRemotoPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="bg-bg-card rounded-xl p-4 border border-border flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-accent-orange/15 text-accent-orange"><Clock size={16} /></div>
+          <div><p className="text-lg font-bold font-mono">{stats.pendiente}</p><p className="text-[10px] text-text-muted uppercase">Pendientes</p></div>
+        </div>
         <div className="bg-bg-card rounded-xl p-4 border border-border flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-accent-blue/15 text-accent-blue"><Activity size={16} /></div>
           <div><p className="text-lg font-bold font-mono">{stats.enCurso}</p><p className="text-[10px] text-text-muted uppercase">En curso</p></div>
@@ -468,7 +501,10 @@ export default function SoporteRemotoPage() {
         </div>
         <div className="bg-bg-card rounded-xl p-4 border border-border flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-accent-purple/15 text-accent-purple"><Monitor size={16} /></div>
-          <div><p className="text-lg font-bold font-mono">{stats.total}</p><p className="text-[10px] text-text-muted uppercase">Total sesiones</p></div>
+          <div>
+            <p className="text-lg font-bold font-mono">{stats.total}</p>
+            <p className="text-[10px] text-text-muted uppercase">Total {stats.fallidas > 0 && <span className="text-accent-red">· {stats.fallidas} fallidas</span>}</p>
+          </div>
         </div>
       </div>
 
@@ -486,12 +522,15 @@ export default function SoporteRemotoPage() {
         <select
           value={filterStatus}
           onChange={e => setFilterStatus(e.target.value)}
-          className="min-w-[150px] bg-bg-secondary border border-border text-text-primary rounded-lg py-2.5 px-3 text-sm outline-none focus:border-accent-cyan"
+          className="min-w-[160px] bg-bg-secondary border border-border text-text-primary rounded-lg py-2.5 px-3 text-sm outline-none focus:border-accent-cyan"
         >
           <option value="all">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
           <option value="En curso">En curso</option>
           <option value="Completada">Completada</option>
           <option value="Fallida">Fallida</option>
+          <option value="Derivado a Visita">Derivado a Visita</option>
+          <option value="Derivado a Planta Externa">Derivado a Planta</option>
         </select>
         <select
           value={filterType}
@@ -554,7 +593,7 @@ export default function SoporteRemotoPage() {
               <div className="flex items-center gap-6 text-[11px] text-text-muted mt-1 flex-wrap">
                 <span className="flex items-center gap-1"><Wifi size={10} /> IP: <span className="text-accent-cyan font-mono">{s.ip}</span></span>
                 <span>Técnico: <span className="text-text-secondary">{s.tecnico}</span></span>
-                <span className="flex items-center gap-1"><Clock size={10} /> Duración: <span className="text-text-secondary">{s.duracion}</span></span>
+                <span className="flex items-center gap-1"><Clock size={10} /> Duración: <span className="text-text-secondary">{calcDuracion(s.fechaInicio, s.fechaFin)}</span></span>
                 <AdjuntosCount count={s.adjuntos?.length} />
               </div>
 
@@ -723,7 +762,7 @@ export default function SoporteRemotoPage() {
                   className="w-4 h-4 rounded accent-accent-cyan" />
                 <div>
                   <span className="text-sm text-text-primary font-medium">Derivar a Visita Técnica</span>
-                  <p className="text-[11px] text-text-muted mt-0.5">Se creará automáticamente una visita técnica al iniciar la sesión</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">Se creará automáticamente una visita técnica al registrar la sesión</p>
                 </div>
               </label>
 
@@ -745,7 +784,7 @@ export default function SoporteRemotoPage() {
 
       {/* ========================= MODAL: DETAIL ========================= */}
       {selectedSesion && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedSesion(null)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => { setSelectedSesion(null); setConfirmDerivacion(null); }}>
           <div className="bg-bg-card rounded-2xl p-6 w-full max-w-[640px] border border-border max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {(() => {
               const s = selectedSesion;
@@ -772,15 +811,17 @@ export default function SoporteRemotoPage() {
                         <p className="text-xs text-text-muted mt-0.5">{s.fecha}</p>
                       </div>
                     </div>
-                    <CopyButton
-                      getTextFn={() => formatSoporteRemoto(selectedSesion, clients.find(c => c.id === selectedSesion.clienteId))}
-                      size="md"
-                      title="Copiar para WhatsApp"
-                    />
-                    <button onClick={() => setSelectedSesion(null)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted hover:text-text-primary cursor-pointer transition-colors">
-                      <X size={16} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <CopyButton
+                        getTextFn={() => formatSoporteRemoto(selectedSesion, clients.find(c => c.id === selectedSesion.clienteId))}
+                        size="md"
+                        title="Copiar para WhatsApp"
+                      />
+                      <button onClick={() => setSelectedSesion(null)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center bg-bg-secondary border border-border text-text-muted hover:text-text-primary cursor-pointer transition-colors">
+                        <X size={16} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Warnings banner */}
@@ -903,6 +944,18 @@ export default function SoporteRemotoPage() {
                     </div>
                   )}
 
+                  {/* Iniciar sesión pendiente */}
+                  {s.estado === 'Pendiente' && (
+                    <div className="mb-3">
+                      <button
+                        onClick={() => handleStatusChange(s.id, 'En curso')}
+                        className="w-full py-2.5 rounded-lg bg-accent-blue/20 text-accent-blue border border-accent-blue/30 text-xs font-semibold cursor-pointer hover:bg-accent-blue/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Activity size={13} /> Iniciar Sesión
+                      </button>
+                    </div>
+                  )}
+
                   {/* Status change actions */}
                   {s.estado === 'En curso' && (
                     <div className="mb-3">
@@ -931,20 +984,46 @@ export default function SoporteRemotoPage() {
                         />
                       </div>
 
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleDerivarVisita(s)}
-                          className="flex-1 py-2 rounded-lg bg-purple-500/20 text-purple-400 border-none text-xs font-semibold cursor-pointer hover:bg-purple-500/30"
-                        >
-                          Derivar a Visita Técnica
-                        </button>
-                        <button
-                          onClick={() => handleDerivarPlanta(s)}
-                          className="flex-1 py-2 rounded-lg bg-orange-500/20 text-orange-400 border-none text-xs font-semibold cursor-pointer hover:bg-orange-500/30"
-                        >
-                          Derivar a Planta Externa
-                        </button>
-                      </div>
+                      {confirmDerivacion ? (
+                        <div className="bg-accent-orange/10 border border-accent-orange/30 rounded-lg p-3">
+                          <p className="text-xs text-accent-orange font-semibold mb-1">
+                            ¿Derivar a {confirmDerivacion.type === 'visita' ? 'Visita Técnica' : 'Planta Externa'}?
+                          </p>
+                          <p className="text-[11px] text-text-muted mb-3">Se creará un nuevo registro y se actualizará el estado del ticket vinculado.</p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setConfirmDerivacion(null)}
+                              className="flex-1 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs text-text-secondary cursor-pointer hover:bg-bg-secondary/80"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => {
+                                confirmDerivacion.type === 'visita' ? handleDerivarVisita(s) : handleDerivarPlanta(s);
+                                setConfirmDerivacion(null);
+                              }}
+                              className="flex-1 py-1.5 rounded-lg bg-accent-orange/30 text-accent-orange border-none text-xs font-semibold cursor-pointer hover:bg-accent-orange/40"
+                            >
+                              Confirmar derivación
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setConfirmDerivacion({ type: 'visita' })}
+                            className="flex-1 py-2 rounded-lg bg-purple-500/20 text-purple-400 border-none text-xs font-semibold cursor-pointer hover:bg-purple-500/30"
+                          >
+                            Derivar a Visita Técnica
+                          </button>
+                          <button
+                            onClick={() => setConfirmDerivacion({ type: 'planta' })}
+                            className="flex-1 py-2 rounded-lg bg-orange-500/20 text-orange-400 border-none text-xs font-semibold cursor-pointer hover:bg-orange-500/30"
+                          >
+                            Derivar a Planta Externa
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -956,7 +1035,7 @@ export default function SoporteRemotoPage() {
                     >
                       <X size={12} /> Eliminar
                     </button>
-                    <button onClick={() => setSelectedSesion(null)}
+                    <button onClick={() => { setSelectedSesion(null); setConfirmDerivacion(null); }}
                       className="flex-1 py-2.5 px-6 rounded-lg bg-bg-secondary border border-border text-text-secondary cursor-pointer text-sm font-semibold hover:bg-bg-secondary/80 transition-colors">
                       Cerrar
                     </button>
@@ -976,11 +1055,11 @@ export default function SoporteRemotoPage() {
           setResolutionTarget(null);
         }}
         onConfirm={handleResolutionConfirm}
-        title="Completar Sesion Remota"
+        title={resolutionTarget?.newEstado === 'Fallida' ? 'Registrar Motivo de Falla' : 'Completar Sesión Remota'}
         entityId={resolutionTarget ? sesiones.find(s => s.id === resolutionTarget.sesionId)?.id : ''}
-        entityLabel="Sesion"
-        newStatus="Completada"
-        accentColor="accent-cyan"
+        entityLabel="Sesión"
+        newStatus={resolutionTarget?.newEstado || 'Completada'}
+        accentColor={resolutionTarget?.newEstado === 'Fallida' ? 'accent-red' : 'accent-cyan'}
       />
     </div>
   );

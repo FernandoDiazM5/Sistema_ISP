@@ -39,22 +39,26 @@ export default function InlineSoporteModal({ client, motivo, onClose, onSuccess 
     const handleSubmit = () => {
         if (!soporteTecnico) return;
         const tec = tecnicos.find(t => t.id === soporteTecnico);
+        const hasDiag = Object.values(diagnostico).some(v => v !== '' && v !== null && v !== undefined);
+        const diagnosticos = hasDiag ? { ...diagnostico } : null;
 
         addSesionRemoto({
             clienteId: client.id,
             clienteNombre: client.nombre,
-            ticketId: '', // Ya no hay ticket
+            ticketId: null,
             tipo: soporteTipo,
             tecnicoId: soporteTecnico,
-            tecnicoNombre: tec ? tec.nombre : '',
+            tecnico: tec ? tec.nombre : '',        // campo unificado con SoporteRemotoPage
             ip: soporteIP,
             tecnologia: client.tecnologia || '',
-            diagnosticoCompleto: diagnostico,
-            ...diagnostico,
-            observaciones: soporteObservaciones,
-            estado: 'Pendiente',
+            diagnosticos,                           // estructura unificada bajo esta clave
+            resultado: soporteObservaciones,        // campo unificado con SoporteRemotoPage
+            estado: 'En curso',
+            fechaInicio: new Date().toISOString(),
+            duracion: '—',
             plan: client.plan || '',
             nodo: client.nodo || client.nodo_router || '',
+            direccion: client.direccion || '',
             adjuntos: soporteAdjuntos,
         });
 
@@ -62,13 +66,13 @@ export default function InlineSoporteModal({ client, motivo, onClose, onSuccess 
             addVisita({
                 clienteId: client.id,
                 clienteNombre: client.nombre,
-                ticketId: '',
+                ticketId: null,
                 tecnicoId: soporteTecnico,
                 tecnicoNombre: tec ? tec.nombre : '',
                 tipo: 'Diagnóstico',
                 prioridad: 'Alta',
                 fecha: new Date().toISOString().split('T')[0],
-                horaInicio: '09:00', // Default a una hora o dejar que asigne
+                horaInicio: '09:00',
                 direccion: client.direccion || '',
                 descripcion: `Derivado desde soporte remoto — Reporte: ${motivo}\nObservaciones: ${soporteObservaciones}`,
                 estado: 'Programada',
@@ -76,8 +80,7 @@ export default function InlineSoporteModal({ client, motivo, onClose, onSuccess 
                 plan: client.plan || '',
                 tecnologia: client.tecnologia || '',
                 adjuntos: soporteAdjuntos,
-                diagnosticoCompleto: diagnostico,
-                ...diagnostico,
+                diagnosticos,                       // estructura unificada
             });
         }
 
