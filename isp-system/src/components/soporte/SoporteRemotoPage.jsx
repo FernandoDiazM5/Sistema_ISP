@@ -974,21 +974,20 @@ export default function SoporteRemotoPage() {
                         </button>
                       </div>
 
-                      {/* Campos de diagnóstico para derivación */}
-                      <div className="mb-3">
-                        <DiagnosticFields
-                          tecnologia={derivacionTecnologia}
-                          onTecnologiaChange={setDerivacionTecnologia}
-                          value={derivacionDiag}
-                          onChange={setDerivacionDiag}
-                        />
-                      </div>
-
+                      {/* Campos de diagnóstico para derivación (MOVIDO AL MODAL DE DERIVACION) */}
                       {confirmDerivacion ? (
                         <div className="bg-accent-orange/10 border border-accent-orange/30 rounded-lg p-3">
                           <p className="text-xs text-accent-orange font-semibold mb-1">
                             ¿Derivar a {confirmDerivacion.type === 'visita' ? 'Visita Técnica' : 'Planta Externa'}?
                           </p>
+                          <div className="mb-3">
+                            <DiagnosticFields
+                              tecnologia={derivacionTecnologia}
+                              onTecnologiaChange={setDerivacionTecnologia}
+                              value={derivacionDiag}
+                              onChange={setDerivacionDiag}
+                            />
+                          </div>
                           <p className="text-[11px] text-text-muted mb-3">Se creará un nuevo registro y se actualizará el estado del ticket vinculado.</p>
                           <div className="flex gap-2">
                             <button
