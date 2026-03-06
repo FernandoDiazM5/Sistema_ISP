@@ -227,6 +227,7 @@ export const pullLiveCollections = async (lastSyncTimestamp = null, onProgress =
         'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
         'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
         'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico'
     ];
 
     const data = {};
@@ -406,6 +407,11 @@ export const pushToCloud = async (data, onProgress = (info) => { }) => {
         'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
         'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
+        'categorias', 'subcategorias', 'prioridadesSLA',
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+        'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+        'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
     ];
 
     const MAX_DOC_BYTES = 800000; // 800KB safe limit (Firestore max 1MB)
@@ -512,6 +518,11 @@ export const pullBackupVersion = async (versionId) => {
         'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
         'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
         'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
+        'categorias', 'subcategorias', 'prioridadesSLA',
+        'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+        'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+        'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+        'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
     ];
 
     const collectionsData = {};
@@ -555,6 +566,24 @@ export const pullBackupVersion = async (versionId) => {
         requerimientos: collectionsData.requerimientos || [],
         whatsappLogs: collectionsData.whatsappLogs || [],
         templates: collectionsData.templates || [],
+        categorias: collectionsData.categorias || [],
+        subcategorias: collectionsData.subcategorias || [],
+        prioridadesSLA: collectionsData.prioridadesSLA || [],
+        estadosCatalogo: collectionsData.estadosCatalogo || [],
+        catalogoServicios: collectionsData.catalogoServicios || [],
+        tiposRequerimiento: collectionsData.tiposRequerimiento || [],
+        averiasTipos: collectionsData.averiasTipos || [],
+        tiposVisita: collectionsData.tiposVisita || [],
+        tiposSesionSoporte: collectionsData.tiposSesionSoporte || [],
+        tiposDerivacion: collectionsData.tiposDerivacion || [],
+        tiposEquipo: collectionsData.tiposEquipo || [],
+        marcasEquipo: collectionsData.marcasEquipo || [],
+        planesInstalacion: collectionsData.planesInstalacion || [],
+        tecnologiasInstalacion: collectionsData.tecnologiasInstalacion || [],
+        cargosTecnico: collectionsData.cargosTecnico || [],
+        especialidadesTecnico: collectionsData.especialidadesTecnico || [],
+        vehiculosTecnico: collectionsData.vehiculosTecnico || [],
+        zonasTecnico: collectionsData.zonasTecnico || [],
         columnPrefs: configData.columnPrefs,
         cleaningOptions: configData.cleaningOptions,
         importHistory: configData.importHistory,
@@ -591,7 +620,12 @@ export const pushLiveData = async (data, pusherId) => {
         const COLLECTIONS = [
             'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
             'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-            'movimientosEquipos', 'whatsappLogs', 'templates',
+            'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
+            'categorias', 'subcategorias', 'prioridadesSLA',
+            'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+            'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+            'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+            'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
         ];
 
         const MAX_DOC_BYTES = 800000;
@@ -664,7 +698,12 @@ export const pullLiveData = async () => {
         const COLLECTIONS = [
             'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
             'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
-            'movimientosEquipos', 'whatsappLogs', 'templates',
+            'movimientosEquipos', 'requerimientos', 'whatsappLogs', 'templates',
+            'categorias', 'subcategorias', 'prioridadesSLA',
+            'estadosCatalogo', 'catalogoServicios', 'tiposRequerimiento', 'averiasTipos',
+            'tiposVisita', 'tiposSesionSoporte', 'tiposDerivacion',
+            'tiposEquipo', 'marcasEquipo', 'planesInstalacion', 'tecnologiasInstalacion',
+            'cargosTecnico', 'especialidadesTecnico', 'vehiculosTecnico', 'zonasTecnico',
         ];
 
         const collectionsData = {};
