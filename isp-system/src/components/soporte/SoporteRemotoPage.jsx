@@ -986,7 +986,7 @@ export default function SoporteRemotoPage() {
                   )}
 
                   {/* Status change actions */}
-                  {s.estado === 'En curso' && (
+                  {(s.estado === 'En curso') && (
                     <div className="mb-4">
                       {/* ==== SECCIÓN 1: RESOLUCIÓN DIRECTA ==== */}
                       <p className="text-[10px] text-text-muted uppercase tracking-wide font-semibold mb-2">Resolución de Sesión</p>

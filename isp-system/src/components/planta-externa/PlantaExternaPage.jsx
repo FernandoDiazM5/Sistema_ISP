@@ -158,6 +158,30 @@ export default function PlantaExternaPage() {
     });
     // Propagate to parent ticket
     const deriv = derivaciones.find(d => d.id === resolutionTarget.derivacionId);
+
+    // Cierre en cadena
+    if (deriv) {
+      const { updateVisita, updateSesionRemoto } = useStore.getState();
+      const statusFinal = resolutionTarget.nuevoEstado === 'Completada' ? 'Completada' : 'Fallida';
+      const comment = `Resuelto por Planta Externa (${deriv.id}). Solución: ${resolutionData.solucion || 'Gestión completada'}`;
+
+      if (deriv.visitaOrigenId && updateVisita) {
+        updateVisita(deriv.visitaOrigenId, {
+          estado: statusFinal,
+          resultado: comment,
+          _historyComment: 'Cerrado automáticamente tras resolución de Planta Externa'
+        });
+      }
+      if (deriv.sesionOrigenId && updateSesionRemoto) {
+        updateSesionRemoto(deriv.sesionOrigenId, {
+          estado: statusFinal,
+          fechaFin: new Date().toISOString(),
+          solucion: comment,
+          _historyComment: 'Cerrado automáticamente tras resolución de Planta Externa'
+        });
+      }
+    }
+
     if (deriv?.ticketId) {
       resolveTicketChain(deriv.ticketId, `Resuelto desde Planta Externa (${deriv.id})`);
     }
@@ -178,6 +202,31 @@ export default function PlantaExternaPage() {
       metricaDespues: completionData.metricaDespues,
       observacionesCierre: completionData.observaciones,
     });
+
+    // Cierre en cadena
+    const { updateVisita, updateSesionRemoto } = useStore.getState();
+    const comment = `Resuelto por Planta Externa (${selectedDerivacion.id}). Métricas: ${completionData.metricaAntes} -> ${completionData.metricaDespues}. ${completionData.observaciones}`;
+
+    if (selectedDerivacion.visitaOrigenId && updateVisita) {
+      updateVisita(selectedDerivacion.visitaOrigenId, {
+        estado: 'Completada',
+        resultado: comment,
+        _historyComment: 'Cerrado automáticamente tras métricas de Planta Externa'
+      });
+    }
+    if (selectedDerivacion.sesionOrigenId && updateSesionRemoto) {
+      updateSesionRemoto(selectedDerivacion.sesionOrigenId, {
+        estado: 'Completada',
+        fechaFin: new Date().toISOString(),
+        solucion: comment,
+        _historyComment: 'Cerrado automáticamente tras métricas de Planta Externa'
+      });
+    }
+
+    if (selectedDerivacion.ticketId) {
+      resolveTicketChain(selectedDerivacion.ticketId, `Métricas ingresadas en Planta Externa (${selectedDerivacion.id})`);
+    }
+
     setSelectedDerivacion({
       ...selectedDerivacion,
       estado: 'Completada',

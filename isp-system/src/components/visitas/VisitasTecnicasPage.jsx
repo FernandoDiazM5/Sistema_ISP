@@ -385,8 +385,24 @@ export default function VisitasTecnicasPage() {
       _historyComment: resolutionData.solucion
     });
 
-    // Propagate resolution to parent ticket
+    // Propagate resolution to parent ticket and origin session if they exist
     const visita = visitas.find(v => v.id === resolutionTarget.visitaId);
+
+    // Si viene de Soporte Remoto, cerrar el soporte remoto original
+    if (visita?.sesionOrigenId) {
+      const { updateSesionRemoto } = useStore.getState();
+      if (updateSesionRemoto) {
+        updateSesionRemoto(visita.sesionOrigenId, {
+          estado: resolutionTarget.newEstado === 'Completada' ? 'Completada' : 'Fallida',
+          fechaFin: new Date().toISOString(),
+          solucion: `Resuelto en terreno por Técnico ${visita.tecnicoNombre}. Solución: ${resolutionData.solucion}`,
+          accionesRealizadas: resolutionData.accionesRealizadas,
+          _historyComment: `Cerrado automáticamente tras resolución de Visita Técnica (${visita.id})`
+        });
+      }
+    }
+
+    // Cerrar el Ticket Maestro
     if (visita?.ticketId) {
       resolveTicketChain(visita.ticketId, `Resuelto desde Visita Técnica (${visita.id})`);
     }
@@ -504,6 +520,7 @@ export default function VisitasTecnicasPage() {
       descripcion: `Derivado de Visita Técnica (${selectedVisita.id}). ${selectedVisita.descripcion || ''}`,
       ticketId: selectedVisita.ticketId || null,
       visitaOrigenId: selectedVisita.id,
+      sesionOrigenId: selectedVisita.sesionOrigenId || null,
     });
     // 3. Update parent ticket history
     if (selectedVisita.ticketId) {
@@ -1517,7 +1534,7 @@ export default function VisitasTecnicasPage() {
 
             {/* Action buttons */}
             <div className="flex gap-2 mt-3">
-              {selectedVisita.estado !== 'Cancelada' && selectedVisita.estado !== 'Completada' && (
+              {selectedVisita.estado !== 'Cancelada' && selectedVisita.estado !== 'Completada' && !selectedVisita.estado.includes('Derivado') && (
                 <button
                   onClick={() => handleStatusChange(selectedVisita.id, 'Cancelada')}
                   className="py-2.5 px-4 rounded-lg border border-border text-xs text-text-muted cursor-pointer bg-transparent hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors"
