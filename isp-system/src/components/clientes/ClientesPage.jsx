@@ -85,13 +85,6 @@ export default function ClientesPage() {
     setEscalarClient(client);
   }, []);
 
-  const onCreatePostVenta = useCallback((client) => {
-    setPvClient(client);
-    setPvServicio('');
-    setPvTecnico('');
-    setPvDescripcion('');
-  }, []);
-
   const navigate = useNavigate();
 
   const onViewDetail = useCallback((client) => {
@@ -99,8 +92,8 @@ export default function ClientesPage() {
   }, [navigate]);
 
   const tableColumns = useMemo(() => {
-    return buildColumns({ onEscalar, onCreatePostVenta, onViewDetail });
-  }, [onEscalar, onCreatePostVenta, onViewDetail]);
+    return buildColumns({ onEscalar, onViewDetail });
+  }, [onEscalar, onViewDetail]);
 
   // Filter visible columns
   const visibleColumns = useMemo(() => {
@@ -174,6 +167,11 @@ export default function ClientesPage() {
         clienteRelacionado: client.id,
       });
       addToast({ type: 'success', message: `Derivación a planta externa creada para ${client.nombre}` });
+    } else if (tipo === 'postVenta') {
+      setPvClient(client);
+      setPvServicio('');
+      setPvTecnico('');
+      setPvDescripcion('');
     }
   };
 

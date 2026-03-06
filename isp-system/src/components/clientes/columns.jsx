@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Eye, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { Eye, ArrowUpRight } from 'lucide-react';
 import StatusBadge from '../common/StatusBadge';
 
 const columnHelper = createColumnHelper();
@@ -92,8 +92,8 @@ const dataColumns = [
 ];
 
 // Columna unificada de acciones
-export function buildColumns({ onEscalar, onCreatePostVenta, onViewDetail } = {}) {
-    const hasActions = onEscalar || onCreatePostVenta;
+export function buildColumns({ onEscalar, onViewDetail } = {}) {
+    const hasActions = !!onEscalar;
 
     const actionsColumn = columnHelper.display({
         id: 'actions',
@@ -107,15 +107,6 @@ export function buildColumns({ onEscalar, onCreatePostVenta, onViewDetail } = {}
                         title="Derivar Cliente"
                     >
                         <ArrowUpRight size={16} />
-                    </button>
-                )}
-                {onCreatePostVenta && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onCreatePostVenta(row.original); }}
-                        className="flex items-center justify-center p-1.5 rounded-xl text-text-muted hover:text-accent-purple hover:bg-accent-purple/10 transition-colors cursor-pointer border-none outline-none focus-visible:ring-2 focus-visible:ring-accent-purple/50 active:scale-95"
-                        title="Crear Post-Venta"
-                    >
-                        <ShoppingBag size={16} />
                     </button>
                 )}
                 <button

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowUpRight, Wrench, Monitor, Radio, X, CheckCircle2, FileText } from 'lucide-react';
+import { ArrowUpRight, Wrench, Monitor, Radio, X, CheckCircle2, FileText, ShoppingBag } from 'lucide-react';
 
 /**
  * Modal to handle direct client escalation/derivation with options.
@@ -24,6 +24,7 @@ export default function EscalarModal({ client, onClose, onConfirm }) {
         { id: 'soporte', label: 'Derivar a Soporte Remoto', icon: Monitor, color: 'text-accent-cyan', bg: 'bg-accent-cyan/15', text: 'Registra una sesión de soporte avanzado.' },
         { id: 'planta', label: 'Derivación a Planta Externa', icon: Radio, color: 'text-accent-purple', bg: 'bg-accent-purple/15', text: 'Escalamiento por saturación o falla de infraestructura.' },
         { id: 'requerimiento', label: 'Derivar a Req. Administrativo', icon: FileText, color: 'text-accent-blue', bg: 'bg-accent-blue/15', text: 'Genera un requerimiento administrativo vinculado.' },
+        { id: 'postVenta', label: 'Crear Post-Venta', icon: ShoppingBag, color: 'text-accent-purple', bg: 'bg-accent-purple/15', text: 'Registra un servicio de post-venta para el cliente.' },
     ];
 
     return (
