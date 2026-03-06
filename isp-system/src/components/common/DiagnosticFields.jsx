@@ -35,12 +35,14 @@ export function getEmptyDiag() {
  * @param {function} onChange - Setter del estado
  */
 export default function DiagnosticFields({ tecnologia, value, onChange, onTecnologiaChange, readOnly = false, warnings = {} }) {
-    const [expanded, setExpanded] = useState(!!tecnologia);
+    // Solo expandir automáticamente si ESTAMOS editando y HAY tecnología seleccionada
+    // Si estamos en modo readOnly (viendo detalles en la tabla), SIEMPRE nace cerrado.
+    const [expanded, setExpanded] = useState(!!tecnologia && !readOnly);
 
-    // Auto-expand when technology changes or is detected
+    // Auto-expand when technology changes or is detected (SOLO en edición)
     useState(() => {
-        if (tecnologia) setExpanded(true);
-    }, [tecnologia]);
+        if (tecnologia && !readOnly) setExpanded(true);
+    }, [tecnologia, readOnly]);
 
     const isFibra = tecnologia?.toLowerCase().includes('fibra');
     const isRadio = tecnologia?.toLowerCase().includes('radio');
