@@ -307,9 +307,9 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="h-full flex flex-col p-4 lg:p-6 gap-4 overflow-hidden">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold flex items-center gap-2">
             <User className="w-8 h-8" />
@@ -329,7 +329,7 @@ export default function UsuariosPage() {
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 shrink-0">
         <div className="card p-4">
           <div className="text-sm text-gray-400">Total</div>
           <div className="text-2xl font-bold">{stats.total}</div>
@@ -361,7 +361,7 @@ export default function UsuariosPage() {
       </div>
 
       {/* SEARCH */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
@@ -373,8 +373,8 @@ export default function UsuariosPage() {
       </div>
 
       {/* TABLE */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="card flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="overflow-x-auto overflow-y-auto flex-1">
           <table className="w-full">
             <thead className="bg-dark-lighter border-b border-dark-border">
               <tr>
