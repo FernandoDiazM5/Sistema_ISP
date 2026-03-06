@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Monitor, Plus, Wifi, Terminal, Activity, CheckCircle2,
   Search, Gauge, Signal, X, Eye,
-  AlertTriangle, Clock, FileText
+  AlertTriangle, Clock, FileText, Trash2, Edit3
 } from 'lucide-react';
 import useStore from '../../store/useStore';
 import useToast from '../../hooks/useToast';
@@ -587,7 +587,31 @@ export default function SoporteRemotoPage() {
                 <div className="flex items-center gap-2">
                   <CopyButton getTextFn={() => formatSoporteRemoto(s, clients.find(c => c.id === s.clienteId))} />
                   <span className="text-[11px] text-text-muted">{s.fecha}</span>
-                  <Eye size={14} className="text-text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Hover Actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedSesion(s); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-text-primary hover:bg-bg-secondary hover:border-border transition-colors cursor-pointer"
+                      title="Ver Detalles"
+                    >
+                      <Eye size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedSesion(s); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-accent-cyan hover:bg-accent-cyan/10 hover:border-accent-cyan/30 transition-colors cursor-pointer"
+                      title="Editar"
+                    >
+                      <Edit3 size={14} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteSesion(s.id); }}
+                      className="p-1.5 rounded-md bg-transparent border border-transparent text-text-muted hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-colors cursor-pointer"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
