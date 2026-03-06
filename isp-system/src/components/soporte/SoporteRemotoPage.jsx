@@ -146,6 +146,10 @@ export default function SoporteRemotoPage() {
 
   /* ---- Confirmación de derivación ---- */
   const [confirmDerivacion, setConfirmDerivacion] = useState(null); // null | { type: 'visita'|'planta' }
+  const [derivacionCoordinada, setDerivacionCoordinada] = useState(true);
+  const [derivacionFecha, setDerivacionFecha] = useState('');
+  const [derivacionHora, setDerivacionHora] = useState('');
+  const [derivacionMotivo, setDerivacionMotivo] = useState('');
 
   /* ---- Diagnostic State ---- */
   const [diag, setDiag] = useState(getEmptyDiag());
@@ -363,6 +367,10 @@ export default function SoporteRemotoPage() {
       sesionOrigenId: sesion.id,
       tecnologia: derivacionTecnologia,
       diagnosticoCompleto: derivacionDiag,
+      coordinado: derivacionCoordinada,
+      fechaCoordinada: derivacionCoordinada ? derivacionFecha : null,
+      horaCoordinada: derivacionCoordinada ? derivacionHora : null,
+      motivoNoCoordinado: !derivacionCoordinada ? derivacionMotivo.trim() : null,
       ...derivacionDiag,
     });
     // 3. Update parent ticket history
@@ -1089,9 +1097,44 @@ export default function SoporteRemotoPage() {
                               onChange={setDerivacionDiag}
                             />
                           </div>
+
+                          {confirmDerivacion.type === 'visita' && (
+                            <div className="mb-4 bg-bg-primary/50 rounded-lg p-3 border border-border">
+                              <p className="text-sm font-semibold mb-2">Detalles de Coordinación de la Visita</p>
+                              <div className="flex items-center gap-4 mb-3">
+                                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                                  <input type="radio" checked={derivacionCoordinada} onChange={() => setDerivacionCoordinada(true)} className="accent-accent-orange" />
+                                  Coordinado con Cliente
+                                </label>
+                                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                                  <input type="radio" checked={!derivacionCoordinada} onChange={() => setDerivacionCoordinada(false)} className="accent-accent-orange" />
+                                  No Coordinado
+                                </label>
+                              </div>
+
+                              {derivacionCoordinada ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[10px] text-text-muted uppercase tracking-wide mb-1 block">Día coordinado</label>
+                                    <input type="date" value={derivacionFecha} onChange={e => setDerivacionFecha(e.target.value)} className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-1.5 px-2 text-xs outline-none focus:border-accent-orange" />
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] text-text-muted uppercase tracking-wide mb-1 block">Hora coordinada</label>
+                                    <input type="time" value={derivacionHora} onChange={e => setDerivacionHora(e.target.value)} className="w-full bg-bg-secondary border border-border text-text-primary rounded-lg py-1.5 px-2 text-xs outline-none focus:border-accent-orange" />
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="text-[10px] text-text-muted uppercase tracking-wide mb-1 block">Motivo de no coordinación</label>
+                                  <textarea value={derivacionMotivo} onChange={e => setDerivacionMotivo(e.target.value)} placeholder="Ej: El cliente no responde las llamadas..." className="w-full bg-bg-secondary border border-border text-text-primary p-2 rounded-lg text-xs min-h-[60px] resize-y outline-none focus:border-accent-orange" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="flex gap-2 justify-end">
                             <button
-                              onClick={() => setConfirmDerivacion(null)}
+                              onClick={() => { setConfirmDerivacion(null); setDerivacionFecha(''); setDerivacionHora(''); setDerivacionMotivo(''); setDerivacionCoordinada(true); }}
                               className="px-4 py-1.5 rounded-lg bg-bg-secondary border border-border text-xs text-text-primary font-medium cursor-pointer hover:bg-bg-secondary/80"
                             >
                               Cancelar
@@ -1100,8 +1143,15 @@ export default function SoporteRemotoPage() {
                               onClick={() => {
                                 confirmDerivacion.type === 'visita' ? handleDerivarVisita(s) : handleDerivarPlanta(s);
                                 setConfirmDerivacion(null);
+                                setDerivacionFecha(''); setDerivacionHora(''); setDerivacionMotivo(''); setDerivacionCoordinada(true);
                               }}
-                              className="px-4 py-1.5 rounded-lg bg-accent-orange text-white border-none text-xs font-bold cursor-pointer hover:bg-accent-orange/90 shadow-sm"
+                              disabled={
+                                confirmDerivacion.type === 'visita' && (
+                                  (derivacionCoordinada && (!derivacionFecha || !derivacionHora)) ||
+                                  (!derivacionCoordinada && !derivacionMotivo.trim())
+                                )
+                              }
+                              className="px-4 py-1.5 rounded-lg bg-accent-orange text-white border-none text-xs font-bold cursor-pointer hover:bg-accent-orange/90 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Confirmar Derivación
                             </button>

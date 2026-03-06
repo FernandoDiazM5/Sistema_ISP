@@ -852,6 +852,11 @@ export default function VisitasTecnicasPage() {
                     <span className="text-[11px] text-text-muted bg-bg-secondary px-2 py-0.5 rounded">
                       {v.tipo}
                     </span>
+                    {v.coordinado !== undefined && (
+                      <span className={`text-[11px] px-2 py-0.5 rounded font-medium ${v.coordinado ? 'bg-accent-green/15 text-accent-green' : 'bg-accent-orange/15 text-accent-orange'}`}>
+                        {v.coordinado ? 'Coordinado' : 'No Coordinado'}
+                      </span>
+                    )}
                     {slaVencido && (
                       <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/15 text-red-500 flex items-center gap-1">
                         <Clock size={10} /> SLA +48h
@@ -1234,6 +1239,32 @@ export default function VisitasTecnicasPage() {
                 </p>
               </div>
             </div>
+
+            {/* Detalles de Coordinación */}
+            {selectedVisita.coordinado !== undefined && (
+              <div className={`rounded-lg p-3 mb-4 border ${selectedVisita.coordinado ? 'bg-accent-green/5 border-accent-green/20' : 'bg-accent-orange/5 border-accent-orange/20'}`}>
+                <p className={`text-[10px] uppercase tracking-wide mb-1 font-semibold ${selectedVisita.coordinado ? 'text-accent-green' : 'text-accent-orange'}`}>
+                  {selectedVisita.coordinado ? 'Visita Coordinada' : 'Visita No Coordinada'}
+                </p>
+                {selectedVisita.coordinado ? (
+                  <div className="flex items-center gap-4 mt-2">
+                    <div>
+                      <span className="text-[10px] text-text-muted block">Día acordado</span>
+                      <span className="text-sm font-medium text-text-primary">{selectedVisita.fechaCoordinada || '—'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-text-muted block">Hora acordada</span>
+                      <span className="text-sm font-medium text-text-primary">{selectedVisita.horaCoordinada || '—'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2">
+                    <span className="text-[10px] text-text-muted block">Motivo / Anotación</span>
+                    <span className="text-sm text-text-secondary italic">{selectedVisita.motivoNoCoordinado || 'Sin motivo registrado'}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Address */}
             <div className="bg-bg-secondary rounded-lg p-3 mb-4">
