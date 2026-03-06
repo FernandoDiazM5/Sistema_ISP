@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, User, Mail, Shield, Edit3, Trash2, X, Eye, EyeOff, CheckCircle2, XCircle, Calendar, Clock, Crown, Settings, Lock, KeyRound, Loader2, AlertCircle } from 'lucide-react';
 import useStore from '../../store/useStore';
 import { ROLES, ROLE_LABELS, MODULES, MODULE_LABELS, PERMISSION_LEVELS, DEFAULT_PERMISSIONS } from '../../types/user';
-import { createUserWithPassword } from '../../api/authAPI';
 
 const ESTADO_COLORS = {
   true: { bg: 'bg-accent-green/15', text: 'text-accent-green', icon: CheckCircle2 },
@@ -102,11 +101,13 @@ export default function UsuariosPage() {
   const openEdit = (user) => {
     setEditingId(user.uid);
     setForm({
-      email: user.email,
-      nombre: user.nombre,
+      email: user.email || '',
+      nombre: user.nombre || '',
       foto: user.foto || '',
-      rol: user.rol,
-      permisos: { ...user.permisos },
+      rol: user.rol || ROLES.VIEWER,
+      permisos: user.permisos ? { ...user.permisos } : { ...DEFAULT_PERMISSIONS[user.rol || ROLES.VIEWER] },
+      authType: user.authType || 'email_password',
+      password: user.password || '',
     });
     setShowModal(true);
   };
@@ -184,23 +185,7 @@ export default function UsuariosPage() {
         // Crear nuevo usuario
         let authUid = null;
 
-        // Si es con email/password, primero crear en Firebase Auth
-        if (form.authType === 'email_password') {
-          const authResult = await createUserWithPassword(form.email, form.password);
-
-          if (!authResult.success) {
-            addToast({
-              type: 'error',
-              message: authResult.error || 'Error al crear usuario en Firebase Auth',
-            });
-            setIsSubmitting(false);
-            return;
-          }
-
-          authUid = authResult.uid;
-        }
-
-        // Crear usuario en Firestore
+        // Crear usuario en Firestore con su respectiva clave si aplica
         const newUserObj = {
           email: form.email,
           nombre: form.nombre,
@@ -208,9 +193,10 @@ export default function UsuariosPage() {
           rol: form.rol,
           permisos: form.permisos,
           authType: form.authType,
+          password: form.authType === 'email_password' ? form.password : undefined,
         };
 
-        await createUser(newUserObj, currentUser?.uid || 'system', authUid);
+        await createUser(newUserObj);
 
         addToast({
           type: 'success',

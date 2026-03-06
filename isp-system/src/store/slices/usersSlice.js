@@ -58,6 +58,36 @@ export const createUsersSlice = (set, get) => ({
     }
   },
 
+  // Cargar usuario desde Firebase por correo literal (Login manual - bypass FirebaseAuth)
+  loginWithCustomCredentials: async (email, password) => {
+    try {
+      set({ usersLoading: true, usersError: null });
+      const user = await usersAPI.loginCustomUser(email, password);
+
+      if (!user) {
+        set({ currentUser: null, usersLoading: false, usersError: 'Usuario o contraseña incorrectos.' });
+        return { success: false, error: 'Usuario o contraseña incorrectos.' };
+      }
+
+      if (!user.activo) {
+        set({ currentUser: null, usersLoading: false, usersError: 'Tu cuenta ha sido desactivada. Contacta al administrador.' });
+        return { success: false, error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' };
+      }
+
+      // Actualizar último acceso
+      await usersAPI.updateLastAccess(user.uid);
+
+      set({ currentUser: user, user: user, usersLoading: false });
+      localStorage.setItem('isp_user', JSON.stringify(user));
+
+      return { success: true, user };
+    } catch (error) {
+      console.error('Error custom login:', error);
+      set({ currentUser: null, usersLoading: false, usersError: error.message });
+      return { success: false, error: 'Error al iniciar sesión' };
+    }
+  },
+
   // Cargar usuario desde Firebase por UID (después del login con email/password)
   getUserByUid: async (uid) => {
     try {
@@ -100,19 +130,10 @@ export const createUsersSlice = (set, get) => ({
       set({ usersLoading: true, usersError: null });
       const currentUser = get().currentUser;
 
-      // Si es usuario email/password, registrar en Firebase Auth primero para obtener UID real
-      let authUid = null;
-      if (userData.authType === 'email_password' && userData.password) {
-        const authResult = await createUserWithPassword(userData.email, userData.password);
-        if (!authResult.success) {
-          throw new Error(authResult.error || 'Error al crear credenciales de acceso');
-        }
-        authUid = authResult.uid;
-      }
+      // Si es usuario google_oauth no necesita clave extra.
+      // Si es email_password, la guardaremos en db directamente sin Auth
 
-      // Nunca guardar la contraseña en Firestore
-      const { password: _pw, ...safeUserData } = userData;
-      const newUser = await usersAPI.createUser(safeUserData, currentUser?.uid || 'system', authUid);
+      const newUser = await usersAPI.createUser(userData, currentUser?.uid || 'system', null);
 
       // Actualizar lista local
       const allUsers = get().allUsers;

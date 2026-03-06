@@ -9,6 +9,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const loadCurrentUserByEmail = useStore(s => s.loadCurrentUserByEmail);
   const getUserByUid = useStore(s => s.getUserByUid);
+  const loginWithCustomCredentials = useStore(s => s.loginWithCustomCredentials);
 
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' o 'google'
   const [email, setEmail] = useState('');
@@ -167,8 +168,8 @@ export default function LoginPage() {
       setLoading(true);
       setError('');
 
-      // Autenticar con Firebase Auth
-      const authResult = await loginWithPassword(email, password);
+      // Autenticar con búsqueda directa a la base de datos (Bypass Firebase Auth)
+      const authResult = await loginWithCustomCredentials(email, password);
 
       if (!authResult.success) {
         setError(authResult.error);
@@ -176,20 +177,7 @@ export default function LoginPage() {
         return;
       }
 
-      // Cargar datos del usuario desde Firestore usando el UID de Firebase Auth
-      const firebaseUser = await getUserByUid(authResult.uid);
-
-      if (!firebaseUser) {
-        setError('Usuario no encontrado en el sistema. Contacta al administrador.');
-        setLoading(false);
-        return;
-      }
-
-      if (!firebaseUser.activo) {
-        setError('Tu cuenta ha sido desactivada. Contacta al administrador.');
-        setLoading(false);
-        return;
-      }
+      const firebaseUser = authResult.user;
 
       // Login exitoso
       login({

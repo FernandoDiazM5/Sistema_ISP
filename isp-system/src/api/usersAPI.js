@@ -85,9 +85,34 @@ export const createUser = async (userData, createdBy, authUid = null) => {
     ultimoAcceso: null,
   };
 
+  // Guardar contraseña de forma literal en la DB como fue solicitado
+  if (userData.authType === 'email_password' && userData.password) {
+    newUser.password = userData.password;
+  }
+
   await setDoc(doc(db, COLLECTION_NAME, uid), newUser);
 
   return { uid, ...newUser };
+};
+
+/**
+ * Iniciar sesión de forma manual validando credenciales
+ */
+export const loginCustomUser = async (email, password) => {
+  const db = initFirebase();
+  if (!db) throw new Error('Firebase no configurado');
+
+  const q = query(
+    collection(db, COLLECTION_NAME),
+    where('email', '==', email.trim()),
+    where('password', '==', password)
+  );
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) return null;
+
+  const docData = snapshot.docs[0];
+  return { uid: docData.id, ...docData.data() };
 };
 
 /**
