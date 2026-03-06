@@ -57,6 +57,19 @@ export const createOperationsSlice = (set, get) => ({
     derivaciones: [],
 
     addDerivacion: (deriv) => set(s => {
+        // Prevención de Anidación Infinita o Duplicados Vigentes (Desde Sesión o Visita)
+        if (deriv.sesionOrigenId || deriv.visitaOrigenId) {
+            const hasActive = s.derivaciones.some(d =>
+                ((deriv.sesionOrigenId && d.sesionOrigenId === deriv.sesionOrigenId) ||
+                    (deriv.visitaOrigenId && d.visitaOrigenId === deriv.visitaOrigenId)) &&
+                d.estado !== 'Completada' && d.estado !== 'Cancelada'
+            );
+            if (hasActive) {
+                console.warn('Bloqueado: Ya existe una Derivación a Planta Externa activa desde este origen.');
+                return {}; // Evitamos crear duplicado
+            }
+        }
+
         const newId = getNextId(s.derivaciones, 'DPE');
         const newDerivaciones = [{ ...deriv, id: newId, fecha: deriv.fecha || new Date().toISOString().split('T')[0], fechaCompletado: null }, ...s.derivaciones];
         saveToDB('isp_derivaciones', newDerivaciones);

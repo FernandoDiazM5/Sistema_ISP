@@ -551,6 +551,13 @@ export default function VisitasTecnicasPage() {
 
   const todayStr = formatDateStr(new Date());
 
+  /* ---- Alerta SLA (>48h) ---- */
+  const isSlaBreached = (fechaStr, estado) => {
+    if (estado === 'Completada' || estado === 'Cancelada' || estado.includes('Derivado')) return false;
+    const diff = new Date() - new Date(fechaStr);
+    return diff > 48 * 60 * 60 * 1000;
+  };
+
   return (
     <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
       {/* Header */}
@@ -824,11 +831,14 @@ export default function VisitasTecnicasPage() {
           {filteredVisitas.map(v => {
             const ec = ESTADO_COLORS[v.estado] || ESTADO_COLORS['Programada'];
             const pc = PRIORIDAD_COLOR[v.prioridad] || PRIORIDAD_COLOR['Media'];
+            const slaVencido = isSlaBreached(v.fecha, v.estado);
+
             return (
               <div
                 key={v.id}
                 onClick={() => setSelectedVisita(v)}
-                className="bg-bg-card rounded-xl p-4 border border-border cursor-pointer transition-all hover:border-accent-blue/50 hover:bg-bg-card/80"
+                className={`bg-bg-card rounded-xl p-4 border cursor-pointer transition-all ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-blue/50 hover:bg-bg-card/80'
+                  }`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-3 flex-wrap">
@@ -842,6 +852,11 @@ export default function VisitasTecnicasPage() {
                     <span className="text-[11px] text-text-muted bg-bg-secondary px-2 py-0.5 rounded">
                       {v.tipo}
                     </span>
+                    {slaVencido && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/15 text-red-500 flex items-center gap-1">
+                        <Clock size={10} /> SLA +48h
+                      </span>
+                    )}
                     <AdjuntosCount count={v.adjuntos?.length} />
                   </div>
                   <div className="flex items-center gap-2">
@@ -1573,6 +1588,7 @@ export default function VisitasTecnicasPage() {
         entityLabel="Visita"
         newStatus="Completada"
         accentColor="accent-green"
+        requireAttachments={true}
       />
 
       {/* Reschedule Modal */}

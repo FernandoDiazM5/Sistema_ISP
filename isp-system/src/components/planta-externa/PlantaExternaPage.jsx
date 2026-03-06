@@ -56,6 +56,7 @@ export default function PlantaExternaPage() {
     metricaAntes: '',
     metricaDespues: '',
     observaciones: '',
+    adjuntos: [],
   });
   const [formAdjuntos, setFormAdjuntos] = useState([]);
   const [showResolutionModal, setShowResolutionModal] = useState(false);
@@ -195,12 +196,18 @@ export default function PlantaExternaPage() {
 
   const handleCompletion = () => {
     if (!selectedDerivacion) return;
+    if (!completionData.adjuntos || completionData.adjuntos.length === 0) {
+      alert('⚠️ Debe subir al menos 1 fotografía de evidencia para cerrar esta tarea en campo.');
+      return;
+    }
+
     updateDerivacion(selectedDerivacion.id, {
       estado: 'Completada',
       fechaCompletado: new Date().toISOString().split('T')[0],
       metricaAntes: completionData.metricaAntes,
       metricaDespues: completionData.metricaDespues,
       observacionesCierre: completionData.observaciones,
+      adjuntosResolucion: completionData.adjuntos,
     });
 
     // Cierre en cadena
@@ -234,9 +241,10 @@ export default function PlantaExternaPage() {
       metricaAntes: completionData.metricaAntes,
       metricaDespues: completionData.metricaDespues,
       observacionesCierre: completionData.observaciones,
+      adjuntosResolucion: completionData.adjuntos,
     });
     setShowCompletionForm(false);
-    setCompletionData({ metricaAntes: '', metricaDespues: '', observaciones: '' });
+    setCompletionData({ metricaAntes: '', metricaDespues: '', observaciones: '', adjuntos: [] });
   };
 
   const getRelatedInstallation = (instalacionId) => {
@@ -249,6 +257,13 @@ export default function PlantaExternaPage() {
     if (cat === 'radio') return <Wifi size={16} />;
     if (cat === 'fibra') return <Cable size={16} />;
     return <Wrench size={16} />;
+  };
+
+  /* ---- Alerta SLA (>48h) ---- */
+  const isSlaBreached = (fechaStr, estado) => {
+    if (estado === 'Completada' || estado === 'Cancelada' || estado.includes('Derivado')) return false;
+    const diff = new Date() - new Date(fechaStr);
+    return diff > 48 * 60 * 60 * 1000;
   };
 
   return (
@@ -371,11 +386,14 @@ export default function PlantaExternaPage() {
         )}
         {filtered.map(d => {
           const cat = getTipoCategoria(d.tipo);
+          const slaVencido = isSlaBreached(d.fecha, d.estado);
+
           return (
             <div
               key={d.id}
               onClick={() => setSelectedDerivacion(d)}
-              className="bg-bg-card rounded-xl p-5 border border-border cursor-pointer transition-all hover:border-accent-purple/40 hover:bg-bg-card-hover"
+              className={`bg-bg-card rounded-xl p-5 border cursor-pointer transition-all hover:bg-bg-card-hover ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-purple/40'
+                }`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -395,6 +413,11 @@ export default function PlantaExternaPage() {
                       <span className="text-[11px] text-text-muted bg-bg-secondary px-2 py-0.5 rounded">
                         {cat === 'radio' ? 'Radio Enlace' : cat === 'fibra' ? 'Fibra Óptica' : 'Infraestructura'}
                       </span>
+                      {slaVencido && (
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/15 text-red-500 flex items-center gap-1">
+                          <Clock size={10} /> SLA +48h
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm font-semibold mt-0.5">{d.tipo}</p>
                   </div>
@@ -779,6 +802,17 @@ export default function PlantaExternaPage() {
                       className="bg-bg-secondary border border-border text-text-primary p-3 rounded-lg text-sm min-h-[60px] resize-y outline-none focus:border-accent-green w-full font-[inherit]"
                     />
                   </div>
+                  <div>
+                    <Adjuntos
+                      value={completionData.adjuntos || []}
+                      onChange={v => setCompletionData(p => ({ ...p, adjuntos: v }))}
+                      max={10}
+                      label="Evidencia Fotográfica / Adjuntos"
+                    />
+                    {(!completionData.adjuntos || completionData.adjuntos.length === 0) && (
+                      <p className="text-accent-yellow text-[11px] mt-1 italic">* Evidencia fotográfica requerida para cerrar tarea</p>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setShowCompletionForm(false)}
@@ -788,7 +822,8 @@ export default function PlantaExternaPage() {
                     </button>
                     <button
                       onClick={handleCompletion}
-                      className="flex-1 py-2 rounded-lg bg-accent-green border-none text-white text-xs font-semibold cursor-pointer hover:opacity-90"
+                      disabled={!completionData.adjuntos || completionData.adjuntos.length === 0}
+                      className="flex-1 py-2 rounded-lg bg-accent-green border-none text-white text-xs font-semibold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Completar con métricas
                     </button>
@@ -886,11 +921,12 @@ export default function PlantaExternaPage() {
           setResolutionTarget(null);
         }}
         onConfirm={handleResolutionConfirm}
-        title="Completar Trabajo de Planta Externa"
-        entityId={resolutionTarget ? derivaciones.find(d => d.id === resolutionTarget.derivacionId)?.id : ''}
-        entityLabel="Derivacion"
-        newStatus="Completada"
-        accentColor="accent-purple"
+        title="Completar Planta Externa"
+        entityId={resolutionTarget?.derivacionId || ''}
+        entityLabel="Derivación"
+        newStatus={resolutionTarget?.nuevoEstado || 'Completada'}
+        accentColor="accent-green"
+        requireAttachments={true}
       />
     </div>
   );

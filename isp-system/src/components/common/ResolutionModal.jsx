@@ -10,8 +10,9 @@ const COLOR_MAP = {
   'accent-red': { bg: 'bg-accent-red/20', text: 'text-accent-red', border: 'border-accent-red/20', bgLight: 'bg-accent-red/10', btnBg: 'bg-accent-red' },
 };
 
-export default function ResolutionModal({ open, onClose, onConfirm, title, entityId, entityLabel, newStatus, accentColor = 'accent-green' }) {
+export default function ResolutionModal({ open, onClose, onConfirm, title, entityId, entityLabel, newStatus, accentColor = 'accent-green', requireAttachments = false }) {
   const [solucion, setSolucion] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [acciones, setAcciones] = useState('');
   const [adjuntos, setAdjuntos] = useState([]);
 
@@ -27,6 +28,11 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
 
   const handleConfirm = () => {
     if (!solucion.trim()) return;
+    if (requireAttachments && adjuntos.length === 0) {
+      setErrorMsg('⚠️ Debe subir al menos 1 fotografía de evidencia para cerrar esta tarea en campo.');
+      return;
+    }
+    setErrorMsg('');
     onConfirm({
       solucion: solucion.trim(),
       accionesRealizadas: acciones.trim(),
@@ -46,6 +52,7 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
   const handleClose = () => {
     setSolucion(''); setAcciones(''); setAdjuntos([]);
     setPing(''); setDownload(''); setUpload(''); setPacketLoss(''); setJitter('');
+    setErrorMsg('');
     onClose();
   };
 
@@ -99,7 +106,13 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
             />
           </div>
 
-          <Adjuntos value={adjuntos} onChange={setAdjuntos} max={10} label="Evidencia / Adjuntos" />
+          <div>
+            <Adjuntos value={adjuntos} onChange={(newAdj) => { setAdjuntos(newAdj); if (newAdj.length > 0) setErrorMsg(''); }} max={10} label="Evidencia Fotográfica / Adjuntos" />
+            {errorMsg && <p className="text-red-500 text-[11px] mt-1 font-semibold">{errorMsg}</p>}
+            {requireAttachments && adjuntos.length === 0 && !errorMsg && (
+              <p className="text-accent-yellow text-[11px] mt-1 italic">* Evidencia requerida para cerrar tarea</p>
+            )}
+          </div>
 
           {newStatus === 'Resuelto' && (
             <div className="bg-bg-secondary/50 border border-border rounded-lg p-4 mt-1">
@@ -136,7 +149,7 @@ export default function ResolutionModal({ open, onClose, onConfirm, title, entit
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={!solucion.trim()}
+              disabled={!solucion.trim() || (requireAttachments && adjuntos.length === 0)}
               className={`flex-1 py-2.5 rounded-lg ${colors.btnBg} border-none text-white cursor-pointer text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
             >
               <CheckCircle2 size={14} />

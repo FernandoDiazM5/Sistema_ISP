@@ -136,6 +136,113 @@ export const createTicketsSlice = (set) => ({
         };
     }),
 
+    // Reabrir Cadena (Rollback Upstream)
+    reopenTicketChain: (ticketId, motivoReapertura) => set(s => {
+        const now = new Date().toISOString();
+        const dateNow = now.split('T')[0];
+
+        // 1. Reabrir el Ticket Maestro
+        const newTickets = s.tickets.map(t => {
+            if (t.id === ticketId && (t.estado === 'Resuelto' || t.estado === 'Cerrado' || t.estado === 'Cancelado')) {
+                const historyItem = { fecha: now, estadoAnterior: t.estado, estadoNuevo: 'Abierto', motivo: motivoReapertura || 'Reapertura de cadena solicitada manual' };
+                return { ...t, estado: 'Abierto', fechaUpdate: dateNow, historial: [historyItem, ...(t.historial || [])] };
+            }
+            return t;
+        });
+
+        // 2. Reabrir Soporte Remoto intermedio
+        const newSesiones = s.sesionesRemoto.map(sr => {
+            if (sr.ticketId === ticketId && (sr.estado === 'Completada' || sr.estado === 'Cancelada' || sr.estado === 'Fallida')) {
+                const historyItem = { fecha: now, estadoAnterior: sr.estado, estadoNuevo: 'En curso', motivo: motivoReapertura || 'Reapertura en cascada' };
+                return { ...sr, estado: 'En curso', resultado: 'Cadena de ticket reabierta.', historial: [historyItem, ...(sr.historial || [])] };
+            }
+            return sr;
+        });
+
+        // 3. Reabrir Visitas Técnicas intermedias
+        const newVisitas = s.visitas.map(v => {
+            if (v.ticketId === ticketId && (v.estado === 'Completada' || v.estado === 'Cancelada' || v.estado === 'Fallida')) {
+                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'En Progreso', motivo: motivoReapertura || 'Reapertura en cascada' };
+                return { ...v, estado: 'En Progreso', resultado: 'Reapertura en cascada.', historial: [historyItem, ...(v.historial || [])] };
+            }
+            return v;
+        });
+
+        // 4. Reabrir Derivaciones (Planta Externa) vinculadas a este ticket
+        const newDerivaciones = s.derivaciones ? s.derivaciones.map(d => {
+            if (d.ticketId === ticketId && (d.estado === 'Completada' || d.estado === 'Cancelada')) {
+                const historyItem = { fecha: now, estadoAnterior: d.estado, estadoNuevo: 'En progreso', motivo: motivoReapertura || 'Reapertura en cascada' };
+                return { ...d, estado: 'En progreso', fechaCompletado: null, historial: [historyItem, ...(d.historial || [])] };
+            }
+            return d;
+        }) : [];
+
+        // 5. Reabrir Requerimientos vinculados
+        const newRequerimientos = s.requerimientos ? s.requerimientos.map(r => {
+            if (r.ticketOrigen === ticketId && (r.estado === 'Completado' || r.estado === 'Cancelado')) {
+                const historyItem = { fecha: now, estadoAnterior: r.estado, estadoNuevo: 'Pendiente', motivo: motivoReapertura || 'Reapertura en cascada' };
+                return { ...r, estado: 'Pendiente', historial: [historyItem, ...(r.historial || [])] };
+            }
+            return r;
+        }) : [];
+
+        saveToDB('isp_tickets', newTickets);
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        saveToDB('isp_visitas', newVisitas);
+        if (s.derivaciones) saveToDB('isp_derivaciones', newDerivaciones);
+        if (s.requerimientos) saveToDB('isp_requerimientos', newRequerimientos);
+
+        return {
+            tickets: newTickets,
+            sesionesRemoto: newSesiones,
+            visitas: newVisitas,
+            ...(s.derivaciones && { derivaciones: newDerivaciones }),
+            ...(s.requerimientos && { requerimientos: newRequerimientos }),
+        };
+    }),
+
+    // Reabrir Cadena desde un Soporte Remoto (Descendente)
+    reopenSesionChain: (sesionId, motivoReapertura) => set(s => {
+        const now = new Date().toISOString();
+
+        // 1. Reabrir Soporte Remoto
+        const newSesiones = s.sesionesRemoto.map(sr => {
+            if (sr.id === sesionId && (sr.estado === 'Completada' || sr.estado === 'Cancelada' || sr.estado === 'Fallida')) {
+                const historyItem = { fecha: now, estadoAnterior: sr.estado, estadoNuevo: 'En curso', motivo: motivoReapertura || 'Reapertura descendente solicitada manual' };
+                return { ...sr, estado: 'En curso', resultado: 'Sesión reabierta.', historial: [historyItem, ...(sr.historial || [])] };
+            }
+            return sr;
+        });
+
+        // 2. Reabrir Visitas hijas directas
+        const newVisitas = s.visitas.map(v => {
+            if (v.sesionOrigenId === sesionId && (v.estado === 'Completada' || v.estado === 'Cancelada' || v.estado === 'Fallida')) {
+                const historyItem = { fecha: now, estadoAnterior: v.estado, estadoNuevo: 'En Progreso', motivo: motivoReapertura || 'Reapertura descendente' };
+                return { ...v, estado: 'En Progreso', resultado: 'Reapertura descendente.', historial: [historyItem, ...(v.historial || [])] };
+            }
+            return v;
+        });
+
+        // 3. Reabrir Planta Externa hija directa
+        const newDerivaciones = s.derivaciones ? s.derivaciones.map(d => {
+            if (d.sesionOrigenId === sesionId && (d.estado === 'Completada' || d.estado === 'Cancelada')) {
+                const historyItem = { fecha: now, estadoAnterior: d.estado, estadoNuevo: 'En progreso', motivo: motivoReapertura || 'Reapertura descendente' };
+                return { ...d, estado: 'En progreso', fechaCompletado: null, historial: [historyItem, ...(d.historial || [])] };
+            }
+            return d;
+        }) : [];
+
+        saveToDB('isp_sesionesRemoto', newSesiones);
+        saveToDB('isp_visitas', newVisitas);
+        if (s.derivaciones) saveToDB('isp_derivaciones', newDerivaciones);
+
+        return {
+            sesionesRemoto: newSesiones,
+            visitas: newVisitas,
+            ...(s.derivaciones && { derivaciones: newDerivaciones }),
+        };
+    }),
+
     // ===================== AVERÍAS =====================
     averias: [],
 
@@ -209,6 +316,18 @@ export const createTicketsSlice = (set) => ({
     visitas: [],
 
     addVisita: (visita) => set(s => {
+        // Prevención de Anidación Infinita o Duplicados Vigentes
+        if (visita.sesionOrigenId) {
+            const hasActive = s.visitas.some(v =>
+                v.sesionOrigenId === visita.sesionOrigenId &&
+                v.estado !== 'Completada' && v.estado !== 'Cancelada' && v.estado !== 'Fallida'
+            );
+            if (hasActive) {
+                console.warn('Bloqueado: Ya existe una Visita Técnica activa derivada de esta misma sesión.');
+                return {}; // No mutar el estado
+            }
+        }
+
         const newId = getNextId(s.visitas, 'VT');
         const newVisitas = [{ ...visita, id: newId, fecha: visita.fecha || new Date().toISOString().split('T')[0] }, ...s.visitas];
         saveToDB('isp_visitas', newVisitas);

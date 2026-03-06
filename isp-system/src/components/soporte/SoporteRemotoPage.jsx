@@ -109,6 +109,8 @@ export default function SoporteRemotoPage() {
   const tickets = useStore(s => s.tickets);
   const updateTicket = useStore(s => s.updateTicket);
   const resolveTicketChain = useStore(s => s.resolveTicketChain);
+  const reopenTicketChain = useStore(s => s.reopenTicketChain);
+  const reopenSesionChain = useStore(s => s.reopenSesionChain);
   const tecnicos = useStore(s => s.tecnicos);
   const addVisita = useStore(s => s.addVisita);
   const addDerivacion = useStore(s => s.addDerivacion);
@@ -494,6 +496,14 @@ export default function SoporteRemotoPage() {
     return m > 0 ? `${h}h ${m}min` : `${h}h`;
   };
 
+  /* ---- Alerta SLA (>48h) ---- */
+  const isSlaBreached = (fechaStr, estado) => {
+    if (estado === 'Completada' || estado === 'Cancelada' || estado.includes('Derivado')) return false;
+    // Asumimos que fechaStr es YYYY-MM-DD o ISO string.
+    const diff = new Date() - new Date(fechaStr);
+    return diff > 48 * 60 * 60 * 1000; // 48 horas en milisegundos
+  };
+
   /* ========================= RENDER ========================= */
   return (
     <div className="animate-fade p-4 sm:p-6 sm:px-8 h-full overflow-y-auto">
@@ -579,10 +589,12 @@ export default function SoporteRemotoPage() {
           const hasDiag = s.diagnosticos && Object.values(s.diagnosticos).some(v => v !== '' && v !== null && v !== undefined);
           const warns = getDiagWarnings(s.diagnosticos);
           const hasWarnings = Object.keys(warns).length > 0;
+          const slaVencido = isSlaBreached(s.fecha, s.estado);
 
           return (
             <div key={s.id} onClick={() => setSelectedSesion(s)}
-              className="bg-bg-card rounded-xl p-4 border border-border cursor-pointer transition-all hover:border-accent-cyan/40 group">
+              className={`bg-bg-card rounded-xl p-4 border cursor-pointer transition-all group ${slaVencido ? 'border-red-500/60 shadow-[0_0_10px_rgba(239,68,68,0.15)] hover:border-red-400' : 'border-border hover:border-accent-cyan/40'
+                }`}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent-cyan/15 text-accent-cyan">
@@ -601,6 +613,11 @@ export default function SoporteRemotoPage() {
                       {hasWarnings && (
                         <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-accent-orange/15 text-accent-orange flex items-center gap-1">
                           <AlertTriangle size={10} /> Alertas
+                        </span>
+                      )}
+                      {slaVencido && (
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/15 text-red-500 flex items-center gap-1">
+                          <Clock size={10} /> SLA +48h
                         </span>
                       )}
                     </div>
@@ -1106,6 +1123,32 @@ export default function SoporteRemotoPage() {
                           </button>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Reapertura de Cadena (Rollback) */}
+                  {(s.estado === 'Completada' || s.estado === 'Cancelada' || s.estado === 'Fallida') && (
+                    <div className="mb-4">
+                      <p className="text-[10px] text-accent-orange uppercase tracking-wide font-semibold mb-2 flex items-center gap-1">
+                        <AlertTriangle size={12} /> Acciones Administrativas
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (window.confirm("¿Estás seguro de reabrir esta sesión y toda su cadena descendente (Visitas/Planta vinculadas)?")) {
+                            // Si hay ticket raíz se reabre toda la línea, si no, se reabre desde la sesión actual descendente.
+                            if (s.ticketId && reopenTicketChain) {
+                              reopenTicketChain(s.ticketId, "Reapertura manual desde Soporte Remoto");
+                            } else if (reopenSesionChain) {
+                              reopenSesionChain(s.id, "Reapertura manual desde Soporte Remoto");
+                            }
+                            toast.success("Cadena reabierta correctamente. El caso volvió a estado En curso.");
+                            setSelectedSesion(null);
+                          }
+                        }}
+                        className="w-full py-2.5 rounded-lg bg-transparent text-accent-orange border border-accent-orange/40 text-xs font-bold cursor-pointer hover:bg-accent-orange/10 transition-colors flex justify-center items-center gap-2"
+                      >
+                        Reabrir Sesión / Cadena
+                      </button>
                     </div>
                   )}
 
