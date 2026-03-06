@@ -478,9 +478,13 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   // ===================== APPLY DELTAS (para live sync incremental) =====================
   applyDeltas: (data: any) => {
+    if (data.users && !data.allUsers) {
+      data.allUsers = data.users;
+    }
+
     // Colecciones de entidades (arrays con .id): se fusionan por ID
     const arrayKeysWithId = [
-      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'allUsers', 'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory', 'clientChanges',
@@ -562,8 +566,12 @@ const useStore = create<StoreState>((set: any, get: any) => ({
 
   // ===================== RESTORE SYSTEM (para backups y live sync full) =====================
   restoreSystem: (data: any) => {
+    if (data.users && !data.allUsers) {
+      data.allUsers = data.users;
+    }
+
     const keysToRestore = [
-      'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
+      'allUsers', 'clients', 'tickets', 'averias', 'tecnicos', 'equipos', 'visitas',
       'instalaciones', 'derivaciones', 'postVenta', 'sesionesRemoto',
       'movimientosEquipos', 'whatsappLogs', 'templates', 'requerimientos',
       'columnPrefs', 'cleaningOptions', 'importHistory',

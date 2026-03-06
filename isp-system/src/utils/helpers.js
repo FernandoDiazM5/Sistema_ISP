@@ -38,6 +38,7 @@ export function getNextId(collection, prefix, idField = 'id') {
  * Usado en hydrateStore, applyDeltas y restoreSystem para sincronización local ↔ store.
  */
 export const ISP_KEY_MAP = {
+    isp_users: 'allUsers',
     isp_clients: 'clients',
     isp_tickets: 'tickets',
     isp_averias: 'averias',

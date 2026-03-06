@@ -5,6 +5,7 @@ import { pushToCloud, pullFromCloud, listBackupVersions, pullBackupVersion, dele
 function getDataSnapshot() {
     const s = useStore.getState();
     return {
+        users: s.allUsers,
         clients: s.clients,
         tickets: s.tickets,
         averias: s.averias,
@@ -184,7 +185,7 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             if (!get().liveEnabled || get().isReceivingRemoteData) return;
 
             const dataKeys = [
-                'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
+                'allUsers', 'clients', 'tickets', 'averias', 'tecnicos', 'equipos',
                 'visitas', 'instalaciones', 'derivaciones', 'postVenta',
                 'sesionesRemoto', 'movimientosEquipos', 'requerimientos',
                 'whatsappLogs', 'templates', 'whatsappCategories',
@@ -234,7 +235,10 @@ const useSyncStore = create<SyncStoreState>((set: any, get: any) => ({
             if (deltas.length > 0) {
                 // Enviar a Firestore nativo en background
                 deltas.forEach(delta => {
-                    const firestoreCollection = delta.col === 'clients' ? 'clients' : delta.col; // mapear nombres si es necesario
+                    let firestoreCollection = delta.col;
+                    if (delta.col === 'clients') firestoreCollection = 'clients'; // mapeos
+                    if (delta.col === 'allUsers') firestoreCollection = 'users';
+
                     if (delta.action === 'delete') {
                         deleteDocument(firestoreCollection, delta.id).catch(console.error);
                     } else {
